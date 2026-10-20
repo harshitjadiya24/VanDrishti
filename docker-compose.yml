@@ -1,0 +1,40 @@
+# Services for development, sized for an 8 GB laptop. Every port binds to 127.0.0.1 only.
+#   docker compose up -d --wait        db (Postgres 16 + PostGIS) + redis
+name: vandrishti
+
+services:
+  db:
+    build: ./docker/db
+    image: vandrishti/postgres:16-postgis
+    environment:
+      POSTGRES_USER: ${VANDRISHTI_DB_USER:-vandrishti}
+      POSTGRES_PASSWORD: ${VANDRISHTI_DB_PASSWORD:-change-me}
+      POSTGRES_DB: ${VANDRISHTI_DB_NAME:-vandrishti}
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "effective_cache_size=256MB",
+              "-c", "work_mem=8MB", "-c", "maintenance_work_mem=64MB", "-c", "max_connections=40"]
+    ports:
+      - "127.0.0.1:${VANDRISHTI_DB_PORT:-5432}:5432"
+    volumes:
+      # A new volume: the previous build's database stays untouched in `pgdata`.
+      - pgdata_v2:/var/lib/postgresql/data
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:${VANDRISHTI_REDIS_PORT:-6379}:6379"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata_v2:

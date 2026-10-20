@@ -1,0 +1,21 @@
+# Data, weights and images never go in git (they can contain people and exact locations).
+data/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Tools
+.playwright-mcp/
+.DS_Store
