@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from vandrishti.api.deps import DB, Writer
-from vandrishti.db.models import Camera, CameraStatus, Reserve
+from vandrishti.db.models import Camera, CameraStatus, Reserve, Sensitivity
 
 router = APIRouter(tags=["registry"])
 
@@ -56,12 +56,14 @@ class CameraOut(BaseModel):
     model: str | None
     serial: str | None
     status: CameraStatus
+    sensitivity: Sensitivity
     installed_at: datetime | None
     last_seen_at: datetime | None
 
 
 class CameraPatch(BaseModel):
-    status: CameraStatus
+    status: CameraStatus | None = None
+    sensitivity: Sensitivity | None = None  # section 6: location sensitivity
 
 
 def _camera_out(c: Camera, reserve_code: str) -> CameraOut:
@@ -74,6 +76,7 @@ def _camera_out(c: Camera, reserve_code: str) -> CameraOut:
         model=c.model,
         serial=c.serial,
         status=c.status,
+        sensitivity=c.sensitivity,
         installed_at=c.installed_at,
         last_seen_at=c.last_seen_at,
     )
@@ -133,6 +136,9 @@ def update_camera(camera_id: uuid.UUID, body: CameraPatch, session: DB) -> Camer
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "camera not found")
     camera, code = row
-    camera.status = body.status
+    if body.status is not None:
+        camera.status = body.status
+    if body.sensitivity is not None:
+        camera.sensitivity = body.sensitivity
     session.commit()
     return _camera_out(camera, code)

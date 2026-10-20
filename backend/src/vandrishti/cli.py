@@ -380,6 +380,46 @@ def cmd_audit_verify(args: argparse.Namespace) -> None:
         sys.exit(2)
 
 
+def cmd_risk(args: argparse.Namespace) -> None:
+    from vandrishti.core.config import get_settings
+    from vandrishti.pipeline.risk import assess, build_events, classify_vehicles
+
+    settings = get_settings()
+    with _session() as s:
+        created = build_events(s, settings, reserve=args.reserve)
+        typed = 0
+        if args.vehicle_types:
+            from vandrishti.core.storage import LocalStorage
+            from vandrishti.models.adapters.openclip_verifier import OpenClipVerifier
+            from vandrishti.models.manager import ModelManager
+
+            manager = ModelManager(max_loaded=1, device=settings.verifier_device)
+            try:
+                clip = manager.get(OpenClipVerifier(settings.model_cache_dir / "openclip-vit-b-16"))
+                typed = classify_vehicles(
+                    s, LocalStorage(settings.storage_root), clip, reserve=args.reserve, force=True
+                )
+            finally:
+                manager.unload_all()
+        _print(
+            {
+                "new_events": created,
+                "vehicle_types_estimated": typed,
+                "levels": assess(s, reserve=args.reserve),
+            }
+        )
+
+
+def cmd_camera_sensitivity(args: argparse.Namespace) -> None:
+    from vandrishti.db.models import Sensitivity
+
+    with _session() as s:
+        camera = _camera(s, args.reserve, args.code)
+        camera.sensitivity = Sensitivity(args.level)
+        s.commit()
+        print(f"{args.code}: {camera.sensitivity.value}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -416,6 +456,11 @@ def main(argv: list[str] | None = None) -> None:
     cs.add_argument("--code", required=True)
     cs.add_argument("--status", required=True, choices=["active", "inactive", "faulty", "stolen"])
     cs.set_defaults(func=cmd_camera_status)
+    cz = cam.add_parser("set-sensitivity", help="section 6 location sensitivity")
+    cz.add_argument("--reserve", required=True)
+    cz.add_argument("--code", required=True)
+    cz.add_argument("--level", required=True, choices=["normal", "sensitive", "core"])
+    cz.set_defaults(func=cmd_camera_sensitivity)
 
     ing = sub.add_parser("ingest", help="ingest a folder (an SD-card dump) from one camera")
     ing.add_argument("folder")
@@ -474,6 +519,13 @@ def main(argv: list[str] | None = None) -> None:
     au.add_parser("verify", help="recompute the audit hash chain").set_defaults(
         func=cmd_audit_verify
     )
+
+    rk = sub.add_parser("risk", help="6: presence events and explained risk levels")
+    rk.add_argument("--reserve")
+    rk.add_argument(
+        "--vehicle-types", action="store_true", help="estimate vehicle types (OpenCLIP)"
+    )
+    rk.set_defaults(func=cmd_risk)
 
     args = parser.parse_args(argv)
     args.func(args)

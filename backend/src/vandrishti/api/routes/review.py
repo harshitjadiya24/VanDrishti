@@ -21,13 +21,16 @@ from vandrishti.db.models import (
     Camera,
     Detection,
     Image,
+    PresenceEvent,
     Reserve,
     ReserveSpecies,
     ReviewAction,
+    RiskAssessment,
     RouteState,
     Routing,
     Severity,
 )
+from vandrishti.pipeline.risk import RiskConfig
 from vandrishti.pipeline.routing import run_routing
 from vandrishti.review import service
 
@@ -57,6 +60,7 @@ class QueueItem(BaseModel):
     boxes: list[BoxOut]
     has_mask: bool
     allowed_actions: list[str]
+    risk: dict[str, Any] | None = None  # section 6, for people/vehicle frames
 
 
 class RouteCount(BaseModel):
@@ -130,10 +134,35 @@ def review_queue(
                     if d.confidence >= 0.1
                 ],
                 has_mask=bool(explanation and "mask" in explanation),
+                risk=_risk_for(session, img.id),
                 allowed_actions=sorted(a.value for a in service.ALLOWED[routing.route]),
             )
         )
     return out
+
+
+def _risk_for(session: Any, image_id: uuid.UUID) -> dict[str, Any] | None:
+    row = session.execute(
+        select(PresenceEvent, RiskAssessment)
+        .join(RiskAssessment, RiskAssessment.event_id == PresenceEvent.id)
+        .where(
+            PresenceEvent.image_ids.contains([str(image_id)]),
+            RiskAssessment.config_hash == RiskConfig().hash(),
+        )
+    ).first()
+    if row is None:
+        return None
+    event, a = row
+    return {
+        "level": a.level.value,
+        "score": a.score,
+        "dismissed": a.dismissed,
+        "factors": a.factors,
+        "people": event.people_count,
+        "vehicles": event.vehicle_count,
+        "vehicle_type": event.vehicle_type,
+        "night": event.night,
+    }
 
 
 class ReviewIn(BaseModel):

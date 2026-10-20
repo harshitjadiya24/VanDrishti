@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { CircleAlert, CircleCheck, Info } from "lucide-react";
 import type { QueueItem } from "../api";
+import { RiskBadge, RiskReasons } from "./RiskBadge";
 
 export function band(c: number | null): { word: string; tone: string } {
   if (c === null) return { word: "no score", tone: "text-dim" };
@@ -36,6 +37,16 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
         )}
         <p className="mt-2 text-[13px] text-dim">Why it is here: <span className="text-ink">{item.reason}</span></p>
       </div>
+
+      {item.risk && (
+        <div className="grid gap-2 rounded-md border border-line p-3">
+          <div className="flex items-center gap-2 text-[13px]">
+            <RiskBadge level={item.risk.level} dismissed={item.risk.dismissed} />
+            <span className="text-dim">score {item.risk.score}</span>
+          </div>
+          <RiskReasons factors={item.risk.factors} />
+        </div>
+      )}
 
       {ex?.summary && <p className="rounded-md bg-base px-3 py-2 text-[13px] leading-relaxed">{ex.summary}</p>}
 

@@ -31,6 +31,44 @@ export interface QueueItem {
   boxes: { category: string; confidence: number; box: [number, number, number, number] }[];
   has_mask: boolean;
   allowed_actions: Action[];
+  risk: Risk | null;
+}
+export interface RiskFactor { name: string; points: number; reason: string }
+export interface Risk {
+  level: "low" | "medium" | "high";
+  score: number;
+  dismissed: boolean;
+  factors: RiskFactor[];
+  people: number;
+  vehicles: number;
+  vehicle_type: string | null;
+  night: boolean;
+}
+export interface RiskEvent {
+  event_id: string;
+  camera: string;
+  camera_sensitivity: string;
+  start_at: string;
+  timezone: string;
+  people: number;
+  vehicles: number;
+  vehicle_type: string | null;
+  vehicle_type_score: number | null;
+  night: boolean;
+  night_basis: string;
+  level: "low" | "medium" | "high";
+  score: number;
+  dismissed: boolean;
+  factors: RiskFactor[];
+  image_ids: string[];
+}
+export interface RiskSummary {
+  events: number;
+  levels: Record<"high" | "medium" | "low", number>;
+  night_share: number | null;
+  dismissed: number;
+  cameras: { camera: string; high: number; medium: number; low: number }[];
+  note: string;
 }
 export interface ReviewIn {
   image_id: string;
@@ -91,6 +129,10 @@ export const api = {
   feedback: (reserve?: string) => request<Feedback>(`/feedback/stats${qs({ reserve })}`),
   audit: () => request<AuditEvent[]>("/audit/events?limit=200"),
   auditVerify: () => request<{ ok: boolean; events_checked: number; first_broken_seq: number | null }>("/audit/verify"),
+  riskEvents: (reserve?: string, level?: string, includeDismissed = false) =>
+    request<RiskEvent[]>(`/risk/events${qs({ reserve, level, include_dismissed: includeDismissed ? "true" : undefined })}`),
+  riskSummary: (reserve?: string) => request<RiskSummary>(`/risk/summary${qs({ reserve })}`),
+  runRisk: (reserve?: string) => request<{ new_events: number }>(`/risk/run${qs({ reserve })}`, { method: "POST" }),
   displayUrl: (id: string) => `/api/images/${id}/display`,
   maskUrl: (id: string) => `/api/images/${id}/mask`,
 };

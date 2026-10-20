@@ -13,7 +13,8 @@ locked by role, and exact locations are protected.
 > sections 1–4 (cameras, ingestion, raw storage, preprocessing) and 5.1–5.2 (quality gate,
 > MegaDetector V6, whole-body blur of people and vehicles) and 5.3–5.7 (SpeciesNet, OpenCLIP,
 > SAM 2, explainable decision engine) and 7–8 (confidence routing, the review console, feedback,
-> hash-chained audit trail). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
+> hash-chained audit trail) and 6 (people/vehicle events, activity patterns, explained poaching-risk
+> levels). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## Run the foundations
 
@@ -64,6 +65,15 @@ uv run vandrishti-api                      # API on 127.0.0.1:8000
 cd ../frontend && npm ci && npm run dev    # console on http://127.0.0.1:5173
 uv run vandrishti audit verify             # recompute the audit hash chain
 ```
+
+## People, vehicles and poaching risk
+
+```bash
+uv run vandrishti camera set-sensitivity --reserve KAN --code S-07 --level core   # optional
+uv run vandrishti risk --reserve KAN --vehicle-types     # events + LOW/MEDIUM/HIGH with reasons
+```
+The console's "Poaching risk" screen lists events most urgent first. The level is a triage
+order with reasons, not a prediction.
 
 In the console, name yourself in the sidebar, pick a queue and review with the keyboard:
 `Y`/`Enter` confirm, `C` correct, `N` not an animal, `F` false alarm, `S` skip, `P` poaching,

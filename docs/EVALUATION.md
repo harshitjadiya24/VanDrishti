@@ -79,3 +79,19 @@ reviewer a second); people and vehicles are blurred from 0.1 (privacy errs on th
 - **Speed (M3 8 GB, CPU):** SpeciesNet 31 s for 125 images (one subprocess, includes model
   start-up), OpenCLIP 14 s, SAM 2 80 s (0.64 s/image), decisions 0.4 s; peak RSS 1.5 GB with
   one model loaded at a time.
+
+
+## Section 6 — people/vehicle events and risk (Phase 5, 2026-10-21)
+
+- **No ground truth exists** for poaching risk here, so there is no accuracy number. What
+  was checked: the rules on hand-built cases (unit and integration tests) and the output on
+  the LILA sample's 66 people/vehicle frames, which became 42 events. Final levels: 25 LOW,
+  17 MEDIUM, 0 HIGH (the sample's two "cameras" each merge many real locations, so repeat
+  and spike signals there say little).
+- A first run produced 1 HIGH from an ENA24 event dated by its file (no capture time):
+  night and spike points came from a meaningless time. Time-based signals now require EXIF
+  or manifest times.
+- **Vehicle type (OpenCLIP zero-shot, 8 types):** on the 32 Caltech events labelled "car",
+  CLIP said car 10, pickup truck 5, truck 4, jeep 1, bus 6, tractor 3, motorcycle 3. Caltech's
+  "car" may cover pickups and trucks, but buses and tractors on these trails are unlikely.
+  With a 0.6 floor, 13 of 35 become "unknown". Shown as a guess; never scored.

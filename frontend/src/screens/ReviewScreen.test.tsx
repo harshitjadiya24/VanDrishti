@@ -13,7 +13,7 @@ const item = (over: Partial<QueueItem> = {}): QueueItem => ({
   taxon: "mammalia;carnivora;felidae;panthera;tigris", confidence: 0.75,
   explanation: { summary: "tiger: SpeciesNet 0.75", factors: [{ name: "detection strength", factor: 1, reason: "clear detection (0.90)" }] },
   boxes: [{ category: "animal", confidence: 0.9, box: [0.2, 0.2, 0.4, 0.4] }],
-  has_mask: false, allowed_actions: ["confirm", "correct", "not_animal", "skip"], ...over,
+  has_mask: false, allowed_actions: ["confirm", "correct", "not_animal", "skip"], risk: null, ...over,
 });
 
 let calls: { url: string; body: unknown }[] = [];
@@ -70,11 +70,15 @@ describe("review screen", () => {
 
   it("offers only the actions that fit the queue", async () => {
     mockApi([item({ route: "people_vehicles", label: null, confidence: null, explanation: null,
-      allowed_actions: ["confirm_people", "false_alarm", "skip"] })]);
+      allowed_actions: ["confirm_people", "false_alarm", "skip"],
+      risk: { level: "high", score: 8, dismissed: false, people: 2, vehicles: 0, vehicle_type: null, night: true,
+        factors: [{ name: "night", points: 3, reason: "at night, after sunset at this camera" }] } })]);
     renderAt("people_vehicles");
     expect(await screen.findByRole("button", { name: /Confirm people\/vehicle/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Confirm Y/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /False alarm/ })).toBeInTheDocument();
+    expect(screen.getByText("high risk")).toBeInTheDocument();
+    expect(screen.getByText("at night, after sunset at this camera")).toBeInTheDocument();
   });
 
   it("needs a reviewer name before anything is saved", async () => {

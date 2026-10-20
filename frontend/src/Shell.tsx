@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Activity, Ban, Eye, HelpCircle, ScrollText, ShieldAlert, Signpost, Sparkles } from "lucide-react";
+import { Activity, Ban, Eye, HelpCircle, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
 import { api, type QueueKind } from "./api";
@@ -81,7 +81,7 @@ function Layout() {
         <div className="hidden gap-3 px-4 pb-3 md:grid">{settings}</div>
         <nav aria-label="Queues" className="flex gap-1.5 overflow-x-auto px-4 pb-3 md:hidden">
           {[{ to: "/routing", label: "Routing", n: undefined }, ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind] })),
-            { to: "/feedback", label: "Feedback", n: undefined }, { to: "/audit", label: "Audit", n: undefined }].map((x) => (
+            { to: "/risk", label: "Poaching risk", n: undefined }, { to: "/feedback", label: "Feedback", n: undefined }, { to: "/audit", label: "Audit", n: undefined }].map((x) => (
             <NavLink key={x.to} to={x.to}
               className={({ isActive }) => clsx("shrink-0 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap",
                 isActive ? "border-amber text-ink" : "border-line text-dim")}>
@@ -102,6 +102,8 @@ function Layout() {
               </NavLink>
             );
           })}
+          <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Section 6</div>
+          <NavLink to="/risk" className={link}><span className="text-alarm"><Siren size={17} /></span> Poaching risk</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Records</div>
           <NavLink to="/feedback" className={link}><Activity size={17} /> Feedback</NavLink>
           <NavLink to="/audit" className={link}><ScrollText size={17} /> Audit trail</NavLink>

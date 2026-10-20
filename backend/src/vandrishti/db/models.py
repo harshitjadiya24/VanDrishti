@@ -5,7 +5,8 @@ Phase 1 (image sections 1-4): ingest batches, images, burst sequences.
 Phase 2 (5.1-5.2): quality fields, detections, privacy locks.
 Phase 3 (5.3-5.7): classifications, semantic checks, segmentations, decisions.
 Phase 4 (7-8): routing, human reviews (feedback), hash-chained audit trail.
-Later phases add risk and embeddings (section 9).
+Phase 5 (6): presence events (people/vehicles), camera sensitivity, risk assessments.
+Phase 6 adds embeddings (section 9).
 """
 
 from __future__ import annotations
@@ -54,6 +55,14 @@ class Reserve(UUIDPrimaryKey, Timestamps, Base):
     country: Mapped[str] = mapped_column(String(3), default="IND")
 
 
+class Sensitivity(enum.StrEnum):
+    """How much a person or vehicle at this camera matters (set by the reserve)."""
+
+    NORMAL = "normal"
+    SENSITIVE = "sensitive"  # e.g. waterhole, known tiger route
+    CORE = "core"  # core zone: nobody should be there unannounced
+
+
 class Camera(UUIDPrimaryKey, Timestamps, Base):
     """One physical camera trap (section 3.1). Exact location is sensitive."""
 
@@ -77,6 +86,11 @@ class Camera(UUIDPrimaryKey, Timestamps, Base):
     installed_at: Mapped[datetime | None]
     # Newest capture time seen from this camera (silent cameras are found from this later).
     last_seen_at: Mapped[datetime | None]
+    sensitivity: Mapped[Sensitivity] = mapped_column(
+        _str_enum(Sensitivity, "sensitivity"),
+        default=Sensitivity.NORMAL,
+        server_default=Sensitivity.NORMAL.value,
+    )
 
 
 class ModelRegistry(UUIDPrimaryKey, Timestamps, Base):
@@ -481,3 +495,52 @@ class AuditEvent(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     prev_hash: Mapped[str] = mapped_column(String(64))
     hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class PresenceEvent(UUIDPrimaryKey, Timestamps, Base):
+    """Section 6: one burst at one camera in which people and/or vehicles were detected."""
+
+    __tablename__ = "presence_event"
+    __table_args__ = (UniqueConstraint("camera_id", "start_at", "first_image_id"),)
+
+    camera_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("camera.id", ondelete="RESTRICT"), index=True
+    )
+    sequence_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("sequence.id", ondelete="SET NULL")
+    )
+    first_image_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("image.id", ondelete="CASCADE"))
+    image_ids: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    start_at: Mapped[datetime] = mapped_column(index=True)
+    end_at: Mapped[datetime]
+    # Counts are the most seen in any one frame of the burst: an estimate (people overlap).
+    people_count: Mapped[int] = mapped_column(Integer, default=0)
+    vehicle_count: Mapped[int] = mapped_column(Integer, default=0)
+    # OpenCLIP zero-shot guess on the largest vehicle crop; an estimate, never a fact.
+    vehicle_type: Mapped[str | None] = mapped_column(String(50))
+    vehicle_type_score: Mapped[float | None] = mapped_column(Float)
+    night: Mapped[bool] = mapped_column(Boolean, default=False)
+    night_basis: Mapped[str] = mapped_column(String(20))  # "sun" (location known) | "clock"
+
+
+class RiskLevel(enum.StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class RiskAssessment(UUIDPrimaryKey, Timestamps, Base):
+    """Section 6: an explained poaching-risk score for one presence event."""
+
+    __tablename__ = "risk_assessment"
+    __table_args__ = (UniqueConstraint("event_id", "config_hash"),)
+
+    event_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("presence_event.id", ondelete="CASCADE"), index=True
+    )
+    config_hash: Mapped[str] = mapped_column(String(64))
+    score: Mapped[int] = mapped_column(Integer)
+    level: Mapped[RiskLevel] = mapped_column(_str_enum(RiskLevel, "risk_level"), index=True)
+    # [{"name", "points", "reason"}], plus who/what set any override.
+    factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    dismissed: Mapped[bool] = mapped_column(Boolean, default=False)  # reviewer: false alarm

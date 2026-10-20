@@ -29,8 +29,8 @@ records how each part is built; it grows phase by phase.
 | 2 | Quality gate, MegaDetector V6, privacy blur | built |
 | 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | built |
 | 4 | Confidence routing, review UI, feedback | built |
-| 5 | Human/vehicle activity, poaching risk | next |
-| 6 | Dashboard, re-identification | planned |
+| 5 | Human/vehicle activity, poaching risk | built |
+| 6 | Dashboard, re-identification | next |
 | 7 | Alerts, reports (PDF/Excel), integration API | planned |
 | 8 | Hardening and production | planned |
 
@@ -169,3 +169,32 @@ undo (POST /reviews/{id}/undo) → review.undone_at, route reopened, audit event
   shows the frame with numbered boxes and the SAM outline, the 5.7 explanation, and only the
   actions allowed for the route. Times are shown in the reserve's zone. The reviewer names
   themselves until login (Phase 8). No third-party requests (system fonts, no map tiles).
+
+## 8. Section 6: people, vehicles, activity patterns and poaching risk (Phase 5, ADR 0006)
+
+```
+HUMAN_VEHICLE frames ─► build_events: one PresenceEvent per burst and camera
+    counts = most people / vehicles in any one frame (estimate; people overlap)
+    night  = sunrise equation at the camera (basis "sun"), else 19:00-06:00 local ("clock")
+  ─► classify_vehicles (optional): OpenCLIP guess on the largest vehicle crop;
+     "unknown" below 0.6; never adds points
+  ─► assess: points with reasons → LOW < 4 ≤ MEDIUM < 8 ≤ HIGH
+     person +2 (group of 3+ +1) · vehicle +2 · night +3 · unusual spike vs the camera's own
+     28-day history (Poisson tail < 0.05) +2 · 3+ events in 7 days +2 · sensitive place +2 /
+     core zone +3 · tiger recorded at the camera within 30 days +2 · reviewer confirmed +1 ·
+     reviewer marked poaching +5 and HIGH minimum · reviewer severity = minimum level ·
+     reviewer false alarm = dismissed
+```
+
+- Time-based signals (night, spike, repeats, tiger nearby) need a real capture time (EXIF or
+  manifest); a file-date time skips them and says so.
+- History (spike baseline, repeats) counts only events with real times and no false-alarm
+  verdict.
+- Scores are recomputed on every run, because reviews and history change.
+- API: `POST /risk/run`, `GET /risk/events` (urgent first), `GET /risk/summary`;
+  `PATCH /cameras/{id}` sets `sensitivity`; people/vehicle queue items carry their risk.
+  CLI: `vandrishti risk [--vehicle-types]`, `vandrishti camera set-sensitivity`.
+- Console: "Poaching risk" screen (levels, most urgent cameras, events with blurred photo
+  and reasons) and the risk inside each people/vehicle review.
+- It decides what to look at first, not a prediction: the weights are reasoned defaults,
+  not fitted, because no labelled poaching outcomes exist here.

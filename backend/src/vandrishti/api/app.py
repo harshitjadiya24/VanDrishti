@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from vandrishti import __version__
-from vandrishti.api.routes import health, images, registry, review
+from vandrishti.api.routes import health, images, registry, review, risk
 from vandrishti.core.config import get_settings
 from vandrishti.core.logging import configure_logging
 
@@ -22,6 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(registry.router)
     app.include_router(images.router)
     app.include_router(review.router)
+    app.include_router(risk.router)
     return app
 
 

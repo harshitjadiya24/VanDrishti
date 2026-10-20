@@ -86,5 +86,9 @@ history, old Docker volumes). Do not look for it; build from the image.
   viewer's. New single-key actions must respect typing in inputs. No third-party requests.
 - Reviews are append-only (undo = `undone_at`); `audit_event` has triggers refusing edits;
   routing never reopens a route a person finished; spot checks are deterministic draws.
+- Risk (section 6) is rule-based points with reasons, not a model; never call it a prediction.
+  Time-based signals need EXIF/manifest times; `file_mtime` events skip them. A reviewer's
+  poaching mark always means HIGH. Vehicle type is an OpenCLIP guess (≥ 0.6), never scored.
+- `vandrishti.sun` gives sunrise/sunset; night uses the camera's location, else 19:00-06:00.
 - `.env` predates the rebuild: old keys can collide with new meanings (DETECTOR_BATCH_SIZE
   was 250 and is now images per model batch). Keep `.env.example` the reference.
