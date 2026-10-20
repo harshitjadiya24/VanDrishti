@@ -72,5 +72,14 @@ history, old Docker volumes). Do not look for it; build from the image.
   copies for people) before trusting a surprising metric.
 - Test data: `scripts/download_sample.py` (252 LILA images, ~110 MB, contains a few people:
   `data/` stays git-ignored); weights: `scripts/download_models.py megadetector-v6-mit-c`.
+- SpeciesNet lives in `tools/speciesnet` (own uv env; GPL yolov5 inside). Never import it in
+  the backend; call `SpeciesNetTool` (subprocess, JSON). Unset `VIRTUAL_ENV` for that call.
+  Weights: `KAGGLEHUB_CACHE=data/models/kagglehub`. Its "no cv result" means unknown.
+- OpenCLIP is informational by default: on labelled data its disagreements predicted no
+  errors. Do not let it lower confidence again without new labelled evidence (ADR 0004).
+- SAM 2 runs on CPU (MPS hides ~2.4 GB); the HF checkpoint is `sam2_video` type, loaded into
+  `Sam2Model` with all weights present (the transformers warning is expected).
+- Decisions are keyed by engine config + upstream config hashes; a decision only changes when
+  something it read changed.
 - `.env` predates the rebuild: old keys can collide with new meanings (DETECTOR_BATCH_SIZE
   was 250 and is now images per model batch). Keep `.env.example` the reference.

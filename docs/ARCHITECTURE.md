@@ -27,8 +27,8 @@ records how each part is built; it grows phase by phase.
 | 0 | Foundations | built |
 | 1 | Cameras, ingestion, raw storage, preprocessing | built |
 | 2 | Quality gate, MegaDetector V6, privacy blur | built |
-| 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | next |
-| 4 | Confidence routing, review UI, feedback | planned |
+| 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | built |
+| 4 | Confidence routing, review UI, feedback | next |
 | 5 | Human/vehicle activity, poaching risk | planned |
 | 6 | Dashboard, re-identification | planned |
 | 7 | Alerts, reports (PDF/Excel), integration API | planned |
@@ -114,3 +114,24 @@ image (quality_status=pending)
   quality and screening fields. CLI: `vandrishti quality`, `vandrishti detect`.
 - Measured (docs/EVALUATION.md): at 0.2 on 252 LILA images, animal precision 0.94 / recall
   0.91, vehicle 1.00 / 0.92, 12% of empty frames get a false box; 0.16 s/image on CPU.
+
+## 6. Sections 5.3–5.7: species, semantic check, segmentation, decision (Phase 3, ADR 0004)
+
+```
+ANIMAL image ─► animal boxes ≥ 0.2 (from 5.2)
+  5.3 SpeciesNet v4.0.3a  (subprocess in tools/speciesnet; JSON in/out; our boxes)
+      → classification rows: raw top-5 per box + FINAL (after country geofence, roll-up)
+  5.4 OpenCLIP ViT-B/16   (top box crop vs species-level candidates + "empty scene")
+      → semantic_check (probabilities); informational by default
+  5.5 SAM 2.1 tiny (CPU)   (top box as prompt) → segmentation: PNG mask, box fill, tight box
+  5.6 decision engine v1   SpeciesNet score x factors: model agreement, detection strength,
+      geographic prior (geofence + reserve species list), time-of-day prior (learned from
+      verified sightings, neutral < 30); unnamed animal capped at 0.5
+  5.7 explanation          JSON: base, every factor with reason, top-5, CLIP top-5, boxes,
+      mask, one-line summary → GET /images/{id}/decision, GET /images/{id}/mask
+```
+
+- One model resident at a time: `vandrishti analyse --reserve R` loads, runs and unloads
+  each stage's model in turn (peak 1.5 GB on the sample).
+- Decisions are keyed by engine config + the classification/check/mask config hashes they
+  used, so re-running after an upstream change recomputes only what changed.

@@ -1,0 +1,9 @@
+[project]
+name = "vandrishti-speciesnet-tool"
+version = "0.1.0"
+description = "Isolated environment for Google SpeciesNet (Apache-2.0). It depends on yolov5 (GPL) and pins setuptools, so it never shares VanDrishti's environment; VanDrishti calls it as a subprocess (ADR 0004)."
+requires-python = ">=3.11,<3.12"
+dependencies = ["speciesnet==5.0.6"]
+
+[tool.uv]
+package = false

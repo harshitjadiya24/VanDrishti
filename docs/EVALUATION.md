@@ -49,3 +49,33 @@ reviewer a second); people and vehicles are blurred from 0.1 (privacy errs on th
   brightest 0.1% is near black) fails the gate; heavier problems are warnings.
 - Result on the sample: 252 pass; 104 flagged night IR, 15 dim, 1 low contrast; 3.9 s for
   252 images.
+
+## 5.3–5.7 Species, semantic check, segmentation, decision — Phase 3, 2026-10-20
+
+- **Pipeline:** MegaDetector V6 animal boxes → SpeciesNet v4.0.3a crop classifier (country
+  geofence, label roll-up) → OpenCLIP ViT-B/16 check on the top crop → SAM 2.1 tiny mask →
+  decision engine v1. Run on the 125 sample images screened ANIMAL (`vandrishti analyse`).
+- **Scoring** (`scripts/eval_species.py`): each sample label maps to the taxon it implies at
+  its own precision (Caltech "deer" = deer family, ENA24 "White_Tailed_Deer" = species). A
+  decision is correct if its taxon lies inside, too general if it stops above, wrong
+  otherwise. 117 images have exactly one labelled species and were scored.
+- **Caveat:** SpeciesNet was very likely trained on Caltech and ENA24, so its near-perfect
+  accuracy here is optimistic; it says nothing yet about Indian reserves.
+
+| Confidence band (routing, section 7) | Images | Correct | Too general | Wrong |
+|---|---|---|---|---|
+| High (≥ 0.9) | 86 | 84 | 2 | 0 |
+| Medium (0.6–0.9) | 26 | 19 | 7 | 0 |
+| Low (< 0.6) | 5 | — | — | — (all 5 "animal, unidentified") |
+
+- **OpenCLIP as a second opinion:** with species-level candidates, it disagreed with
+  SpeciesNet on 51 of 103 correctly named images and on 0 wrong ones (there were none). Its
+  disagreements therefore predicted no errors and only pushed correct answers out of the
+  high band (with it lowering confidence: high 54, medium 54). It is now **informational by
+  default** (`clip_affects_confidence=False`); its opinion stays in every explanation. A first
+  version also offered CLIP "a person" and genus/family names as candidates; it chose "a
+  person" on 33 dim animal crops, so those prompts were removed.
+- **SAM 2.1 tiny:** 123 of 125 masks with predicted IoU ≥ 0.7.
+- **Speed (M3 8 GB, CPU):** SpeciesNet 31 s for 125 images (one subprocess, includes model
+  start-up), OpenCLIP 14 s, SAM 2 80 s (0.64 s/image), decisions 0.4 s; peak RSS 1.5 GB with
+  one model loaded at a time.

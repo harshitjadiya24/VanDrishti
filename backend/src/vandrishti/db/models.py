@@ -2,7 +2,9 @@
 
 Phase 0: reserves, the camera registry, the model registry.
 Phase 1 (image sections 1-4): ingest batches, images, burst sequences.
-Later phases add detections, classifications, reviews, risk and embeddings (section 9).
+Phase 2 (5.1-5.2): quality fields, detections, privacy locks.
+Phase 3 (5.3-5.7): classifications, semantic checks, segmentations, decisions.
+Later phases add reviews, risk and embeddings (section 9).
 """
 
 from __future__ import annotations
@@ -261,3 +263,121 @@ class Detection(UUIDPrimaryKey, Timestamps, Base):
     y: Mapped[float] = mapped_column(Float)
     w: Mapped[float] = mapped_column(Float)
     h: Mapped[float] = mapped_column(Float)
+
+
+class ClassificationKind(enum.StrEnum):
+    RAW = "raw"  # the classifier's own top-k
+    FINAL = "final"  # after SpeciesNet's ensemble rules (geofence, rollup, blank/human logic)
+
+
+class Classification(UUIDPrimaryKey, Timestamps, Base):
+    """5.3: species predictions for one detection (crop)."""
+
+    __tablename__ = "classification"
+    __table_args__ = (
+        UniqueConstraint(
+            "detection_id", "model_name", "model_version", "config_hash", "kind", "rank"
+        ),
+        CheckConstraint("score >= 0 AND score <= 1.0001", name="score_range"),
+    )
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    detection_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("detection.id", ondelete="CASCADE"), index=True
+    )
+    model_name: Mapped[str] = mapped_column(String(100))
+    model_version: Mapped[str] = mapped_column(String(100))
+    config_hash: Mapped[str] = mapped_column(String(64), index=True)
+    kind: Mapped[ClassificationKind] = mapped_column(
+        _str_enum(ClassificationKind, "classification_kind")
+    )
+    rank: Mapped[int] = mapped_column(Integer)
+    # "class;order;family;genus;species" (lower case; empty levels allowed).
+    taxon: Mapped[str] = mapped_column(String(300), index=True)
+    common_name: Mapped[str] = mapped_column(String(200))
+    score: Mapped[float] = mapped_column(Float)
+    source: Mapped[str | None] = mapped_column(String(100))  # ensemble rule that decided
+
+
+class SemanticCheck(UUIDPrimaryKey, Timestamps, Base):
+    """5.4: OpenCLIP image-text similarity of the crop against candidate labels."""
+
+    __tablename__ = "semantic_check"
+    __table_args__ = (UniqueConstraint("detection_id", "model_name", "config_hash"),)
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    detection_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("detection.id", ondelete="CASCADE"), index=True
+    )
+    model_name: Mapped[str] = mapped_column(String(100))
+    model_version: Mapped[str] = mapped_column(String(100))
+    config_hash: Mapped[str] = mapped_column(String(64))
+    # [{"label": "tiger", "taxon": "...", "probability": 0.81}, ...] in descending order.
+    candidates: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    top_label: Mapped[str] = mapped_column(String(200))
+    top_probability: Mapped[float] = mapped_column(Float)
+
+
+class Segmentation(UUIDPrimaryKey, Timestamps, Base):
+    """5.5: SAM 2 mask of the main animal, stored as a PNG derivative."""
+
+    __tablename__ = "segmentation"
+    __table_args__ = (UniqueConstraint("detection_id", "model_name", "config_hash"),)
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    detection_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("detection.id", ondelete="CASCADE"), index=True
+    )
+    model_name: Mapped[str] = mapped_column(String(100))
+    model_version: Mapped[str] = mapped_column(String(100))
+    config_hash: Mapped[str] = mapped_column(String(64))
+    mask_key: Mapped[str] = mapped_column(String(300))
+    # Share of the detection box covered by the mask, and SAM's own predicted IoU.
+    box_fill: Mapped[float] = mapped_column(Float)
+    predicted_iou: Mapped[float] = mapped_column(Float)
+    # Tight box around the mask (normalised x, y, w, h): a better crop than the detector's.
+    mask_box: Mapped[list[float]] = mapped_column(JSONB, default=list)
+
+
+class Decision(UUIDPrimaryKey, Timestamps, Base):
+    """5.6 + 5.7: the final label and confidence for an image, with its explanation."""
+
+    __tablename__ = "decision"
+    __table_args__ = (
+        UniqueConstraint("image_id", "config_hash"),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="confidence_range"),
+    )
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    engine_version: Mapped[str] = mapped_column(String(32))
+    config_hash: Mapped[str] = mapped_column(String(64), index=True)
+    label: Mapped[str] = mapped_column(String(200))  # common name, e.g. "tiger"
+    taxon: Mapped[str | None] = mapped_column(String(300), index=True)
+    taxon_level: Mapped[str] = mapped_column(String(16))  # species | genus | ... | none
+    confidence: Mapped[float] = mapped_column(Float)
+    # 5.7: every factor with its value and a plain-language reason; model outputs; boxes.
+    explanation: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    # Set by people in Phase 4; the time-of-day prior learns only from verified decisions.
+    verified_by_human: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+
+class ReserveSpecies(UUIDPrimaryKey, Timestamps, Base):
+    """Species known in a reserve (geographic prior, finer than SpeciesNet's country geofence)."""
+
+    __tablename__ = "reserve_species"
+    __table_args__ = (UniqueConstraint("reserve_id", "taxon"),)
+
+    reserve_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("reserve.id", ondelete="CASCADE"), index=True
+    )
+    taxon: Mapped[str] = mapped_column(String(300))
+    common_name: Mapped[str] = mapped_column(String(200))
+    source: Mapped[str | None] = mapped_column(String(300))  # e.g. a management plan citation

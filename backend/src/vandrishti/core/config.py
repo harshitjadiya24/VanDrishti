@@ -60,12 +60,18 @@ class Settings(BaseSettings):
     # People and vehicles are blurred from this (lower: privacy errs on the safe side).
     privacy_threshold: float = Field(default=0.1, ge=0, le=1)
 
+    # 5.3-5.5 (Phase 3). SpeciesNet runs in its own environment (ADR 0004).
+    speciesnet_tool_dir: Path = Path("tools/speciesnet")
+    # SAM 2 on MPS makes the Metal driver reserve ~2.4 GB hidden from RSS: CPU by default.
+    segmenter_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
+    verifier_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
+
     # On an 8 GB M3 only one heavy model should be resident at a time.
     model_device: Literal["auto", "mps", "cuda", "cpu"] = "auto"
     model_max_loaded: int = Field(default=1, ge=1)
     model_memory_budget_mb: int = Field(default=3000, ge=128)
 
-    @field_validator("storage_root", "model_cache_dir")
+    @field_validator("storage_root", "model_cache_dir", "speciesnet_tool_dir")
     @classmethod
     def _anchor_to_repo(cls, value: Path) -> Path:
         value = value.expanduser()

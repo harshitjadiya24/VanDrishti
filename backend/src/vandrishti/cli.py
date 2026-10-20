@@ -240,6 +240,135 @@ def cmd_detect(args: argparse.Namespace) -> None:
     _print(stats.as_dict())
 
 
+STEPS = ("classify", "verify", "segment", "decide")
+
+
+def cmd_analyse(args: argparse.Namespace) -> None:
+    """5.3-5.7 in order, one model in memory at a time (8 GB laptop)."""
+    from vandrishti.core.config import get_settings
+    from vandrishti.core.storage import LocalStorage
+    from vandrishti.models.manager import ModelManager
+    from vandrishti.pipeline import species as stages
+
+    settings = get_settings()
+    storage = LocalStorage(settings.storage_root)
+    steps = args.steps.split(",") if args.steps else list(STEPS)
+    report: dict[str, object] = {}
+    with _session() as s:
+        reserve = s.scalar(select(Reserve).where(Reserve.code == args.reserve))
+        if reserve is None:
+            sys.exit(f"no reserve {args.reserve!r}")
+        country = reserve.country
+    for step in steps:
+        manager = ModelManager(max_loaded=1, budget_mb=settings.model_memory_budget_mb)
+        try:
+            with _session() as s:
+                if step == "classify":
+                    from vandrishti.models.adapters.speciesnet_tool import SpeciesNetTool
+
+                    manager.device = "cpu"
+                    tool = manager.get(
+                        SpeciesNetTool(
+                            settings.speciesnet_tool_dir, settings.model_cache_dir, country=country
+                        )
+                    )
+                    stats = stages.run_classification(
+                        s, storage, settings, tool, reserve=args.reserve, limit=args.limit
+                    )
+                elif step == "verify":
+                    from vandrishti.models.adapters.openclip_verifier import OpenClipVerifier
+
+                    manager.device = settings.verifier_device
+                    clip = manager.get(
+                        OpenClipVerifier(settings.model_cache_dir / "openclip-vit-b-16")
+                    )
+                    stats = stages.run_semantic(
+                        s, storage, settings, clip, reserve=args.reserve, limit=args.limit
+                    )
+                elif step == "segment":
+                    from vandrishti.models.adapters.sam2_segmenter import Sam2Segmenter
+
+                    manager.device = settings.segmenter_device
+                    sam = manager.get(Sam2Segmenter(settings.model_cache_dir / "sam2.1-tiny"))
+                    stats = stages.run_segmentation(
+                        s, storage, settings, sam, reserve=args.reserve, limit=args.limit
+                    )
+                elif step == "decide":
+                    stats = stages.run_decisions(
+                        s, settings, reserve=args.reserve, limit=args.limit
+                    )
+                else:
+                    sys.exit(f"unknown step {step!r}; choose from {', '.join(STEPS)}")
+        finally:
+            manager.unload_all()
+        report[step] = stats.as_dict()
+        _print({step: report[step]})
+
+
+def _speciesnet_names() -> dict[str, str]:
+    """common name → taxon, from SpeciesNet's own label file (the names it can output)."""
+    from vandrishti.core.config import get_settings
+    from vandrishti.taxonomy import parse_label
+
+    folder = get_settings().model_cache_dir / "kagglehub/models/google/speciesnet/pyTorch/v4.0.3a/1"
+    labels = next(folder.glob("*.labels.*.txt"), None)
+    if labels is None:
+        sys.exit("SpeciesNet labels missing: scripts/download_models.py speciesnet-v4.0.3a")
+    out = {}
+    for line in labels.read_text().splitlines():
+        t = parse_label(line)
+        if t.is_animal_taxon:
+            out[t.common_name] = t.taxon
+    return out
+
+
+def cmd_species_add(args: argparse.Namespace) -> None:
+    from vandrishti.db.models import ReserveSpecies
+
+    names = _speciesnet_names()
+    with _session() as s:
+        reserve = s.scalar(select(Reserve).where(Reserve.code == args.reserve))
+        if reserve is None:
+            sys.exit(f"no reserve {args.reserve!r}")
+        for raw in args.name:
+            name = raw.strip().lower()
+            if name not in names:
+                close = [n for n in names if name in n][:5]
+                sys.exit(
+                    f"{name!r} is not a SpeciesNet label"
+                    + (f"; did you mean {close}?" if close else "")
+                )
+            exists_ = s.scalar(
+                select(ReserveSpecies).where(
+                    ReserveSpecies.reserve_id == reserve.id, ReserveSpecies.taxon == names[name]
+                )
+            )
+            if exists_ is None:
+                s.add(
+                    ReserveSpecies(
+                        reserve_id=reserve.id,
+                        taxon=names[name],
+                        common_name=name,
+                        source=args.source,
+                    )
+                )
+        s.commit()
+    print(f"added {len(args.name)} to {args.reserve}")
+
+
+def cmd_species_list(args: argparse.Namespace) -> None:
+    from vandrishti.db.models import ReserveSpecies
+
+    with _session() as s:
+        rows = s.scalars(
+            select(ReserveSpecies)
+            .join(Reserve, Reserve.id == ReserveSpecies.reserve_id)
+            .where(Reserve.code == args.reserve)
+        )
+        for r in rows:
+            print(f"{r.common_name}\t{r.taxon}\t{r.source or ''}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -309,6 +438,22 @@ def main(argv: list[str] | None = None) -> None:
     de.add_argument("--limit", type=int)
     de.add_argument("--device", choices=["cpu", "mps", "cuda", "auto"])
     de.set_defaults(func=cmd_detect)
+
+    an = sub.add_parser("analyse", help="5.3-5.7: SpeciesNet, OpenCLIP, SAM 2, decision")
+    an.add_argument("--reserve", required=True)
+    an.add_argument("--steps", help=f"comma-separated subset of {','.join(STEPS)}")
+    an.add_argument("--limit", type=int)
+    an.set_defaults(func=cmd_analyse)
+
+    sp = sub.add_parser("species").add_subparsers(dest="action", required=True)
+    sa = sp.add_parser("add", help="add SpeciesNet common names to a reserve's species list")
+    sa.add_argument("--reserve", required=True)
+    sa.add_argument("--name", action="append", required=True, help="repeatable, e.g. --name tiger")
+    sa.add_argument("--source", help="where the list comes from (e.g. a management plan)")
+    sa.set_defaults(func=cmd_species_add)
+    sl = sp.add_parser("list")
+    sl.add_argument("--reserve", required=True)
+    sl.set_defaults(func=cmd_species_list)
 
     args = parser.parse_args(argv)
     args.func(args)

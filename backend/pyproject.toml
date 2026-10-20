@@ -30,8 +30,10 @@ dev = [
 ]
 ml = [
     "omegaconf>=2.3",
+    "open-clip-torch>=3.3",
     "torch>=2.6",
     "torchvision>=0.21",
+    "transformers>=5.20",
 ]
 
 [project.scripts]
@@ -79,5 +81,5 @@ module = ["vandrishti.models.adapters.vendor.*"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["omegaconf", "omegaconf.*", "torchvision", "torchvision.*"]
+module = ["omegaconf", "omegaconf.*", "torchvision", "torchvision.*", "open_clip", "open_clip.*", "transformers", "transformers.*"]
 ignore_missing_imports = true

@@ -15,7 +15,16 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from vandrishti.api.deps import DB, Config, Storage, Writer
-from vandrishti.db.models import Camera, Detection, Image, IngestBatch, IngestSource, QualityStatus
+from vandrishti.db.models import (
+    Camera,
+    Decision,
+    Detection,
+    Image,
+    IngestBatch,
+    IngestSource,
+    QualityStatus,
+    Segmentation,
+)
 from vandrishti.ingest.service import IMAGE_SUFFIXES, ingest_files
 
 router = APIRouter(tags=["images"])
@@ -205,3 +214,48 @@ def get_display(image_id: uuid.UUID, session: DB, storage: Storage) -> FileRespo
     if img is None or not img.display_key:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no display copy for this image")
     return FileResponse(storage.path(img.display_key), media_type="image/jpeg")
+
+
+class DecisionOut(BaseModel):
+    label: str
+    taxon: str | None
+    taxon_level: str
+    confidence: float
+    engine_version: str
+    explanation: dict[str, Any]
+    verified_by_human: bool
+    mask_url: str | None
+
+
+@router.get("/images/{image_id}/decision")
+def get_decision(image_id: uuid.UUID, session: DB) -> DecisionOut:
+    """5.6 label + confidence and the 5.7 explanation (newest engine config)."""
+    d = session.scalar(
+        select(Decision).where(Decision.image_id == image_id).order_by(Decision.created_at.desc())
+    )
+    if d is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no decision for this image yet")
+    has_mask = "mask" in d.explanation
+    return DecisionOut(
+        label=d.label,
+        taxon=d.taxon,
+        taxon_level=d.taxon_level,
+        confidence=d.confidence,
+        engine_version=d.engine_version,
+        explanation=d.explanation,
+        verified_by_human=d.verified_by_human,
+        mask_url=f"/images/{image_id}/mask" if has_mask else None,
+    )
+
+
+@router.get("/images/{image_id}/mask")
+def get_mask(image_id: uuid.UUID, session: DB, storage: Storage) -> FileResponse:
+    """5.5 SAM 2 mask (PNG, original resolution of the analysis copy) for visualisation."""
+    seg = session.scalar(
+        select(Segmentation)
+        .where(Segmentation.image_id == image_id)
+        .order_by(Segmentation.created_at.desc())
+    )
+    if seg is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no mask for this image")
+    return FileResponse(storage.path(seg.mask_key), media_type="image/png")

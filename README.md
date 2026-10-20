@@ -11,7 +11,8 @@ locked by role, and exact locations are protected.
 > **Rebuild in progress (from 2026-10-20).** The brief is [`MASTER_PROMPT.md`](MASTER_PROMPT.md);
 > design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Built so far: foundations, image
 > sections 1–4 (cameras, ingestion, raw storage, preprocessing) and 5.1–5.2 (quality gate,
-> MegaDetector V6, whole-body blur of people and vehicles). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
+> MegaDetector V6, whole-body blur of people and vehicles) and 5.3–5.7 (SpeciesNet, OpenCLIP,
+> SAM 2, explainable decision engine). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## Run the foundations
 
@@ -44,6 +45,16 @@ uv run --project backend python scripts/download_sample.py && \
   uv run --project backend python scripts/eval_detector.py   # measure on 252 labelled LILA images
 ```
 
+## Species, checks, masks and decisions
+
+```bash
+(cd tools/speciesnet && uv sync)                                  # isolated SpeciesNet env
+uv run --project backend python scripts/download_models.py speciesnet-v4.0.3a openclip-vit-b-16 sam2.1-tiny
+uv run vandrishti species add --reserve KAN --name tiger --name leopard --name chital   # optional prior
+uv run vandrishti analyse --reserve KAN        # 5.3 species → 5.4 OpenCLIP → 5.5 SAM 2 → 5.6/5.7
+curl http://127.0.0.1:8000/images/<id>/decision                    # label, confidence, explanation
+```
+
 Uploads: `POST /cameras/{id}/images` (multipart, `Authorization: Bearer $VANDRISHTI_INGEST_TOKEN`).
 
 Checks: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`
@@ -56,11 +67,12 @@ backend/src/vandrishti/
   db/        SQLAlchemy models, Alembic migrations
   models/    the Model interface, a memory-aware ModelManager, adapters (only place for ML libs)
   ingest/    metadata (EXIF, manifest), preprocessing, bursts, ingest service, inbox watcher
-  pipeline/  5.1 quality gate, 5.2 detection stage
+  pipeline/  5.1 quality gate, 5.2 detection, 5.3-5.5 species/check/mask stages, 5.6 decision engine
   privacy/   whole-body blur
   api/       FastAPI app: health, reserves and cameras, uploads, batches, images
   cli.py     `vandrishti` command
 docker/      database image (Postgres 16 + PostGIS on arm64 and amd64)
+tools/       speciesnet/: isolated SpeciesNet environment and bridge script
 docs/        architecture, models and licences, decisions
 data/        weights and datasets (git-ignored)
 ```
