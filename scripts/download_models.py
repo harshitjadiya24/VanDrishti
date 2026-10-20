@@ -43,7 +43,12 @@ def hf(repo: str, revision: str, file: str, folder: str, sha256: str | None = No
 
 OPENCLIP = ("laion/CLIP-ViT-B-16-laion2B-s34B-b88K", "7288da5a0d6f0b51c4a2b27c624837a9236d0112")
 SAM2 = ("facebook/sam2.1-hiera-tiny", "de431c4043854a71d8101e17995dfe596bf101a5")
-SPECIESNET = "google/speciesnet/pyTorch/v4.0.3a/1"  # Kaggle; fetched inside tools/speciesnet
+SPECIESNET = "google/speciesnet/pyTorch/v4.0.3a/1"
+MEGADESCRIPTOR_T = ("BVRA/MegaDescriptor-T-224", "3ea58ff6c6195bc748bb86c111ff40c32bdddcba")
+DINOV2_SMALL = (
+    "facebook/dinov2-small",
+    "ed25f3a31f01632728cabb09d1542f84ab7b0056",
+)  # Kaggle; fetched inside tools/speciesnet
 
 
 # Zenodo record 15398270 (Pytorch-Wildlife model weights, CC-BY-4.0), checksums from its API.
@@ -68,6 +73,27 @@ CATALOG: dict[str, list[Asset]] = {
             "open_clip_model.safetensors",
             "openclip-vit-b-16",
             "3f25d29d3cc74e1d25d47e0593b4dd0864ced1e9b4d8e486a247ca4502f227f1",
+        ),
+    ],
+    # Re-identification (10.5): MegaDescriptor-T (CC-BY-NC-4.0, non-commercial) and DINOv2-small
+    # (Apache-2.0). Both are measured; see docs/EVALUATION.md.
+    "megadescriptor-t-224": [
+        hf(*MEGADESCRIPTOR_T, "config.json", "megadescriptor-t-224"),
+        hf(
+            *MEGADESCRIPTOR_T,
+            "pytorch_model.bin",
+            "megadescriptor-t-224",
+            "62f53e6335d5f8ea4d764c91b442f8daa5ce7f316d388cc890e06c943218190c",
+        ),
+    ],
+    "dinov2-small": [
+        hf(*DINOV2_SMALL, "config.json", "dinov2-small"),
+        hf(*DINOV2_SMALL, "preprocessor_config.json", "dinov2-small"),
+        hf(
+            *DINOV2_SMALL,
+            "model.safetensors",
+            "dinov2-small",
+            "ae1e99fcefd534ed978cdeb8326f08030c96e28b7a81ffcbc98a857c84d14be1",
         ),
     ],
     # SAM 2.1 hiera-tiny in Hugging Face transformers format (Apache-2.0), section 5.5.

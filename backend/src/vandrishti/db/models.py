@@ -6,7 +6,7 @@ Phase 2 (5.1-5.2): quality fields, detections, privacy locks.
 Phase 3 (5.3-5.7): classifications, semantic checks, segmentations, decisions.
 Phase 4 (7-8): routing, human reviews (feedback), hash-chained audit trail.
 Phase 5 (6): presence events (people/vehicles), camera sensitivity, risk assessments.
-Phase 6 adds embeddings (section 9).
+Phase 6 (9-10.5): re-ID embeddings, named individuals, match proposals.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
 )
@@ -544,3 +545,74 @@ class RiskAssessment(UUIDPrimaryKey, Timestamps, Base):
     # [{"name", "points", "reason"}], plus who/what set any override.
     factors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
     dismissed: Mapped[bool] = mapped_column(Boolean, default=False)  # reviewer: false alarm
+
+
+class Individual(UUIDPrimaryKey, Timestamps, Base):
+    """A named tiger, created only by a person (10.5)."""
+
+    __tablename__ = "individual"
+    __table_args__ = (UniqueConstraint("reserve_id", "code"),)
+
+    reserve_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("reserve.id", ondelete="CASCADE"), index=True
+    )
+    code: Mapped[str] = mapped_column(String(32))  # e.g. "T-07"
+    name: Mapped[str | None] = mapped_column(String(100))
+    created_by: Mapped[str] = mapped_column(String(100))
+
+
+class ReidEmbedding(UUIDPrimaryKey, Timestamps, Base):
+    """One tiger crop's embedding (section 9 embedding store; searched with FAISS)."""
+
+    __tablename__ = "reid_embedding"
+    __table_args__ = (UniqueConstraint("detection_id", "model_name", "model_version"),)
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    detection_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("detection.id", ondelete="CASCADE"), index=True
+    )
+    model_name: Mapped[str] = mapped_column(String(100))
+    model_version: Mapped[str] = mapped_column(String(100))
+    dim: Mapped[int] = mapped_column(Integer)
+    vector: Mapped[bytes] = mapped_column(LargeBinary)  # float32, little-endian, unit length
+    crop_box: Mapped[list[float]] = mapped_column(JSONB, default=list)  # normalised x, y, w, h
+    # Set only by a person (identity review); never by the model.
+    individual_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("individual.id", ondelete="SET NULL"), index=True
+    )
+    assigned_by: Mapped[str | None] = mapped_column(String(100))
+    assigned_at: Mapped[datetime | None]
+
+
+class ProposalKind(enum.StrEnum):
+    POSSIBLE_MATCH = "possible_match"  # similar to a known tiger: a person checks
+    POSSIBLE_NEW = "possible_new"  # unlike every known tiger: a person decides
+
+
+class ProposalState(enum.StrEnum):
+    OPEN = "open"
+    DONE = "done"
+
+
+class ReidProposal(UUIDPrimaryKey, Timestamps, Base):
+    """The model's suggestion for one crop; only a person turns it into an identity."""
+
+    __tablename__ = "reid_proposal"
+    __table_args__ = (UniqueConstraint("embedding_id"),)
+
+    embedding_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("reid_embedding.id", ondelete="CASCADE")
+    )
+    kind: Mapped[ProposalKind] = mapped_column(_str_enum(ProposalKind, "proposal_kind"))
+    state: Mapped[ProposalState] = mapped_column(
+        _str_enum(ProposalState, "proposal_state"), default=ProposalState.OPEN, index=True
+    )
+    # [{"individual_id", "code", "similarity", "example_embedding_id"}], best first.
+    candidates: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list)
+    best_similarity: Mapped[float | None] = mapped_column(Float)
+    threshold: Mapped[float] = mapped_column(Float)
+    outcome: Mapped[str | None] = mapped_column(String(32))  # same | new | not_tiger
+    decided_by: Mapped[str | None] = mapped_column(String(100))
+    decided_at: Mapped[datetime | None]

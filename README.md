@@ -84,6 +84,19 @@ Uploads: `POST /cameras/{id}/images` (multipart, `Authorization: Bearer $VANDRIS
 Checks: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`
 (integration tests: `uv run pytest -m integration`, needs the database).
 
+## Dashboard and tiger identities
+
+```bash
+uv run vandrishti reid embed --reserve KAN     # PyTorch: one vector per settled tiger frame
+uv run vandrishti reid match --reserve KAN     # FAISS: proposals for a person to decide
+uv run vandrishti individual list --reserve KAN
+uv run vandrishti reid similar --reserve KAN   # named tigers that look alike
+```
+The console opens on the Dashboard (overview, camera map, camera analytics, trends). Under
+"Tiger identities" a person confirms "same tiger as…", creates a new tiger, or rejects the
+proposal; the model never names a tiger. MegaDescriptor is **non-commercial** (CC-BY-NC-4.0):
+see [`docs/MODELS.md`](docs/MODELS.md).
+
 ## Layout
 ```
 backend/src/vandrishti/
@@ -92,6 +105,8 @@ backend/src/vandrishti/
   models/    the Model interface, a memory-aware ModelManager, adapters (only place for ML libs)
   ingest/    metadata (EXIF, manifest), preprocessing, bursts, ingest service, inbox watcher
   pipeline/  5.1 quality gate, 5.2 detection, 5.3-5.5 species/check/mask stages, 5.6 decision engine
+  analytics/ settled labels, 10.1-10.4 dashboard numbers
+  reid/      10.5 embeddings, FAISS index, proposals, people's decisions
   privacy/   whole-body blur
   api/       FastAPI app: health, reserves and cameras, uploads, batches, images
   cli.py     `vandrishti` command

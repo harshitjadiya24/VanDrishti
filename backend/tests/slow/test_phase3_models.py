@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 
 import pytest
@@ -10,7 +11,8 @@ from PIL import Image
 from vandrishti.core.config import REPO_ROOT
 
 pytestmark = pytest.mark.slow
-pytest.importorskip("torch")
+if importlib.util.find_spec("torch") is None:  # not importorskip: see test_megadetector
+    pytest.skip("torch not installed", allow_module_level=True)
 MODELS = REPO_ROOT / "data" / "models"
 SAMPLE = REPO_ROOT / "data" / "samples" / "lila"
 if not (SAMPLE / "ground_truth.json").exists():

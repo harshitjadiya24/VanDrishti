@@ -30,8 +30,8 @@ records how each part is built; it grows phase by phase.
 | 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | built |
 | 4 | Confidence routing, review UI, feedback | built |
 | 5 | Human/vehicle activity, poaching risk | built |
-| 6 | Dashboard, re-identification | next |
-| 7 | Alerts, reports (PDF/Excel), integration API | planned |
+| 6 | Dashboard, re-identification | built |
+| 7 | Alerts, reports (PDF/Excel), integration API | next |
 | 8 | Hardening and production | planned |
 
 ## 3. Foundations (Phase 0)
@@ -198,3 +198,40 @@ HUMAN_VEHICLE frames ─► build_events: one PresenceEvent per burst and camera
   and reasons) and the risk inside each people/vehicle review.
 - It decides what to look at first, not a prediction: the weights are reasoned defaults,
   not fitted, because no labelled poaching outcomes exist here.
+
+## 9. Section 10: dashboard (10.1-10.4) and tiger re-identification (10.5) (Phase 6, ADR 0007)
+
+```
+settled label per image (analytics/labels.py):
+    latest non-undone review (confirm / correct / not an animal)  >  auto-accepted decision
+    review / uncertain items nobody has looked at  →  "unsettled", never a species
+  ─► 10.1 overview · 10.2 camera map · 10.3 camera analytics · 10.4 trends (analytics/dashboard.py)
+
+10.5, two processes (PyTorch and FAISS each bring their own OpenMP runtime: together → segfault)
+  vandrishti reid embed   [PyTorch]  settled-tiger frames → best animal box (SAM outline box if
+                                      present, +5% pad) → MegaDescriptor-T → unit vector
+                                      → reid_embedding (float32 bytes, model name + version)
+  vandrishti reid match   [FAISS]    unidentified crops vs crops people named (same reserve, same
+                                      model); best similarity per tiger, top 5
+                                      ≥ 0.76 → possible_match, else possible_new  (a proposal)
+  person (console / API)             same tiger · new tiger (code) · not a tiger → audited, undoable
+  vandrishti reid similar [FAISS]    named tigers whose mean vectors are ≥ 0.76 alike:
+                                      maybe one tiger named twice (a person checks)
+```
+
+- Counts are frames, not animals. Hour-of-day and calendar buckets use the reserve's time zone;
+  frames and events timed only by file date are left out of time charts and counted as such.
+- The map is an SVG of camera coordinates with no tiles (no third-party requests). Cameras
+  without coordinates are listed, never placed. Exact camera coordinates are shown to everyone
+  until roles arrive (Phase 8 must mask them for non-privileged roles).
+- The model never names or creates a tiger: `reid_embedding.individual_id` is set only by
+  `reid.service.decide`. A person's "not a tiger" is never reopened by a later `match`.
+- The API process (FAISS for `/identity/similar`) must never import PyTorch;
+  `reid.index` raises `TorchLoadedError` if it is loaded.
+- API: `GET /dashboard/overview|map|trends`, `GET /dashboard/cameras/{id}`,
+  `GET /identity/proposals`, `POST /identity/proposals/{id}/decide|undo`,
+  `GET /identity/embeddings/{id}/crop` (cut from the blurred display copy),
+  `GET /identity/individuals[/{id}/sightings]`, `GET /identity/similar`.
+- Console: Dashboard (default screen), Tiger identities (one proposal at a time with the
+  closest sighting of each candidate), Named tigers (sightings, look-alike warning).
+

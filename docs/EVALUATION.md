@@ -95,3 +95,48 @@ reviewer a second); people and vehicles are blurred from 0.1 (privacy errs on th
   CLIP said car 10, pickup truck 5, truck 4, jeep 1, bus 6, tractor 3, motorcycle 3. Caltech's
   "car" may cover pickups and trucks, but buses and tractors on these trails are unlikely.
   With a 0.6 floor, 13 of 35 become "unknown". Shown as a guess; never scored.
+
+## 10.5 Tiger re-identification — Phase 6, 2026-10-21
+
+**Embedders on ATRW** (`scripts/eval_reid.py`; 1,887 labelled crops of 107 Amur tigers; CPU,
+batch 32). Each crop searches all others (FAISS inner product on unit vectors).
+"Near-duplicates excluded": same-tiger frames whose 64-bit dHash differ by ≤ 12 bits are
+removed from that query's gallery (1,444 groups), so a hit must come from a visibly different
+frame.
+
+| Model | Licence | s/image | Top-1 (naive) | Top-1 (near-dups excluded) | Top-5 | mAP | Unknown tigers above the 95%-known line |
+|---|---|---|---|---|---|---|---|
+| MegaDescriptor-T-224 | CC-BY-NC-4.0 | 0.028 | 0.982 | **0.974** | 0.990 | **0.919** | **4.4%** (line 0.76) |
+| DINOv2-small | Apache-2.0 | 0.019 | 0.977 | 0.963 | 0.988 | 0.737 | 36.1% (line 0.884) |
+
+Open set: 21 of 107 identities held out of the gallery. MegaDescriptor: known tigers' best
+similarity median 0.925, unknown 0.459; DINOv2: 0.952 vs 0.870. Top-1 is close, but DINOv2
+cannot tell "a tiger I know" from "a new tiger", which is the decision that matters here.
+**Chosen: MegaDescriptor-T, threshold 0.76.**
+
+Caveats, all making these numbers optimistic:
+- MegaDescriptor was most likely trained on ATRW.
+- ATRW is zoo video of Amur tigers, not Indian camera traps (different light, IR, angles).
+- Video neighbours that differ by more than 12 bits can still leak.
+- No Indian tiger re-ID test exists yet. A test on tigers MegaDescriptor never saw is still
+  needed before quoting accuracy for a reserve.
+
+**End-to-end on the real pipeline** (`scripts/demo_reid.py`; 300 ATRW crops of 30 tigers,
+reserve ATRW-DEMO). Steps: ingest → quality → MegaDetector → SpeciesNet → decide → route →
+embed → match.
+- **Screening:** 236 frames screened animal, 58 people/vehicles, 6 blank. The 58 were
+  whole-frame **vehicle** boxes (one person box) on tight zoo crops, the same whole-frame
+  artefact as Caltech's car boxes, and no people. These crops are not camera-trap frames; they
+  stay in the people/vehicle queue, as privacy-first screening intends.
+- **Species:** 206 auto-accepted as tiger, 8 "tiger" in the review band, the rest
+  higher-level or uncertain. Embedding took 7.6 s for 206 crops (1.1 GB peak).
+- **Naming:** reviewer `atrw-truth` (ATRW's labels standing in for a person) named 13 tigers
+  from 37 sightings. Two of the 15 planned tigers had too few settled frames.
+- **Then `match`:**
+  - Of 51 sightings of named tigers, the right tiger was listed first for 50 (98%) and was in
+    the top 5 for all 51. Only 38 (74.5%) cleared 0.76 as "possible match": with 3 gallery
+    sightings per tiger, a quarter of returning tigers are shown as "possibly new", still with
+    the right tiger first.
+  - All 118 sightings of unnamed tigers were "possibly new".
+- The threshold was not re-tuned on this set (that would fit the test).
+

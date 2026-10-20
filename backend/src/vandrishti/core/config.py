@@ -66,6 +66,13 @@ class Settings(BaseSettings):
     segmenter_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
     verifier_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
 
+    # 10.5 re-identification (Phase 6, ADR 0007). The threshold comes from the ATRW open-set
+    # test for MegaDescriptor (95% of known tigers score above it); it only chooses between
+    # "possible match" and "possibly a new tiger" for a person to check. It is model-specific.
+    reid_model: Literal["megadescriptor-t-224", "dinov2-small"] = "megadescriptor-t-224"
+    reid_match_threshold: float = Field(default=0.76, ge=0, le=1)
+    reid_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
+
     # On an 8 GB M3 only one heavy model should be resident at a time.
     model_device: Literal["auto", "mps", "cuda", "cpu"] = "auto"
     model_max_loaded: int = Field(default=1, ge=1)

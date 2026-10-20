@@ -92,6 +92,92 @@ export interface Feedback {
 }
 export interface AuditEvent { seq: number; at: string; actor: string; action: string; entity: string; entity_id: string | null; payload: Record<string, unknown> }
 
+export interface Overview {
+  images: number;
+  cameras: number;
+  cameras_active: number;
+  first_capture: string | null;
+  last_capture: string | null;
+  screen: { animal: number; people_vehicles: number; blank: number; not_screened: number };
+  animal_images_settled: number;
+  animal_images_unsettled: number;
+  species_count: number;
+  top_species: { label: string; images: number }[];
+  tiger_images: number;
+  named_tigers: number;
+  open_identity_proposals: number;
+  people_vehicle_events: number;
+  risk_levels: Record<"high" | "medium" | "low", number>;
+}
+export interface MapCamera {
+  id: string;
+  code: string;
+  reserve: string;
+  status: string;
+  sensitivity: string;
+  latitude: number | null;
+  longitude: number | null;
+  last_seen_at: string | null;
+  images: number;
+  animal_images: number;
+  tiger_images: number;
+  people_vehicle_events: number;
+  worst_risk: "high" | "medium" | "low" | null;
+}
+export interface CameraDetail {
+  id: string;
+  code: string;
+  reserve: string;
+  timezone: string;
+  status: string;
+  sensitivity: string;
+  images: number;
+  first_capture: string | null;
+  last_capture: string | null;
+  species: { label: string; images: number }[];
+  tiger_images: number;
+  hourly_animal_images: number[];
+  hourly_tiger_images: number[];
+  untimed_animal_images: number;
+  people_vehicle_events: number;
+  night_events: number;
+}
+export interface Trends {
+  period: "day" | "week";
+  species: string[];
+  buckets: { start: string; animal_images: number; tiger_images: number; people_vehicle_events: number; by_species: Record<string, number> }[];
+  untimed_animal_images: number;
+  untimed_people_vehicle_events: number;
+}
+export interface Candidate { individual_id: string; code: string; similarity: number; example_embedding_id: string }
+export interface Proposal {
+  id: string;
+  kind: "possible_match" | "possible_new";
+  state: "open" | "done";
+  image_id: string;
+  embedding_id: string;
+  camera: string;
+  reserve: string;
+  timezone: string;
+  captured_at: string | null;
+  best_similarity: number | null;
+  threshold: number;
+  candidates: Candidate[];
+  outcome: string | null;
+}
+export interface IdentityDecision { action: "same" | "new" | "not_tiger"; reviewer: string; individual_id?: string; code?: string; name?: string }
+export interface Individual {
+  id: string;
+  code: string;
+  name: string | null;
+  sightings: number;
+  cameras: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  created_by: string;
+}
+export interface Sighting { embedding_id: string; image_id: string; camera: string; captured_at: string | null; assigned_by: string | null }
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
@@ -133,6 +219,20 @@ export const api = {
     request<RiskEvent[]>(`/risk/events${qs({ reserve, level, include_dismissed: includeDismissed ? "true" : undefined })}`),
   riskSummary: (reserve?: string) => request<RiskSummary>(`/risk/summary${qs({ reserve })}`),
   runRisk: (reserve?: string) => request<{ new_events: number }>(`/risk/run${qs({ reserve })}`, { method: "POST" }),
+  overview: (reserve?: string) => request<Overview>(`/dashboard/overview${qs({ reserve })}`),
+  cameraMap: (reserve?: string) =>
+    request<{ cameras: MapCamera[]; without_location: MapCamera[] }>(`/dashboard/map${qs({ reserve })}`),
+  cameraDetail: (id: string) => request<CameraDetail>(`/dashboard/cameras/${id}`),
+  trends: (reserve: string | undefined, period: "day" | "week") => request<Trends>(`/dashboard/trends${qs({ reserve, period })}`),
+  proposals: (reserve?: string) => request<Proposal[]>(`/identity/proposals${qs({ reserve, limit: 200 })}`),
+  decideIdentity: (id: string, body: IdentityDecision) =>
+    request<Proposal>(`/identity/proposals/${id}/decide`, { method: "POST", body: JSON.stringify(body) }),
+  undoIdentity: (id: string, reviewer: string) =>
+    request<Proposal>(`/identity/proposals/${id}/undo`, { method: "POST", body: JSON.stringify({ reviewer }) }),
+  individuals: (reserve?: string) => request<Individual[]>(`/identity/individuals${qs({ reserve })}`),
+  sightings: (id: string) => request<Sighting[]>(`/identity/individuals/${id}/sightings`),
+  similarTigers: (reserve?: string) => request<{ a: string; b: string; similarity: number }[]>(`/identity/similar${qs({ reserve })}`),
+  cropUrl: (embeddingId: string) => `/api/identity/embeddings/${embeddingId}/crop`,
   displayUrl: (id: string) => `/api/images/${id}/display`,
   maskUrl: (id: string) => `/api/images/${id}/mask`,
 };

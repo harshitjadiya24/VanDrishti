@@ -92,3 +92,16 @@ history, old Docker volumes). Do not look for it; build from the image.
 - `vandrishti.sun` gives sunrise/sunset; night uses the camera's location, else 19:00-06:00.
 - `.env` predates the rebuild: old keys can collide with new meanings (DETECTOR_BATCH_SIZE
   was 250 and is now images per model batch). Keep `.env.example` the reference.
+- PyTorch and FAISS must never share a process (two OpenMP runtimes → segfault 139). Embedding
+  (`reid embed`, eval `embed`) is torch-only; matching, the API and FAISS tests are torch-free.
+  `pytest.importorskip("torch")` imports torch: use `importlib.util.find_spec` in tests.
+- MegaDescriptor-T's `pytorch_model.bin` is a training checkpoint (weights under "model", old
+  timm Swin layout): convert with `timm.models.swin_transformer.checkpoint_filter_fn`. Licence
+  CC-BY-NC-4.0 (card), not the "mit" in its config.
+- Re-ID never names a tiger: proposals only; people decide (audited, undoable). The 0.76 line
+  is MegaDescriptor's ATRW open-set 95%-known point; ATRW numbers are optimistic.
+- Analytics count settled labels only (person > auto-accept; unreviewed review/uncertain never
+  count) and frames, not animals. `file_mtime` times stay out of time charts and "first seen".
+- MegaDetector puts whole-frame vehicle boxes on tight crops (ATRW: 58/300): not a bug to "fix"
+  by lowering privacy screening.
+

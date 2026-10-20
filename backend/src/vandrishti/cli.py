@@ -7,6 +7,7 @@ vandrishti camera list [--reserve CODE] | camera set-status --reserve R --code C
 vandrishti ingest <folder> --reserve R --camera C [--manifest CSV [--manifest-utc]]
 vandrishti watch <inbox> [--once]
 vandrishti batch show <id>
+vandrishti reid embed|match|similar [--reserve R] | individual list [--reserve R]
 """
 
 from __future__ import annotations
@@ -420,6 +421,55 @@ def cmd_camera_sensitivity(args: argparse.Namespace) -> None:
         print(f"{args.code}: {camera.sensitivity.value}")
 
 
+def cmd_reid(args: argparse.Namespace) -> None:
+    """10.5. `embed` loads PyTorch; `match` and `similar` use FAISS; never both in one process."""
+    from vandrishti.core.config import get_settings
+    from vandrishti.reid import service
+
+    settings = get_settings()
+    with _session() as s:
+        if args.action == "embed":
+            from vandrishti.core.storage import LocalStorage
+            from vandrishti.models.adapters.reid_embedders import EMBEDDERS
+            from vandrishti.models.manager import ModelManager
+
+            manager = ModelManager(max_loaded=1, device=settings.reid_device)
+            try:
+                model = manager.get(
+                    EMBEDDERS[settings.reid_model](settings.model_cache_dir / settings.reid_model)
+                )
+                n = service.embed(
+                    s, LocalStorage(settings.storage_root), settings, model, reserve=args.reserve
+                )
+            finally:
+                manager.unload_all()
+            _print({"embedded": n, "model": settings.reid_model})
+        elif args.action == "match":
+            counts = service.match(
+                s,
+                model_name=settings.reid_model,
+                threshold=settings.reid_match_threshold,
+                reserve=args.reserve,
+            )
+            _print({"proposals": counts, "threshold": settings.reid_match_threshold})
+        else:
+            _print(
+                service.similar_individuals(
+                    s,
+                    model_name=settings.reid_model,
+                    threshold=settings.reid_match_threshold,
+                    reserve=args.reserve,
+                )
+            )
+
+
+def cmd_individual_list(args: argparse.Namespace) -> None:
+    from vandrishti.reid import service
+
+    with _session() as s:
+        _print(service.individuals(s, reserve=args.reserve))
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -526,6 +576,16 @@ def main(argv: list[str] | None = None) -> None:
         "--vehicle-types", action="store_true", help="estimate vehicle types (OpenCLIP)"
     )
     rk.set_defaults(func=cmd_risk)
+
+    ri = sub.add_parser("reid", help="10.5: tiger re-identification proposals")
+    ri.add_argument("action", choices=["embed", "match", "similar"])
+    ri.add_argument("--reserve")
+    ri.set_defaults(func=cmd_reid)
+
+    ind = sub.add_parser("individual").add_subparsers(dest="action", required=True)
+    il = ind.add_parser("list", help="named tigers with sightings (person-confirmed only)")
+    il.add_argument("--reserve")
+    il.set_defaults(func=cmd_individual_list)
 
     args = parser.parse_args(argv)
     args.func(args)

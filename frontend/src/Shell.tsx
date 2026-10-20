@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Activity, Ban, Eye, HelpCircle, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
+import { Activity, Ban, Eye, Fingerprint, HelpCircle, LayoutDashboard, PawPrint, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
 import { api, type QueueKind } from "./api";
@@ -37,7 +37,7 @@ function Layout() {
         <select
           value={reserve}
           onChange={(e) => setReserve(e.target.value)}
-          className="h-9 rounded-md border border-line bg-base px-2 text-[14px] text-ink"
+          className="h-9 w-full min-w-0 rounded-md border border-line bg-base px-2 text-[14px] text-ink"
         >
           <option value="">All reserves</option>
           {(reserves.data ?? []).map((r) => (
@@ -51,7 +51,7 @@ function Layout() {
           value={reviewer}
           onChange={(e) => setReviewer(e.target.value.slice(0, 100))}
           placeholder="e.g. Asha"
-          className="h-9 rounded-md border border-line bg-base px-2 text-[14px] text-ink placeholder:text-dim/60"
+          className="h-9 w-full min-w-0 rounded-md border border-line bg-base px-2 text-[14px] text-ink placeholder:text-dim/60"
         />
       </label>
     </>
@@ -80,7 +80,8 @@ function Layout() {
         </details>
         <div className="hidden gap-3 px-4 pb-3 md:grid">{settings}</div>
         <nav aria-label="Queues" className="flex gap-1.5 overflow-x-auto px-4 pb-3 md:hidden">
-          {[{ to: "/routing", label: "Routing", n: undefined }, ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind] })),
+          {[{ to: "/dashboard", label: "Dashboard", n: undefined }, { to: "/identity", label: "Tiger identities", n: undefined },
+            { to: "/tigers", label: "Named tigers", n: undefined }, { to: "/routing", label: "Routing", n: undefined }, ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind] })),
             { to: "/risk", label: "Poaching risk", n: undefined }, { to: "/feedback", label: "Feedback", n: undefined }, { to: "/audit", label: "Audit", n: undefined }].map((x) => (
             <NavLink key={x.to} to={x.to}
               className={({ isActive }) => clsx("shrink-0 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap",
@@ -90,6 +91,9 @@ function Layout() {
           ))}
         </nav>
         <nav aria-label="Main" className="hidden gap-0.5 px-2 pb-4 md:grid">
+          <NavLink to="/dashboard" className={link}><LayoutDashboard size={17} /> Dashboard</NavLink>
+          <NavLink to="/identity" className={link}><span className="text-amber"><Fingerprint size={17} /></span> Tiger identities</NavLink>
+          <NavLink to="/tigers" className={link}><PawPrint size={17} /> Named tigers</NavLink>
           <NavLink to="/routing" className={link}><Signpost size={17} /> Routing (section 7)</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Review queues (section 8)</div>
           {QUEUES.map(({ kind, label, icon: Icon, tone }) => {

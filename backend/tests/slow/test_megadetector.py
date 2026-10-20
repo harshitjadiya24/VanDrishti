@@ -3,8 +3,10 @@ scripts/download_models.py megadetector-v6-mit-c, scripts/download_sample.py."""
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from PIL import Image
@@ -15,15 +17,21 @@ pytestmark = pytest.mark.slow
 WEIGHTS = REPO_ROOT / "data" / "models" / "megadetector"
 SAMPLE = REPO_ROOT / "data" / "samples" / "lila"
 
-pytest.importorskip("torch")  # CI installs without the ml group
+# Not importorskip: that imports torch at collection, and FAISS tests in the same run must
+# not share a process with torch (vandrishti.reid.index).
+if importlib.util.find_spec("torch") is None:  # CI installs without the ml group
+    pytest.skip("torch not installed", allow_module_level=True)
 if not (WEIGHTS / "MDV6-mit-yolov9-c.ckpt").exists() or not (SAMPLE / "ground_truth.json").exists():
     pytest.skip("weights or sample not downloaded", allow_module_level=True)
 
-from vandrishti.models.adapters.megadetector_v6 import MegaDetectorV6MIT  # noqa: E402
+if TYPE_CHECKING:
+    from vandrishti.models.adapters.megadetector_v6 import MegaDetectorV6MIT
 
 
 @pytest.fixture(scope="module")
 def detector() -> MegaDetectorV6MIT:
+    from vandrishti.models.adapters.megadetector_v6 import MegaDetectorV6MIT
+
     md = MegaDetectorV6MIT(WEIGHTS)
     md.load("cpu")
     return md
@@ -55,6 +63,8 @@ def test_refuses_weights_that_do_not_fit(tmp_path: Path) -> None:
     import shutil
 
     import torch
+
+    from vandrishti.models.adapters.megadetector_v6 import MegaDetectorV6MIT
 
     shutil.copy(WEIGHTS / "config_v9s.yaml", tmp_path / "config_v9s.yaml")
     torch.save(
