@@ -8,7 +8,6 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
@@ -20,101 +19,24 @@ from vandrishti.api.app import create_app
 from vandrishti.db.models import (
     AuditEvent,
     Camera,
-    Decision,
-    Detection,
-    DetectionCategory,
-    GpsSource,
     Image,
     ProposalKind,
     ProposalState,
-    QualityStatus,
     ReidEmbedding,
     ReidProposal,
     Reserve,
     Review,
     ReviewAction,
     Route,
-    RouteState,
-    Routing,
-    ScreenOutcome,
     TimeSource,
 )
 from vandrishti.db.session import get_session
 from vandrishti.reid import service
 
+from .factories import animal, unit
+
 pytestmark = pytest.mark.integration
 MODEL = "test-embedder"
-
-
-def unit(v: list[float]) -> np.ndarray[Any, Any]:
-    a = np.asarray(v, dtype=np.float32)
-    return a / np.linalg.norm(a)
-
-
-def animal(
-    s: Session,
-    cam: Camera,
-    at: datetime,
-    *,
-    label: str,
-    taxon: str | None,
-    route: Route,
-    time_source: TimeSource = TimeSource.EXIF,
-) -> tuple[Image, Detection]:
-    img = Image(
-        sha256=uuid.uuid4().hex * 2,
-        storage_key="k",
-        original_filename=f"{uuid.uuid4().hex}.jpg",
-        camera_id=cam.id,
-        captured_at=at,
-        time_source=time_source,
-        gps_source=GpsSource.CAMERA,
-        file_size=1,
-        exif={},
-        preprocess={},
-        quality_status=QualityStatus.PASS,
-        screen=ScreenOutcome.ANIMAL,
-        screened_with="cfg",
-    )
-    s.add(img)
-    s.flush()
-    det = Detection(
-        image_id=img.id,
-        model_name="m",
-        model_version="1",
-        config_hash="cfg",
-        det_index=0,
-        category=DetectionCategory.ANIMAL,
-        confidence=0.9,
-        x=0.1,
-        y=0.1,
-        w=0.5,
-        h=0.5,
-    )
-    dec = Decision(
-        image_id=img.id,
-        engine_version="1",
-        config_hash="c",
-        label=label,
-        taxon=taxon,
-        taxon_level="species",
-        confidence=0.95,
-        explanation={},
-    )
-    s.add_all([det, dec])
-    s.flush()
-    s.add(
-        Routing(
-            image_id=img.id,
-            decision_id=dec.id,
-            route=route,
-            state=RouteState.DONE if route is Route.AUTO_ACCEPT else RouteState.OPEN,
-            config_hash="r",
-            reason="test",
-        )
-    )
-    s.flush()
-    return img, det
 
 
 @pytest.fixture

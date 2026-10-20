@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Activity, Ban, Eye, Fingerprint, HelpCircle, LayoutDashboard, PawPrint, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
+import { Activity, Ban, Bell, Eye, FileText, Fingerprint, HelpCircle, LayoutDashboard, PawPrint, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
 import { api, type QueueKind } from "./api";
@@ -30,6 +30,12 @@ function Layout() {
     queryFn: () => api.counts(reserve || undefined),
     refetchInterval: 30_000,
   });
+  const alertCounts = useQuery({
+    queryKey: ["alert-counts", reserve],
+    queryFn: () => api.alertCounts(reserve || undefined),
+    refetchInterval: 30_000,
+  });
+  const urgent = (alertCounts.data?.critical ?? 0) + (alertCounts.data?.warning ?? 0);
   const settings = (
     <>
           <label className="grid gap-1 text-[12px] text-dim">
@@ -80,7 +86,8 @@ function Layout() {
         </details>
         <div className="hidden gap-3 px-4 pb-3 md:grid">{settings}</div>
         <nav aria-label="Queues" className="flex gap-1.5 overflow-x-auto px-4 pb-3 md:hidden">
-          {[{ to: "/dashboard", label: "Dashboard", n: undefined }, { to: "/identity", label: "Tiger identities", n: undefined },
+          {[{ to: "/dashboard", label: "Dashboard", n: undefined }, { to: "/alerts", label: "Alerts", n: urgent || undefined },
+            { to: "/reports", label: "Reports", n: undefined }, { to: "/identity", label: "Tiger identities", n: undefined },
             { to: "/tigers", label: "Named tigers", n: undefined }, { to: "/routing", label: "Routing", n: undefined }, ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind] })),
             { to: "/risk", label: "Poaching risk", n: undefined }, { to: "/feedback", label: "Feedback", n: undefined }, { to: "/audit", label: "Audit", n: undefined }].map((x) => (
             <NavLink key={x.to} to={x.to}
@@ -92,6 +99,12 @@ function Layout() {
         </nav>
         <nav aria-label="Main" className="hidden gap-0.5 px-2 pb-4 md:grid">
           <NavLink to="/dashboard" className={link}><LayoutDashboard size={17} /> Dashboard</NavLink>
+          <NavLink to="/alerts" className={link}>
+            <span className={urgent ? "text-alarm" : undefined}><Bell size={17} /></span>
+            <span className="flex-1">Alerts</span>
+            {urgent ? <span className="rounded-full bg-base px-2 text-[12px] tabular-nums text-ink">{urgent}</span> : null}
+          </NavLink>
+          <NavLink to="/reports" className={link}><FileText size={17} /> Reports and exports</NavLink>
           <NavLink to="/identity" className={link}><span className="text-amber"><Fingerprint size={17} /></span> Tiger identities</NavLink>
           <NavLink to="/tigers" className={link}><PawPrint size={17} /> Named tigers</NavLink>
           <NavLink to="/routing" className={link}><Signpost size={17} /> Routing (section 7)</NavLink>

@@ -140,3 +140,19 @@ embed → match.
   - All 118 sightings of unnamed tigers were "possibly new".
 - The threshold was not re-tuned on this set (that would fit the test).
 
+## Section 11 — alerts, reports, export (Phase 7, 2026-10-21)
+
+There is no accuracy to measure here; these are what the rules produced on the data in the
+database (LILA-TEST and ATRW-DEMO):
+- **First run (27 alerts):** 17 poaching-risk alerts (all MEDIUM, matching Phase 5's 17 MEDIUM
+  events), 3 unusual-activity camera-days, 6 tiger bursts (ATRW), and 1 silent camera
+  (`cct`, last reliable frame 2015). A second run changed nothing (idempotent).
+- **Cameras the silence check cannot judge:** `ena24` and the ATRW camera have no reliable
+  capture times, so no silence alert is possible for them. That is correct, and stated.
+- **Report:** LILA-TEST for December 2011 has 19 timed frames, 3 settled animal frames
+  (1 waiting for a person) and 12 people/vehicle events (10 MEDIUM, 2 LOW); 90 frames have
+  no reliable time and fall in no period. The PDF is 7.7 KB and the Excel file 11 KB.
+- **Camtrap DP:** the export of LILA-TEST is refused, because no camera has coordinates
+  (LILA withholds locations). The synthetic test reserve validates against the 1.0.2 profile
+  and table schemas offline.
+

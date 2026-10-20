@@ -97,6 +97,19 @@ The console opens on the Dashboard (overview, camera map, camera analytics, tren
 proposal; the model never names a tiger. MegaDescriptor is **non-commercial** (CC-BY-NC-4.0):
 see [`docs/MODELS.md`](docs/MODELS.md).
 
+## Alerts, reports and integration
+
+```bash
+uv run vandrishti alerts run --reserve KAN        # raise/refresh alerts, send the webhook (cron)
+uv run vandrishti alerts list --reserve KAN
+uv run vandrishti report --reserve KAN --period weekly --day 2024-03-20 --format pdf --out week.pdf
+uv run vandrishti export camtrap-dp --reserve KAN --sampling-design targeted --out kan.zip
+uv run vandrishti apikey create --reserve KAN --name state-mis --by "admin name"
+```
+In the console, "Alerts" lists what needs a person (acknowledge, resolve, reopen) and
+"Reports and exports" downloads PDF/Excel reports and the Camtrap DP package. Other systems
+use the `/v1` API with a key: see [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
+
 ## Layout
 ```
 backend/src/vandrishti/
@@ -107,6 +120,10 @@ backend/src/vandrishti/
   pipeline/  5.1 quality gate, 5.2 detection, 5.3-5.5 species/check/mask stages, 5.6 decision engine
   analytics/ settled labels, 10.1-10.4 dashboard numbers
   reid/      10.5 embeddings, FAISS index, proposals, people's decisions
+  alerts/    section 11 alert rules, people's actions, signed webhook
+  reports/   report data per period, Excel and PDF rendering
+  exports/   Camtrap DP 1.0.2
+  integration/ API keys for the /v1 integration API
   privacy/   whole-body blur
   api/       FastAPI app: health, reserves and cameras, uploads, batches, images
   cli.py     `vandrishti` command

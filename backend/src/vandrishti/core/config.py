@@ -73,6 +73,22 @@ class Settings(BaseSettings):
     reid_match_threshold: float = Field(default=0.76, ge=0, le=1)
     reid_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
 
+    # Section 11 alerts (Phase 7). The webhook gets open alerts at or above the minimum
+    # severity, signed with HMAC-SHA256 (see alerts/service.py). https only outside dev.
+    alert_webhook_url: str | None = None
+    alert_webhook_secret: SecretStr | None = None
+    alert_webhook_min_severity: Literal["info", "warning", "critical"] = "warning"
+    alert_webhook_max_attempts: int = Field(default=5, ge=1, le=50)
+    alert_webhook_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    camera_silent_days: int = Field(default=7, ge=1)
+
+    @field_validator("alert_webhook_url")
+    @classmethod
+    def _http_only(cls, value: str | None) -> str | None:
+        if value and not value.startswith(("https://", "http://")):
+            raise ValueError("alert_webhook_url must be an http(s) URL")
+        return value or None
+
     # On an 8 GB M3 only one heavy model should be resident at a time.
     model_device: Literal["auto", "mps", "cuda", "cpu"] = "auto"
     model_max_loaded: int = Field(default=1, ge=1)

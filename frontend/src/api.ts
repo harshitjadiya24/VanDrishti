@@ -178,6 +178,33 @@ export interface Individual {
 }
 export interface Sighting { embedding_id: string; image_id: string; camera: string; captured_at: string | null; assigned_by: string | null }
 
+export type AlertState = "open" | "acknowledged" | "resolved";
+export interface AlertItem {
+  id: string;
+  reserve: string;
+  timezone: string;
+  camera: string | null;
+  kind: "tiger_sighting" | "poaching_risk" | "unusual_activity" | "camera_failure";
+  severity: "info" | "warning" | "critical";
+  state: AlertState;
+  title: string;
+  detail: { reasons?: string[]; image_ids?: string[]; individuals?: string[]; time_reliable?: boolean; [k: string]: unknown };
+  occurred_at: string | null;
+  created_at: string;
+  acted_by: string | null;
+  acted_at: string | null;
+  note: string | null;
+  webhook: string | null;
+}
+export interface ReportSummary {
+  period: { kind: string; start: string; end: string };
+  summary: Record<string, number | Record<string, number>>;
+  species: { label: string; frames: number; cameras: number; naive_occupancy: number | null; by_person: number }[];
+  tigers: { code: string; sightings: number; cameras: string[] }[];
+  caveats: string[];
+}
+export type ReportPeriod = "daily" | "weekly" | "monthly";
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
@@ -232,6 +259,18 @@ export const api = {
   individuals: (reserve?: string) => request<Individual[]>(`/identity/individuals${qs({ reserve })}`),
   sightings: (id: string) => request<Sighting[]>(`/identity/individuals/${id}/sightings`),
   similarTigers: (reserve?: string) => request<{ a: string; b: string; similarity: number }[]>(`/identity/similar${qs({ reserve })}`),
+  alerts: (reserve: string | undefined, state?: AlertState, kind?: string) =>
+    request<AlertItem[]>(`/alerts${qs({ reserve, state, kind })}`),
+  alertCounts: (reserve?: string) => request<Record<"critical" | "warning" | "info", number>>(`/alerts/counts${qs({ reserve })}`),
+  runAlerts: (reserve?: string) => request<{ rules: Record<string, number>; webhook: Record<string, unknown> }>(`/alerts/run${qs({ reserve })}`, { method: "POST" }),
+  actAlert: (id: string, action: "acknowledge" | "resolve" | "reopen", person: string, note?: string) =>
+    request<AlertItem>(`/alerts/${id}/act`, { method: "POST", body: JSON.stringify({ action, person, note: note || undefined }) }),
+  report: (reserve: string, period: ReportPeriod, day: string) =>
+    request<ReportSummary>(`/reports/${encodeURIComponent(reserve)}${qs({ period, day, format: "json" })}`),
+  reportUrl: (reserve: string, period: ReportPeriod, day: string, format: "pdf" | "xlsx") =>
+    `/api/reports/${encodeURIComponent(reserve)}${qs({ period, day, format })}`,
+  camtrapUrl: (reserve: string, design: string) =>
+    `/api/exports/${encodeURIComponent(reserve)}/camtrap-dp${qs({ sampling_design: design })}`,
   cropUrl: (embeddingId: string) => `/api/identity/embeddings/${embeddingId}/crop`,
   displayUrl: (id: string) => `/api/images/${id}/display`,
   maskUrl: (id: string) => `/api/images/${id}/mask`,

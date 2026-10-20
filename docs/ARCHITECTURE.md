@@ -31,8 +31,8 @@ records how each part is built; it grows phase by phase.
 | 4 | Confidence routing, review UI, feedback | built |
 | 5 | Human/vehicle activity, poaching risk | built |
 | 6 | Dashboard, re-identification | built |
-| 7 | Alerts, reports (PDF/Excel), integration API | next |
-| 8 | Hardening and production | planned |
+| 7 | Alerts, reports (PDF/Excel), integration API | built |
+| 8 | Hardening and production | next |
 
 ## 3. Foundations (Phase 0)
 
@@ -234,4 +234,37 @@ settled label per image (analytics/labels.py):
   `GET /identity/individuals[/{id}/sightings]`, `GET /identity/similar`.
 - Console: Dashboard (default screen), Tiger identities (one proposal at a time with the
   closest sighting of each candidate), Named tigers (sightings, look-alike warning).
+
+## 10. Section 11: alerts, reports, Camtrap DP, integration API (Phase 7, ADR 0008)
+
+```
+alerts/rules.evaluate (idempotent: one alert per dedupe_key; refreshes only OPEN alerts)
+  tiger sighting   info      one per burst of settled tiger frames (+ person-confirmed tiger codes)
+  poaching risk    warning / critical   per MEDIUM / HIGH event, not dismissed
+  unusual activity warning   per camera and local day with an "unusual spike" event
+  camera failure   warning   silent > camera_silent_days (reliable times) · ≥ 60% of the last
+                             30 frames failed the quality gate
+  condition gone + still OPEN → resolved by "system" with a note; acknowledged/resolved
+  alerts are never touched by rules
+person: acknowledge · resolve · reopen (audited; reopen undoes)
+alerts/service.deliver → signed webhook (HMAC-SHA256 over "<ts>.<body>"), min severity,
+  retries up to max attempts, no redirects, https outside dev, no coordinates or images
+
+reports/data.build(reserve, local start..end) → JSON → render.to_xlsx (openpyxl) / to_pdf (reportlab)
+exports/camtrap_dp.build → zip: datapackage.json + deployments/media/observations (1.0.2)
+integration/keys + api/routes/v1 → read-only /v1/* per reserve key, every read audited
+```
+
+- Reports and exports use the dashboard's rules: settled labels, frames not animals,
+  reserve-local days, unreliable times left out and counted.
+- Camtrap DP: one deployment per camera (no separate deployment periods are recorded), people
+  and vehicle frames never exported, reviewer names not exported, coordinates rounded to 0.1°
+  (uncertainty 7,900 m) unless a key or the CLI asks for precise ones. Sampling design is not
+  recorded in VanDrishti, so the caller must state it.
+- API keys: `vd_<prefix>_<secret>`, SHA-256 stored, prefix lookup + constant-time compare,
+  `precise_locations` off by default; creation and revocation audited.
+- Console: Alerts (state filter, reasons, acknowledge/resolve/reopen with a note; sidebar
+  count of open warning + critical), Reports and exports (period preview, PDF/Excel download,
+  Camtrap DP with a chosen sampling design).
+- Scheduling is not built in: run `vandrishti alerts run` from cron (or the watcher host).
 

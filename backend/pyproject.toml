@@ -9,11 +9,13 @@ dependencies = [
     "faiss-cpu>=1.12",
     "fastapi>=0.120",
     "numpy>=2.0",
+    "openpyxl==3.1.5",
     "pillow>=11.3",
     "psycopg[binary]>=3.2",
     "pydantic>=2.11",
     "pydantic-settings>=2.10",
     "python-multipart>=0.0.20",
+    "reportlab==5.0.1",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.37",
 ]
@@ -25,9 +27,12 @@ default-groups = ["dev", "ml"]
 [dependency-groups]
 dev = [
     "httpx2>=2.13.1",
+    "jsonschema==4.26.0",
     "mypy>=1.18",
     "pytest>=8.4",
     "ruff>=0.13",
+    "types-openpyxl==3.1.5.20260827",
+    "types-reportlab==5.0.0.20260911",
 ]
 ml = [
     "omegaconf>=2.3",

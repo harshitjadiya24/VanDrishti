@@ -7,6 +7,7 @@ Phase 3 (5.3-5.7): classifications, semantic checks, segmentations, decisions.
 Phase 4 (7-8): routing, human reviews (feedback), hash-chained audit trail.
 Phase 5 (6): presence events (people/vehicles), camera sensitivity, risk assessments.
 Phase 6 (9-10.5): re-ID embeddings, named individuals, match proposals.
+Phase 7 (11): alerts, webhook deliveries, integration API keys.
 """
 
 from __future__ import annotations
@@ -616,3 +617,90 @@ class ReidProposal(UUIDPrimaryKey, Timestamps, Base):
     outcome: Mapped[str | None] = mapped_column(String(32))  # same | new | not_tiger
     decided_by: Mapped[str | None] = mapped_column(String(100))
     decided_at: Mapped[datetime | None]
+
+
+class AlertKind(enum.StrEnum):
+    TIGER_SIGHTING = "tiger_sighting"
+    POACHING_RISK = "poaching_risk"
+    UNUSUAL_ACTIVITY = "unusual_activity"
+    CAMERA_FAILURE = "camera_failure"
+
+
+class AlertSeverity(enum.StrEnum):
+    INFO = "info"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+class AlertState(enum.StrEnum):
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"  # a person has seen it and is acting
+    RESOLVED = "resolved"
+
+
+class Alert(UUIDPrimaryKey, Timestamps, Base):
+    """Section 11: something a person should know about. Rules create and refresh open
+    alerts; once a person acts (acknowledge/resolve), rules never edit or reopen it."""
+
+    __tablename__ = "alert"
+    __table_args__ = (UniqueConstraint("dedupe_key"),)
+
+    reserve_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reserve.id", ondelete="CASCADE"))
+    camera_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("camera.id", ondelete="SET NULL")
+    )
+    kind: Mapped[AlertKind] = mapped_column(_str_enum(AlertKind, "alert_kind"), index=True)
+    severity: Mapped[AlertSeverity] = mapped_column(_str_enum(AlertSeverity, "alert_severity"))
+    state: Mapped[AlertState] = mapped_column(
+        _str_enum(AlertState, "alert_state"), default=AlertState.OPEN, index=True
+    )
+    dedupe_key: Mapped[str] = mapped_column(String(200))  # one alert per subject, e.g. a burst
+    rule_version: Mapped[str] = mapped_column(String(16))
+    title: Mapped[str] = mapped_column(String(300))
+    # Reasons and references (image ids, event id, individual codes). Never coordinates.
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    occurred_at: Mapped[datetime | None] = mapped_column(index=True)  # reliable time or None
+    acted_by: Mapped[str | None] = mapped_column(String(100))
+    acted_at: Mapped[datetime | None]
+    note: Mapped[str | None] = mapped_column(String(2000))
+
+
+class DeliveryStatus(enum.StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"  # retried on the next run until max attempts
+    GAVE_UP = "gave_up"
+
+
+class AlertDelivery(UUIDPrimaryKey, Timestamps, Base):
+    """One alert sent to one channel (Phase 7: the signed webhook)."""
+
+    __tablename__ = "alert_delivery"
+    __table_args__ = (UniqueConstraint("alert_id", "channel"),)
+
+    alert_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("alert.id", ondelete="CASCADE"))
+    channel: Mapped[str] = mapped_column(String(32))
+    status: Mapped[DeliveryStatus] = mapped_column(
+        _str_enum(DeliveryStatus, "delivery_status"), default=DeliveryStatus.PENDING, index=True
+    )
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    response_code: Mapped[int | None] = mapped_column(Integer)
+    last_error: Mapped[str | None] = mapped_column(String(500))
+    sent_at: Mapped[datetime | None]
+
+
+class ApiKey(UUIDPrimaryKey, Timestamps, Base):
+    """Integration API key for one reserve. Only a SHA-256 of the key is stored; the key is
+    shown once at creation. `precise_locations` must be granted explicitly."""
+
+    __tablename__ = "api_key"
+    __table_args__ = (UniqueConstraint("prefix"),)
+
+    reserve_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reserve.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(100))
+    prefix: Mapped[str] = mapped_column(String(16))  # first characters, to find the row
+    key_hash: Mapped[str] = mapped_column(String(64))
+    precise_locations: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[str] = mapped_column(String(100))
+    revoked_at: Mapped[datetime | None]
+    last_used_at: Mapped[datetime | None]

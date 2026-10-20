@@ -8,6 +8,10 @@ vandrishti ingest <folder> --reserve R --camera C [--manifest CSV [--manifest-ut
 vandrishti watch <inbox> [--once]
 vandrishti batch show <id>
 vandrishti reid embed|match|similar [--reserve R] | individual list [--reserve R]
+vandrishti alerts run|list [--reserve R] | alerts act <id> --action A --person P
+vandrishti report --reserve R --period weekly --day 2024-03-04 --format pdf --out FILE
+vandrishti export camtrap-dp --reserve R --sampling-design targeted --out FILE [--precise]
+vandrishti apikey create --reserve R --name N --by P [--precise] | apikey list | apikey revoke
 """
 
 from __future__ import annotations
@@ -470,6 +474,98 @@ def cmd_individual_list(args: argparse.Namespace) -> None:
         _print(service.individuals(s, reserve=args.reserve))
 
 
+def cmd_alerts(args: argparse.Namespace) -> None:
+    from vandrishti.alerts import rules
+    from vandrishti.alerts import service as alerts
+    from vandrishti.core.config import get_settings
+    from vandrishti.db.models import Alert, AlertState, Reserve
+
+    settings = get_settings()
+    with _session() as s:
+        if args.action == "run":
+            cfg = rules.AlertConfig(camera_silent_days=settings.camera_silent_days)
+            _print(
+                {
+                    "rules": rules.evaluate(s, reserve=args.reserve, cfg=cfg),
+                    "webhook": alerts.deliver(s, settings),
+                }
+            )
+        elif args.action == "list":
+            q = (
+                select(Alert, Reserve.code)
+                .join(Reserve, Reserve.id == Alert.reserve_id)
+                .where(Alert.state == AlertState.OPEN)
+            )
+            if args.reserve:
+                q = q.where(Reserve.code == args.reserve)
+            for a, code in s.execute(q.order_by(Alert.created_at)):
+                print(f"{a.id}  {code:10} {a.severity.value:8} {a.kind.value:17} {a.title}")
+        else:
+            if not (args.id and args.act and args.person):
+                sys.exit("alerts act needs <id> --action and --person")
+            a = alerts.act(s, uuid.UUID(args.id), args.act, args.person, args.note)
+            print(f"{a.id}: {a.state.value}")
+
+
+def cmd_report(args: argparse.Namespace) -> None:
+    from datetime import date
+
+    from vandrishti.reports import data as reports
+    from vandrishti.reports import render
+
+    day = date.fromisoformat(args.day) if args.day else None
+    start = date.fromisoformat(args.start) if args.start else None
+    end = date.fromisoformat(args.end) if args.end else None
+    with _session() as s:
+        lo, hi = reports.period_range(args.period, day, start, end)
+        r = reports.build(s, args.reserve, lo, hi, args.period)
+    if args.format == "json":
+        body = json.dumps(r, indent=2, default=str).encode()
+    else:
+        body = render.to_xlsx(r) if args.format == "xlsx" else render.to_pdf(r)
+    Path(args.out).write_bytes(body)
+    _print({"out": args.out, "bytes": len(body), "period": r["period"], "summary": r["summary"]})
+
+
+def cmd_export(args: argparse.Namespace) -> None:
+    from vandrishti.exports import camtrap_dp
+
+    with _session() as s:
+        body, summary = camtrap_dp.build(
+            s, args.reserve, sampling_design=args.sampling_design, precise=args.precise
+        )
+    Path(args.out).write_bytes(body)
+    _print({"out": args.out, **summary})
+
+
+def cmd_apikey(args: argparse.Namespace) -> None:
+    from vandrishti.db.models import ApiKey
+    from vandrishti.integration import keys
+
+    with _session() as s:
+        if args.action == "create":
+            key, row = keys.create(
+                s,
+                reserve=args.reserve,
+                name=args.name,
+                created_by=args.by,
+                precise_locations=args.precise,
+            )
+            print(f"{key}\n(shown once; store it now. prefix {row.prefix})")
+        elif args.action == "list":
+            for k, code in s.execute(
+                select(ApiKey, Reserve.code).join(Reserve, Reserve.id == ApiKey.reserve_id)
+            ):
+                state = f"revoked {k.revoked_at:%Y-%m-%d}" if k.revoked_at else "active"
+                print(
+                    f"{k.prefix}  {code:10} {k.name:24} {state:18} precise={k.precise_locations}"
+                    f" last used {k.last_used_at or 'never'}"
+                )
+        else:
+            keys.revoke(s, args.prefix, args.by)
+            print(f"{args.prefix}: revoked")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -587,8 +683,71 @@ def main(argv: list[str] | None = None) -> None:
     il.add_argument("--reserve")
     il.set_defaults(func=cmd_individual_list)
 
+    al = sub.add_parser("alerts", help="11: alert rules, webhook delivery, people's actions")
+    al.add_argument("action", choices=["run", "list", "act"])
+    al.add_argument("id", nargs="?")
+    al.add_argument("--reserve")
+    al.add_argument("--action", dest="act", choices=["acknowledge", "resolve", "reopen"])
+    al.add_argument("--person")
+    al.add_argument("--note")
+    al.set_defaults(func=cmd_alerts)
+
+    rp = sub.add_parser("report", help="11: daily/weekly/monthly/custom report")
+    rp.add_argument("--reserve", required=True)
+    rp.add_argument("--period", choices=["daily", "weekly", "monthly", "custom"], default="weekly")
+    rp.add_argument("--day", help="a date in the period (YYYY-MM-DD)")
+    rp.add_argument("--start")
+    rp.add_argument("--end")
+    rp.add_argument("--format", choices=["json", "xlsx", "pdf"], default="pdf")
+    rp.add_argument("--out", required=True)
+    rp.set_defaults(func=cmd_report)
+
+    ex = sub.add_parser("export").add_subparsers(dest="action", required=True)
+    ec = ex.add_parser("camtrap-dp", help="Camtrap DP 1.0.2 zip (people/vehicles never exported)")
+    ec.add_argument("--reserve", required=True)
+    ec.add_argument(
+        "--sampling-design",
+        required=True,
+        choices=[
+            "simpleRandom",
+            "systematicRandom",
+            "clusteredRandom",
+            "experimental",
+            "targeted",
+            "opportunistic",
+        ],
+        help="how cameras were placed (not recorded in VanDrishti, so you must say)",
+    )
+    ec.add_argument(
+        "--precise", action="store_true", help="exact coordinates (default: 0.1 degree)"
+    )
+    ec.add_argument("--out", required=True)
+    ec.set_defaults(func=cmd_export)
+
+    ak = sub.add_parser("apikey").add_subparsers(dest="action", required=True)
+    akc = ak.add_parser("create", help="integration API key for one reserve (shown once)")
+    akc.add_argument("--reserve", required=True)
+    akc.add_argument("--name", required=True)
+    akc.add_argument("--by", required=True, help="who is issuing it (audit trail)")
+    akc.add_argument("--precise", action="store_true", help="grant exact coordinates")
+    akc.set_defaults(func=cmd_apikey)
+    ak.add_parser("list").set_defaults(func=cmd_apikey)
+    akr = ak.add_parser("revoke")
+    akr.add_argument("prefix")
+    akr.add_argument("--by", required=True)
+    akr.set_defaults(func=cmd_apikey)
+
     args = parser.parse_args(argv)
-    args.func(args)
+    from vandrishti.alerts.service import AlertError
+    from vandrishti.exports.camtrap_dp import ExportError
+    from vandrishti.integration.keys import ApiKeyError
+    from vandrishti.reid.service import ReidError
+    from vandrishti.reports.data import ReportError
+
+    try:
+        args.func(args)
+    except (AlertError, ExportError, ApiKeyError, ReidError, ReportError) as e:
+        sys.exit(f"error: {e}")
 
 
 if __name__ == "__main__":

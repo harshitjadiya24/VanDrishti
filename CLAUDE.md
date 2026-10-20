@@ -104,4 +104,11 @@ history, old Docker volumes). Do not look for it; build from the image.
   count) and frames, not animals. `file_mtime` times stay out of time charts and "first seen".
 - MegaDetector puts whole-frame vehicle boxes on tight crops (ATRW: 58/300): not a bug to "fix"
   by lowering privacy screening.
+- Alerts (section 11) are prompts: rules refresh only OPEN alerts; a person's acknowledge/resolve
+  is never overwritten; reopen is the undo. No coordinates in alerts, webhooks or reports.
+- Camtrap DP schemas are cached in `tests/fixtures/camtrap_dp_1.0.2` (raw.githubusercontent
+  works from here now; geojson/frictionless refs are stubbed offline). Sampling design is never
+  guessed: the caller states it. People/vehicle frames are never exported.
+- urllib title-cases header names (`X-vandrishti-timestamp`): compare headers case-insensitively.
+- Python type stubs and packages follow the same "≥ 14 days old" pin rule as npm.
 
