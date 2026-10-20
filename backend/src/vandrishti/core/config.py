@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     # are allowed only with env=dev, and the API listens on 127.0.0.1 only.
     ingest_token: SecretStr | None = None
 
+    # 5.2 detection (Phase 2). CPU was measured faster than MPS for the compact detector on
+    # an M3 (0.16 vs 0.33 s/image): the default is CPU, not "auto".
+    detector_device: Literal["auto", "mps", "cuda", "cpu"] = "cpu"
+    detector_batch_size: int = Field(default=8, ge=1, le=64)
+    detector_min_confidence: float = Field(default=0.05, ge=0, le=1)  # boxes stored from here
+    # An animal box at or above this means "animal"; below, the frame is likely blank.
+    animal_threshold: float = Field(default=0.2, ge=0, le=1)
+    # People and vehicles are blurred from this (lower: privacy errs on the safe side).
+    privacy_threshold: float = Field(default=0.1, ge=0, le=1)
+
     # On an 8 GB M3 only one heavy model should be resident at a time.
     model_device: Literal["auto", "mps", "cuda", "cpu"] = "auto"
     model_max_loaded: int = Field(default=1, ge=1)

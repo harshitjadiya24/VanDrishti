@@ -196,6 +196,50 @@ def cmd_batch_show(args: argparse.Namespace) -> None:
         )
 
 
+def cmd_quality(args: argparse.Namespace) -> None:
+    from vandrishti.core.config import get_settings
+    from vandrishti.core.storage import LocalStorage
+    from vandrishti.pipeline.screen import run_quality
+
+    with _session() as s:
+        stats = run_quality(
+            s, LocalStorage(get_settings().storage_root), reserve=args.reserve, limit=args.limit
+        )
+    _print(stats.as_dict())
+
+
+def cmd_detect(args: argparse.Namespace) -> None:
+    from vandrishti.core.config import get_settings
+    from vandrishti.core.storage import LocalStorage
+    from vandrishti.models.adapters.megadetector_v6 import MegaDetectorV6MIT
+    from vandrishti.models.manager import ModelManager
+    from vandrishti.pipeline.screen import run_detection
+
+    settings = get_settings()
+    weights = settings.model_cache_dir / "megadetector"
+    if not (weights / "MDV6-mit-yolov9-c.ckpt").exists():
+        sys.exit("weights missing: run scripts/download_models.py megadetector-v6-mit-c")
+    manager = ModelManager(
+        max_loaded=settings.model_max_loaded,
+        budget_mb=settings.model_memory_budget_mb,
+        device=args.device or settings.detector_device,
+    )
+    model = manager.get(MegaDetectorV6MIT(weights, min_confidence=settings.detector_min_confidence))
+    try:
+        with _session() as s:
+            stats = run_detection(
+                s,
+                LocalStorage(settings.storage_root),
+                settings,
+                model,
+                reserve=args.reserve,
+                limit=args.limit,
+            )
+    finally:
+        manager.unload_all()
+    _print(stats.as_dict())
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -254,6 +298,17 @@ def main(argv: list[str] | None = None) -> None:
     bs = bat.add_parser("show")
     bs.add_argument("id")
     bs.set_defaults(func=cmd_batch_show)
+
+    qu = sub.add_parser("quality", help="5.1 quality gate on images not yet checked")
+    qu.add_argument("--reserve")
+    qu.add_argument("--limit", type=int)
+    qu.set_defaults(func=cmd_quality)
+
+    de = sub.add_parser("detect", help="5.2 MegaDetector V6 (MIT) + whole-body privacy blur")
+    de.add_argument("--reserve")
+    de.add_argument("--limit", type=int)
+    de.add_argument("--device", choices=["cpu", "mps", "cuda", "auto"])
+    de.set_defaults(func=cmd_detect)
 
     args = parser.parse_args(argv)
     args.func(args)

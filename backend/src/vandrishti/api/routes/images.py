@@ -12,9 +12,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from vandrishti.api.deps import DB, Config, Storage, Writer
-from vandrishti.db.models import Camera, Image, IngestBatch, IngestSource
+from vandrishti.db.models import Camera, Detection, Image, IngestBatch, IngestSource, QualityStatus
 from vandrishti.ingest.service import IMAGE_SUFFIXES, ingest_files
 
 router = APIRouter(tags=["images"])
@@ -53,6 +54,19 @@ class ImageOut(BaseModel):
     is_corrupt: bool
     corrupt_reason: str | None
     preprocess: dict[str, Any]
+    quality_status: str
+    quality_flags: list[str]
+    quality_metrics: dict[str, Any]
+    screen: str | None
+    is_original_locked: bool
+
+
+class DetectionOut(BaseModel):
+    category: str
+    confidence: float
+    box: list[float]  # x, y, w, h normalised 0-1
+    model: str
+    config_hash: str
 
 
 def _batch_out(b: IngestBatch) -> BatchOut:
@@ -138,12 +152,55 @@ def get_image(image_id: uuid.UUID, session: DB) -> ImageOut:
         is_corrupt=img.is_corrupt,
         corrupt_reason=img.corrupt_reason,
         preprocess=img.preprocess,
+        quality_status=img.quality_status.value,
+        quality_flags=img.quality_flags,
+        quality_metrics=img.quality_metrics,
+        screen=img.screen.value if img.screen else None,
+        is_original_locked=img.is_original_locked,
     )
+
+
+@router.get("/images/{image_id}/detections")
+def get_detections(image_id: uuid.UUID, session: DB) -> list[DetectionOut]:
+    """Boxes from the config the image was last screened with (5.2)."""
+    img = session.get(Image, image_id)
+    if img is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "image not found")
+    rows = session.scalars(
+        select(Detection)
+        .where(Detection.image_id == img.id, Detection.config_hash == img.screened_with)
+        .order_by(Detection.det_index)
+    )
+    return [
+        DetectionOut(
+            category=d.category.value,
+            confidence=d.confidence,
+            box=[d.x, d.y, d.w, d.h],
+            model=f"{d.model_name} {d.model_version}",
+            config_hash=d.config_hash,
+        )
+        for d in rows
+    ]
+
+
+@router.get("/quality/review")
+def quality_review(
+    session: DB, camera: uuid.UUID | None = None, limit: int = 100
+) -> list[ImageOut]:
+    """5.1 FAIL queue: images a person should look at (nothing is deleted)."""
+    q = select(Image).where(Image.quality_status == QualityStatus.FAIL)
+    if camera:
+        q = q.where(Image.camera_id == camera)
+    return [
+        get_image(i.id, session)
+        for i in session.scalars(q.order_by(Image.captured_at).limit(min(limit, 500)))
+    ]
 
 
 @router.get("/images/{image_id}/display")
 def get_display(image_id: uuid.UUID, session: DB, storage: Storage) -> FileResponse:
-    """The normalised copy (never the original: originals get role checks in Phase 8)."""
+    """The normalised copy, already blurred if people or vehicles were detected. Never the
+    original: locked originals get role checks and audit in Phase 8."""
     img = session.get(Image, image_id)
     if img is None or not img.display_key:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no display copy for this image")

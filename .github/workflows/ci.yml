@@ -9,6 +9,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  UV_NO_SYNC: "1"   # keep `uv run` from adding the ml group back
+
 defaults:
   run:
     working-directory: backend
@@ -21,7 +24,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - run: uv sync --locked
+      - run: uv sync --locked --no-group ml   # no PyTorch in CI; real-model tests are `slow`
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
@@ -37,6 +40,6 @@ jobs:
       - name: Start Postgres (PostGIS) and Redis
         working-directory: .
         run: cp .env.example .env && docker compose up -d --build --wait
-      - run: uv sync --locked
+      - run: uv sync --locked --no-group ml   # no PyTorch in CI; real-model tests are `slow`
       - run: uv run alembic upgrade head
       - run: uv run pytest -m integration

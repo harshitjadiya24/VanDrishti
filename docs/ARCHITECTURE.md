@@ -26,8 +26,8 @@ records how each part is built; it grows phase by phase.
 |---|---|---|
 | 0 | Foundations | built |
 | 1 | Cameras, ingestion, raw storage, preprocessing | built |
-| 2 | Quality gate, MegaDetector V6, privacy blur | next |
-| 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | planned |
+| 2 | Quality gate, MegaDetector V6, privacy blur | built |
+| 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | next |
 | 4 | Confidence routing, review UI, feedback | planned |
 | 5 | Human/vehicle activity, poaching risk | planned |
 | 6 | Dashboard, re-identification | planned |
@@ -91,3 +91,26 @@ inbox watcher ───┘     2 check_image: verify + full decode (empty, not a
   batch (~15 images/s, no models), peak RSS 161 MB; 116 bursts, the same count as the
   dataset's own sequence labels; a rerun stored nothing (125 duplicates). (That sample was
   deleted with `data/` afterwards; the numbers are kept as a measurement record.)
+
+## 5. Sections 5.1–5.2 and privacy: quality gate, detection, whole-body blur (Phase 2, ADR 0003)
+
+```
+image (quality_status=pending)
+  └─ 5.1 run_quality: grey 512 px copy → p99.9, white share, mean, std, Laplacian variance,
+         dHash vs previous frame, infrared check
+         FAIL (unreadable | too_dark | white_out) ──► GET /quality/review (a person looks)
+         PASS (+ warnings: dim, overexposed, low_contrast, blurry, near_duplicate, night_ir)
+  └─ 5.2 run_detection (MegaDetector V6 MIT compact, CPU, batches of 8, JPEG draft 1280 px)
+         boxes ≥ 0.05 stored in `detection` (model, version, config hash, normalised box)
+         person/vehicle ≥ 0.1 ─► HUMAN_VEHICLE: whole-body blur → derived/blurred, display copy
+                                 rebuilt from it, original locked → section 6
+         animal ≥ 0.2       ─► ANIMAL → species (Phase 3)
+         otherwise          ─► NO_OBJECT (likely blank; a sample goes to review in Phase 4)
+```
+
+- `image.screen` + `image.screened_with` (config hash) make detection idempotent; a new
+  config re-screens and keeps older boxes for comparison.
+- API: `GET /images/{id}/detections`, `GET /quality/review`; `GET /images/{id}` now includes
+  quality and screening fields. CLI: `vandrishti quality`, `vandrishti detect`.
+- Measured (docs/EVALUATION.md): at 0.2 on 252 LILA images, animal precision 0.94 / recall
+  0.91, vehicle 1.00 / 0.92, 12% of empty frames get a false box; 0.16 s/image on CPU.

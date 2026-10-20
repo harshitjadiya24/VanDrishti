@@ -63,3 +63,14 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Camera clocks are local: EXIF/manifest times are read in the reserve's zone, stored UTC.
   Every image keeps `time_source` and `gps_source`; never treat `file_mtime` times as reliable.
 - The database lives in the Docker volume `vandrishti_pgdata_v2`.
+- MegaDetector V6 (MIT) runs from bundled MIT code in `models/adapters/vendor/yolo_mit`
+  (excluded from ruff/mypy; changes marked "VanDrishti:"). Never install PytorchWildlife (it
+  pulls AGPL ultralytics). Its upstream loader ignores missing weights: our adapter refuses.
+- The detector is faster on CPU than MPS on the M3 (0.16 vs 0.33 s/image): keep CPU default.
+- LILA labels are imperfect: Caltech's box-file "empty" entries show animals; some image-level
+  "empty" frames show people; 30/32 Caltech car boxes are whole-frame. Check by eye (blurred
+  copies for people) before trusting a surprising metric.
+- Test data: `scripts/download_sample.py` (252 LILA images, ~110 MB, contains a few people:
+  `data/` stays git-ignored); weights: `scripts/download_models.py megadetector-v6-mit-c`.
+- `.env` predates the rebuild: old keys can collide with new meanings (DETECTOR_BATCH_SIZE
+  was 250 and is now images per model batch). Keep `.env.example` the reference.

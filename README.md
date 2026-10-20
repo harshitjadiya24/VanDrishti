@@ -9,8 +9,9 @@ dashboards, alerts and reports for forest departments. People are blurred, origi
 locked by role, and exact locations are protected.
 
 > **Rebuild in progress (from 2026-10-20).** The brief is [`MASTER_PROMPT.md`](MASTER_PROMPT.md);
-> design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Built so far: foundations and image
-> sections 1–4 (cameras, ingestion, raw storage, preprocessing).
+> design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Built so far: foundations, image
+> sections 1–4 (cameras, ingestion, raw storage, preprocessing) and 5.1–5.2 (quality gate,
+> MegaDetector V6, whole-body blur of people and vehicles). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## Run the foundations
 
@@ -33,6 +34,16 @@ uv run vandrishti camera add --reserve KAN --code S-01 --lat 22.33 --lon 80.61
 uv run vandrishti ingest /path/to/sd_card --reserve KAN --camera S-01 [--manifest times.csv]
 uv run vandrishti watch /path/to/inbox                        # inbox/<RESERVE>/<CAMERA>/...
 ```
+## Quality gate and detection
+
+```bash
+uv run --project backend python scripts/download_models.py megadetector-v6-mit-c   # 119 MB, verified
+uv run vandrishti quality --reserve KAN        # 5.1: pass / fail (+ warnings)
+uv run vandrishti detect --reserve KAN         # 5.2: animal / no object / person-vehicle (blurred)
+uv run --project backend python scripts/download_sample.py && \
+  uv run --project backend python scripts/eval_detector.py   # measure on 252 labelled LILA images
+```
+
 Uploads: `POST /cameras/{id}/images` (multipart, `Authorization: Bearer $VANDRISHTI_INGEST_TOKEN`).
 
 Checks: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`
@@ -45,6 +56,8 @@ backend/src/vandrishti/
   db/        SQLAlchemy models, Alembic migrations
   models/    the Model interface, a memory-aware ModelManager, adapters (only place for ML libs)
   ingest/    metadata (EXIF, manifest), preprocessing, bursts, ingest service, inbox watcher
+  pipeline/  5.1 quality gate, 5.2 detection stage
+  privacy/   whole-body blur
   api/       FastAPI app: health, reserves and cameras, uploads, batches, images
   cli.py     `vandrishti` command
 docker/      database image (Postgres 16 + PostGIS on arm64 and amd64)

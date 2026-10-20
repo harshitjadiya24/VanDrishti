@@ -112,6 +112,18 @@ class GpsSource(enum.StrEnum):
     NONE = "none"
 
 
+class QualityStatus(enum.StrEnum):
+    PENDING = "pending"
+    PASS = "pass"  # noqa: S105 (a quality verdict, not a password)
+    FAIL = "fail"
+
+
+class ScreenOutcome(enum.StrEnum):
+    NO_OBJECT = "no_object"  # likely blank → a sample goes to review
+    ANIMAL = "animal"  # crop and proceed to species (section 5.3)
+    HUMAN_VEHICLE = "human_vehicle"  # blurred → section 6, always a person decides
+
+
 class IngestBatch(UUIDPrimaryKey, Timestamps, Base):
     """One ingest run: a folder (SD-card dump), an upload, or a watched-inbox pickup."""
 
@@ -186,3 +198,66 @@ class Image(UUIDPrimaryKey, Timestamps, Base):
     # The normalised derivative (section 4) and exactly how it was made.
     display_key: Mapped[str | None] = mapped_column(String(300))
     preprocess: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+
+    # 5.1 quality gate: pass, or fail (→ quality review). Flags explain both; metrics are the
+    # measured values the flags came from.
+    quality_status: Mapped[QualityStatus] = mapped_column(
+        _str_enum(QualityStatus, "quality_status"),
+        default=QualityStatus.PENDING,
+        server_default=QualityStatus.PENDING.value,
+        index=True,
+    )
+    quality_flags: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    quality_metrics: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, default=dict, server_default="{}"
+    )
+    # 64-bit difference hash (hex) for near-duplicate frames from the same camera.
+    dhash: Mapped[str | None] = mapped_column(String(16))
+
+    # 5.2 detection outcome under the detector config in `screened_with`.
+    screen: Mapped[ScreenOutcome | None] = mapped_column(
+        _str_enum(ScreenOutcome, "screen_outcome"), index=True
+    )
+    screened_with: Mapped[str | None] = mapped_column(String(64))
+
+    # Section 6 privacy: people/vehicles seen → whole-body blur; the original is then locked
+    # (only privileged roles, audited, from Phase 8) and every derivative is blurred.
+    is_original_locked: Mapped[bool] = mapped_column(default=False, server_default="false")
+    blurred_key: Mapped[str | None] = mapped_column(String(300))
+
+
+class DetectionCategory(enum.StrEnum):
+    ANIMAL = "animal"
+    PERSON = "person"
+    VEHICLE = "vehicle"
+
+
+class Detection(UUIDPrimaryKey, Timestamps, Base):
+    """One box from a detector run (5.2). Re-running the same config upserts, never duplicates."""
+
+    __tablename__ = "detection"
+    __table_args__ = (
+        UniqueConstraint("image_id", "model_name", "model_version", "config_hash", "det_index"),
+        CheckConstraint("confidence BETWEEN 0 AND 1", name="confidence_range"),
+        CheckConstraint(
+            "x >= 0 AND y >= 0 AND w > 0 AND h > 0 AND x + w <= 1.0001 AND y + h <= 1.0001",
+            name="box_normalised",
+        ),
+    )
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    model_name: Mapped[str] = mapped_column(String(100))
+    model_version: Mapped[str] = mapped_column(String(100))
+    config_hash: Mapped[str] = mapped_column(String(64), index=True)
+    det_index: Mapped[int] = mapped_column(Integer)
+    category: Mapped[DetectionCategory] = mapped_column(
+        _str_enum(DetectionCategory, "detection_category"), index=True
+    )
+    confidence: Mapped[float] = mapped_column(Float)
+    # Normalised 0-1: top-left x, y, width, height (independent of image resolution).
+    x: Mapped[float] = mapped_column(Float)
+    y: Mapped[float] = mapped_column(Float)
+    w: Mapped[float] = mapped_column(Float)
+    h: Mapped[float] = mapped_column(Float)

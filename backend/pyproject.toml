@@ -7,6 +7,7 @@ license = "Apache-2.0"
 dependencies = [
     "alembic>=1.16",
     "fastapi>=0.120",
+    "numpy>=2.0",
     "pillow>=11.3",
     "psycopg[binary]>=3.2",
     "pydantic>=2.11",
@@ -16,12 +17,21 @@ dependencies = [
     "uvicorn>=0.37",
 ]
 
+[tool.uv]
+# ML libraries are a separate group so slim installs (API container, CI) can skip them.
+default-groups = ["dev", "ml"]
+
 [dependency-groups]
 dev = [
     "httpx2>=2.13.1",
     "mypy>=1.18",
     "pytest>=8.4",
     "ruff>=0.13",
+]
+ml = [
+    "omegaconf>=2.3",
+    "torch>=2.6",
+    "torchvision>=0.21",
 ]
 
 [project.scripts]
@@ -35,6 +45,8 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Third-party code bundled as-is (see its __init__ for source and licences).
+extend-exclude = ["src/vandrishti/models/adapters/vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "S", "SIM", "RUF", "N", "C4"]
@@ -60,4 +72,12 @@ markers = [
 [[tool.mypy.overrides]]
 # Torch arrives with the ML group in a later phase; adapters import it optionally.
 module = ["torch", "torch.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["vandrishti.models.adapters.vendor.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["omegaconf", "omegaconf.*", "torchvision", "torchvision.*"]
 ignore_missing_imports = true
