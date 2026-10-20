@@ -28,8 +28,8 @@ records how each part is built; it grows phase by phase.
 | 1 | Cameras, ingestion, raw storage, preprocessing | built |
 | 2 | Quality gate, MegaDetector V6, privacy blur | built |
 | 3 | SpeciesNet, OpenCLIP, SAM 2, decision engine, explanations | built |
-| 4 | Confidence routing, review UI, feedback | next |
-| 5 | Human/vehicle activity, poaching risk | planned |
+| 4 | Confidence routing, review UI, feedback | built |
+| 5 | Human/vehicle activity, poaching risk | next |
 | 6 | Dashboard, re-identification | planned |
 | 7 | Alerts, reports (PDF/Excel), integration API | planned |
 | 8 | Hardening and production | planned |
@@ -135,3 +135,37 @@ ANIMAL image ─► animal boxes ≥ 0.2 (from 5.2)
   each stage's model in turn (peak 1.5 GB on the sample).
 - Decisions are keyed by engine config + the classification/check/mask config hashes they
   used, so re-running after an upstream change recomputes only what changed.
+
+## 7. Sections 7–8: confidence routing, human review, feedback, audit (Phase 4, ADR 0005)
+
+```
+image ─► route_for(quality, screen, decision):
+   quality FAIL            → QUALITY (open)
+   HUMAN_VEHICLE           → PEOPLE_VEHICLES (open, always a person)
+   NO_OBJECT               → LIKELY_BLANK: 10% drawn → open; rest not_sampled
+   decision ≥ 0.90         → AUTO_ACCEPT: done; 5% drawn → open spot check
+   0.60 ≤ decision < 0.90  → REVIEW (open)
+   < 0.60 or unnamed       → UNCERTAIN (open)
+review (POST /reviews) → review row (model said / person said, poaching, severity, notes)
+   + routing done + decision verified (confirm) + audit event (hash-chained)
+undo (POST /reviews/{id}/undo) → review.undone_at, route reopened, audit event
+```
+
+- Draws are deterministic from the image hash (salted per purpose): re-routing draws the same
+  spot checks and blank samples. Re-routing never touches a route a person finished.
+- Allowed actions depend on the route (e.g. people/vehicle frames: confirm presence, false
+  alarm, skip); the API refuses anything else.
+- `feedback_stats`: human agreement per confidence band and the most common corrections:
+  the reserve's own check on the bands, and the data for future model improvement. The
+  time-of-day prior (5.6) learns from confirmed and corrected reviews.
+- Audit trail: `audit_event` rows hash-chained (SHA-256 over content + previous hash,
+  advisory-locked writer); database triggers refuse UPDATE, DELETE and TRUNCATE;
+  `GET /audit/verify`, `vandrishti audit verify`.
+- Name search for corrections ranks the reserve's species list, then species SpeciesNet's
+  geofence allows in the reserve's country, then names ending in the typed word.
+- **Console (`frontend/`):** React 19 + TypeScript 6 + Vite 8 + Tailwind 4 + TanStack Query +
+  React Router. Screens: routing overview (section 7), five review queues (section 8),
+  feedback, audit trail. Review is keyboard-first (Y/Enter, C, N, F, S, P, 1–3, J/K, M, U),
+  shows the frame with numbered boxes and the SAM outline, the 5.7 explanation, and only the
+  actions allowed for the route. Times are shown in the reserve's zone. The reviewer names
+  themselves until login (Phase 8). No third-party requests (system fonts, no map tiles).

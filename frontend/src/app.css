@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* VanDrishti console tokens: a night-forest palette. Amber = needs a person; red = people,
+   vehicles and failures; green = confirmed. Never colour alone: every state also has a word. */
+@theme {
+  --color-ink: #e7ece9;
+  --color-dim: #9fb0a8;
+  --color-base: #121b17;
+  --color-panel: #1a2621;
+  --color-raised: #22322b;
+  --color-line: #31443b;
+  --color-amber: #e3a33b;
+  --color-alarm: #e5585c;
+  --color-ok: #5fae7f;
+  --color-sky: #6b94b8;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans Devanagari", sans-serif;
+}
+
+html, body { background: var(--color-base); color: var(--color-ink); }
+body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; border-radius: 4px; }
+kbd {
+  display: inline-grid; place-items: center; min-width: 1.25rem; padding: 0 0.3rem;
+  border: 1px solid var(--color-line); border-radius: 4px; font-size: 11px; line-height: 18px;
+  color: var(--color-dim); background: var(--color-base);
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

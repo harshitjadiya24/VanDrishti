@@ -307,19 +307,13 @@ def cmd_analyse(args: argparse.Namespace) -> None:
 
 def _speciesnet_names() -> dict[str, str]:
     """common name → taxon, from SpeciesNet's own label file (the names it can output)."""
+    from vandrishti import species_names
     from vandrishti.core.config import get_settings
-    from vandrishti.taxonomy import parse_label
 
-    folder = get_settings().model_cache_dir / "kagglehub/models/google/speciesnet/pyTorch/v4.0.3a/1"
-    labels = next(folder.glob("*.labels.*.txt"), None)
-    if labels is None:
+    names = {t.common_name: t.taxon for t in species_names.load(get_settings().model_cache_dir)}
+    if not names:
         sys.exit("SpeciesNet labels missing: scripts/download_models.py speciesnet-v4.0.3a")
-    out = {}
-    for line in labels.read_text().splitlines():
-        t = parse_label(line)
-        if t.is_animal_taxon:
-            out[t.common_name] = t.taxon
-    return out
+    return names
 
 
 def cmd_species_add(args: argparse.Namespace) -> None:
@@ -367,6 +361,23 @@ def cmd_species_list(args: argparse.Namespace) -> None:
         )
         for r in rows:
             print(f"{r.common_name}\t{r.taxon}\t{r.source or ''}")
+
+
+def cmd_route(args: argparse.Namespace) -> None:
+    from vandrishti.pipeline.routing import run_routing
+
+    with _session() as s:
+        _print(run_routing(s, reserve=args.reserve))
+
+
+def cmd_audit_verify(args: argparse.Namespace) -> None:
+    from vandrishti import audit
+
+    with _session() as s:
+        v = audit.verify(s)
+    _print({"ok": v.ok, "events_checked": v.events, "first_broken_seq": v.first_broken_seq})
+    if not v.ok:
+        sys.exit(2)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -454,6 +465,15 @@ def main(argv: list[str] | None = None) -> None:
     sl = sp.add_parser("list")
     sl.add_argument("--reserve", required=True)
     sl.set_defaults(func=cmd_species_list)
+
+    ro = sub.add_parser("route", help="7: route screened images by confidence")
+    ro.add_argument("--reserve")
+    ro.set_defaults(func=cmd_route)
+
+    au = sub.add_parser("audit").add_subparsers(dest="action", required=True)
+    au.add_parser("verify", help="recompute the audit hash chain").set_defaults(
+        func=cmd_audit_verify
+    )
 
     args = parser.parse_args(argv)
     args.func(args)

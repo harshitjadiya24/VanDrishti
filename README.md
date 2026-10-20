@@ -12,7 +12,8 @@ locked by role, and exact locations are protected.
 > design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Built so far: foundations, image
 > sections 1–4 (cameras, ingestion, raw storage, preprocessing) and 5.1–5.2 (quality gate,
 > MegaDetector V6, whole-body blur of people and vehicles) and 5.3–5.7 (SpeciesNet, OpenCLIP,
-> SAM 2, explainable decision engine). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
+> SAM 2, explainable decision engine) and 7–8 (confidence routing, the review console, feedback,
+> hash-chained audit trail). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## Run the foundations
 
@@ -55,6 +56,19 @@ uv run vandrishti analyse --reserve KAN        # 5.3 species → 5.4 OpenCLIP �
 curl http://127.0.0.1:8000/images/<id>/decision                    # label, confidence, explanation
 ```
 
+## Route and review
+
+```bash
+uv run vandrishti route --reserve KAN      # 7: auto-accept ≥ 0.9, review 0.6-0.9, uncertain < 0.6
+uv run vandrishti-api                      # API on 127.0.0.1:8000
+cd ../frontend && npm ci && npm run dev    # console on http://127.0.0.1:5173
+uv run vandrishti audit verify             # recompute the audit hash chain
+```
+
+In the console, name yourself in the sidebar, pick a queue and review with the keyboard:
+`Y`/`Enter` confirm, `C` correct, `N` not an animal, `F` false alarm, `S` skip, `P` poaching,
+`1`–`3` severity, `M` outline, `J`/`K` next/previous, `U` undo.
+
 Uploads: `POST /cameras/{id}/images` (multipart, `Authorization: Bearer $VANDRISHTI_INGEST_TOKEN`).
 
 Checks: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`
@@ -73,6 +87,7 @@ backend/src/vandrishti/
   cli.py     `vandrishti` command
 docker/      database image (Postgres 16 + PostGIS on arm64 and amd64)
 tools/       speciesnet/: isolated SpeciesNet environment and bridge script
+frontend/    review console (React, TypeScript, Vite, Tailwind)
 docs/        architecture, models and licences, decisions
 data/        weights and datasets (git-ignored)
 ```

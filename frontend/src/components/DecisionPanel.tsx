@@ -1,0 +1,95 @@
+import clsx from "clsx";
+import { CircleAlert, CircleCheck, Info } from "lucide-react";
+import type { QueueItem } from "../api";
+
+export function band(c: number | null): { word: string; tone: string } {
+  if (c === null) return { word: "no score", tone: "text-dim" };
+  if (c >= 0.9) return { word: "high", tone: "text-ok" };
+  if (c >= 0.6) return { word: "medium", tone: "text-amber" };
+  return { word: "low", tone: "text-alarm" };
+}
+
+/** 5.6 answer and 5.7 explanation: what the models said and why it needs a person. */
+export function DecisionPanel({ item }: { item: QueueItem }) {
+  const ex = item.explanation;
+  const b = band(item.confidence);
+  return (
+    <section aria-label="Model decision" className="grid gap-4">
+      <div>
+        <div className="flex flex-wrap items-center gap-2 text-[12px] text-dim">
+          <span>Model says</span>
+          {item.spot_check && <span className="rounded-full border border-sky px-2 text-sky">spot check</span>}
+        </div>
+        <div className="mt-0.5 text-[26px] font-semibold leading-tight">{item.label ?? routeTitle(item.route)}</div>
+        {item.confidence !== null && (
+          <div className="mt-2">
+            <div className="mb-1 flex justify-between text-[12px] text-dim">
+              <span>Confidence: <span className={b.tone}>{b.word}</span></span>
+              <span className="tabular-nums text-ink">{item.confidence.toFixed(2)}</span>
+            </div>
+            <div role="meter" aria-label={`Confidence ${item.confidence.toFixed(2)}`} aria-valuenow={item.confidence} aria-valuemin={0} aria-valuemax={1}
+              className="h-1.5 overflow-hidden rounded-full bg-base">
+              <div className={clsx("h-full rounded-full", item.confidence >= 0.9 ? "bg-ok" : item.confidence >= 0.6 ? "bg-amber" : "bg-alarm")}
+                style={{ width: `${item.confidence * 100}%` }} />
+            </div>
+          </div>
+        )}
+        <p className="mt-2 text-[13px] text-dim">Why it is here: <span className="text-ink">{item.reason}</span></p>
+      </div>
+
+      {ex?.summary && <p className="rounded-md bg-base px-3 py-2 text-[13px] leading-relaxed">{ex.summary}</p>}
+
+      {ex?.factors && ex.factors.length > 0 && (
+        <div>
+          <h3 className="mb-1.5 text-[12px] font-normal text-dim">How the confidence was built</h3>
+          <ul className="grid gap-1.5">
+            {ex.factors.map((f) => (
+              <li key={f.name} className="flex items-start gap-2 text-[13px]">
+                {f.factor === null ? <Info size={15} className="mt-0.5 shrink-0 text-dim" aria-hidden />
+                  : f.factor < 1 ? <CircleAlert size={15} className="mt-0.5 shrink-0 text-amber" aria-hidden />
+                    : <CircleCheck size={15} className="mt-0.5 shrink-0 text-ok" aria-hidden />}
+                <span>
+                  <span className="text-dim">{f.name}{f.factor !== null && f.factor < 1 ? ` (×${f.factor})` : ""}: </span>
+                  {f.reason}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {ex?.species_top && ex.species_top.length > 0 && (
+        <Table title="SpeciesNet top guesses" rows={ex.species_top.map((s) => [s.label, s.score])} />
+      )}
+      {ex?.openclip_top && ex.openclip_top.length > 0 && (
+        <Table title="OpenCLIP (information only)"
+          rows={ex.openclip_top.map((s) => [s.label === "__nothing__" ? "empty scene" : s.label, s.probability])} />
+      )}
+    </section>
+  );
+}
+
+function Table({ title, rows }: { title: string; rows: [string, number][] }) {
+  return (
+    <div>
+      <h3 className="mb-1 text-[12px] font-normal text-dim">{title}</h3>
+      <ul className="grid gap-0.5 text-[13px]">
+        {rows.slice(0, 5).map(([label, v]) => (
+          <li key={label} className="flex justify-between gap-3 border-b border-line/60 py-0.5">
+            <span className="truncate">{label}</span>
+            <span className="tabular-nums text-dim">{v.toFixed(2)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function routeTitle(route: string): string {
+  return ({
+    people_vehicles: "People or vehicles",
+    likely_blank: "Likely blank",
+    quality: "Quality problem",
+    uncertain: "Not identified",
+  } as Record<string, string>)[route] ?? route;
+}

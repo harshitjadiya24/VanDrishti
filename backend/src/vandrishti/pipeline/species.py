@@ -341,15 +341,22 @@ def hour_bin(at: datetime, timezone: str, bins: int) -> int:
 def activity_profile(
     session: Session, reserve_id: Any, timezone: str, bins: int
 ) -> dict[str, list[int]]:
-    """Per taxon, counts of human-verified sightings per hour bin (reserve local time)."""
+    """Per taxon, counts of human-verified sightings per hour bin (reserve local time).
+
+    Verified = a person confirmed the model's species or corrected it (the person's taxon
+    counts), and did not undo it.
+    """
+    from vandrishti.db.models import Review, ReviewAction
+
     rows = session.execute(
-        select(Decision.taxon, Image.captured_at)
-        .join(Image, Image.id == Decision.image_id)
+        select(Review.human_taxon, Image.captured_at)
+        .join(Image, Image.id == Review.image_id)
         .join(Camera, Camera.id == Image.camera_id)
         .where(
             Camera.reserve_id == reserve_id,
-            Decision.verified_by_human.is_(True),
-            Decision.taxon.is_not(None),
+            Review.action.in_([ReviewAction.CONFIRM, ReviewAction.CORRECT]),
+            Review.undone_at.is_(None),
+            Review.human_taxon.is_not(None),
             Image.captured_at.is_not(None),
         )
     ).all()

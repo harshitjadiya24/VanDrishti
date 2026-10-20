@@ -81,5 +81,10 @@ history, old Docker volumes). Do not look for it; build from the image.
   `Sam2Model` with all weights present (the transformers warning is expected).
 - Decisions are keyed by engine config + upstream config hashes; a decision only changes when
   something it read changed.
+- Frontend (`frontend/`): `npm run lint && npm test && npm run build`. Packages pinned to the
+  newest release ≥ 14 days old. Show times in the reserve's zone (`localTime`), never the
+  viewer's. New single-key actions must respect typing in inputs. No third-party requests.
+- Reviews are append-only (undo = `undone_at`); `audit_event` has triggers refusing edits;
+  routing never reopens a route a person finished; spot checks are deterministic draws.
 - `.env` predates the rebuild: old keys can collide with new meanings (DETECTOR_BATCH_SIZE
   was 250 and is now images per model batch). Keep `.env.example` the reference.

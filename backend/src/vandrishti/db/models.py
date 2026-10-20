@@ -4,7 +4,8 @@ Phase 0: reserves, the camera registry, the model registry.
 Phase 1 (image sections 1-4): ingest batches, images, burst sequences.
 Phase 2 (5.1-5.2): quality fields, detections, privacy locks.
 Phase 3 (5.3-5.7): classifications, semantic checks, segmentations, decisions.
-Later phases add reviews, risk and embeddings (section 9).
+Phase 4 (7-8): routing, human reviews (feedback), hash-chained audit trail.
+Later phases add risk and embeddings (section 9).
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from typing import Any
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Enum,
     Float,
@@ -381,3 +383,101 @@ class ReserveSpecies(UUIDPrimaryKey, Timestamps, Base):
     taxon: Mapped[str] = mapped_column(String(300))
     common_name: Mapped[str] = mapped_column(String(200))
     source: Mapped[str | None] = mapped_column(String(300))  # e.g. a management plan citation
+
+
+class Route(enum.StrEnum):
+    """Section 7: where an image goes after the models."""
+
+    AUTO_ACCEPT = "auto_accept"  # confidence >= high threshold: stored, counts in analytics
+    REVIEW = "review"  # medium band: a person checks
+    UNCERTAIN = "uncertain"  # low band or unnamed: a person decides, maybe more data
+    LIKELY_BLANK = "likely_blank"  # no object: only a random sample is reviewed
+    PEOPLE_VEHICLES = "people_vehicles"  # always a person (section 6)
+    QUALITY = "quality"  # failed the quality gate
+
+
+class RouteState(enum.StrEnum):
+    OPEN = "open"  # waiting for a person
+    DONE = "done"  # reviewed, or auto-accepted without a spot check
+    NOT_SAMPLED = "not_sampled"  # likely blank, not drawn for review
+
+
+class Routing(UUIDPrimaryKey, Timestamps, Base):
+    """One image's route under a routing config (section 7). Re-routing replaces it."""
+
+    __tablename__ = "routing"
+    __table_args__ = (UniqueConstraint("image_id"),)
+
+    image_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("image.id", ondelete="CASCADE"))
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("decision.id", ondelete="SET NULL")
+    )
+    route: Mapped[Route] = mapped_column(_str_enum(Route, "route"), index=True)
+    state: Mapped[RouteState] = mapped_column(_str_enum(RouteState, "route_state"), index=True)
+    # An auto-accepted image drawn at random for a person to re-check (keeps the band honest).
+    spot_check: Mapped[bool] = mapped_column(Boolean, default=False)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    config_hash: Mapped[str] = mapped_column(String(64))
+    reason: Mapped[str] = mapped_column(String(300))
+
+
+class ReviewAction(enum.StrEnum):
+    CONFIRM = "confirm"  # the model's label is right
+    CORRECT = "correct"  # a person gives the right label
+    NOT_ANIMAL = "not_animal"  # nothing there / not an animal
+    SKIP = "skip"  # cannot tell; stays open for someone else
+    CONFIRM_PEOPLE = "confirm_people"  # people/vehicle frame: real presence confirmed
+    FALSE_ALARM = "false_alarm"  # people/vehicle frame: not actually people/vehicle
+    QUALITY_OK = "quality_ok"  # quality-failed frame is usable after all
+    QUALITY_BAD = "quality_bad"  # quality-failed frame confirmed unusable
+
+
+class Severity(enum.StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class Review(UUIDPrimaryKey, Timestamps, Base):
+    """Section 8: one human action, kept as feedback (never edited; undo adds a new state)."""
+
+    __tablename__ = "review"
+
+    image_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("image.id", ondelete="CASCADE"), index=True
+    )
+    routing_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("routing.id", ondelete="SET NULL")
+    )
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("decision.id", ondelete="SET NULL")
+    )
+    reviewer: Mapped[str] = mapped_column(String(100))
+    action: Mapped[ReviewAction] = mapped_column(_str_enum(ReviewAction, "review_action"))
+    # What the model said and what the person said: the feedback that tracks model
+    # performance and can later improve the models.
+    model_label: Mapped[str | None] = mapped_column(String(200))
+    model_taxon: Mapped[str | None] = mapped_column(String(300))
+    model_confidence: Mapped[float | None] = mapped_column(Float)
+    human_label: Mapped[str | None] = mapped_column(String(200))
+    human_taxon: Mapped[str | None] = mapped_column(String(300))
+    poaching_activity: Mapped[bool] = mapped_column(Boolean, default=False)
+    severity: Mapped[Severity | None] = mapped_column(_str_enum(Severity, "severity"))
+    notes: Mapped[str | None] = mapped_column(String(2000))
+    undone_at: Mapped[datetime | None]
+
+
+class AuditEvent(Base):
+    """Append-only, hash-chained log: each row's hash covers the previous row's hash."""
+
+    __tablename__ = "audit_event"
+
+    seq: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    at: Mapped[datetime]
+    actor: Mapped[str] = mapped_column(String(100))
+    action: Mapped[str] = mapped_column(String(64), index=True)
+    entity: Mapped[str] = mapped_column(String(64))
+    entity_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    prev_hash: Mapped[str] = mapped_column(String(64))
+    hash: Mapped[str] = mapped_column(String(64), unique=True)
