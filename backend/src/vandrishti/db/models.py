@@ -8,6 +8,7 @@ Phase 4 (7-8): routing, human reviews (feedback), hash-chained audit trail.
 Phase 5 (6): presence events (people/vehicles), camera sensitivity, risk assessments.
 Phase 6 (9-10.5): re-ID embeddings, named individuals, match proposals.
 Phase 7 (11): alerts, webhook deliveries, integration API keys.
+Phase 8 (hardening): user accounts with roles and reserve scope, login sessions.
 """
 
 from __future__ import annotations
@@ -704,3 +705,45 @@ class ApiKey(UUIDPrimaryKey, Timestamps, Base):
     created_by: Mapped[str] = mapped_column(String(100))
     revoked_at: Mapped[datetime | None]
     last_used_at: Mapped[datetime | None]
+
+
+class Role(enum.StrEnum):
+    ADMIN = "admin"  # everything, incl. users, API keys and exact coordinates
+    REVIEWER = "reviewer"  # species, people and identity review; alerts; runs; exports
+    RANGER = "ranger"  # people/vehicle review and alerts
+    VIEWER = "viewer"  # read only
+
+
+class UserAccount(UUIDPrimaryKey, Timestamps, Base):
+    """A person who signs in. `reserves` lists reserve codes; ["*"] means all (admins)."""
+
+    __tablename__ = "user_account"
+    __table_args__ = (UniqueConstraint("username"),)
+
+    username: Mapped[str] = mapped_column(String(64))
+    display_name: Mapped[str] = mapped_column(String(100))
+    password_hash: Mapped[str] = mapped_column(String(200))  # Argon2id
+    role: Mapped[Role] = mapped_column(_str_enum(Role, "user_role"))
+    reserves: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    failed_logins: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None]
+    last_login_at: Mapped[datetime | None]
+    password_changed_at: Mapped[datetime | None]
+
+
+class LoginSession(UUIDPrimaryKey, Timestamps, Base):
+    """A signed-in browser. Only the SHA-256 of the cookie token is stored."""
+
+    __tablename__ = "login_session"
+    __table_args__ = (UniqueConstraint("token_hash"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_account.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64))
+    csrf_token: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime]
+    last_seen_at: Mapped[datetime]
+    revoked_at: Mapped[datetime | None]
+    user_agent: Mapped[str | None] = mapped_column(String(300))

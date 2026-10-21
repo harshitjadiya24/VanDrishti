@@ -1,12 +1,15 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
+import type { Me } from "./api";
 
-// Reserve and reviewer are chosen once and remembered in this browser. Until login arrives
-// (Phase 8) the reviewer name is how every action in the audit trail is attributed.
+// The signed-in person (from /auth/me) and the reserve they are looking at, remembered in
+// this browser. The server signs every action with the signed-in user; `reviewer` is their
+// username, kept for screens that show who is acting.
 interface Ctx {
   reserve: string;
   setReserve: (code: string) => void;
   reviewer: string;
-  setReviewer: (name: string) => void;
+  me: Me | null;
+  can: (permission: string) => boolean;
 }
 
 const SessionCtx = createContext<Ctx | null>(null);
@@ -18,16 +21,19 @@ const write = (key: string, value: string) => {
   try { localStorage.setItem(key, value); } catch { /* storage unavailable */ }
 };
 
-export function SessionProvider({ children, initial }: { children: ReactNode; initial?: Partial<Ctx> }) {
-  const [reserve, setR] = useState(initial?.reserve ?? read("vd.reserve"));
-  const [reviewer, setV] = useState(initial?.reviewer ?? read("vd.reviewer"));
+export function SessionProvider({ children, initial, me = null }: { children: ReactNode; initial?: { reserve?: string; reviewer?: string }; me?: Me | null }) {
+  const allowed = (code: string) => !me || me.reserves.includes("*") || me.reserves.includes(code);
+  const remembered = initial?.reserve ?? read("vd.reserve");
+  const fallback = me && !me.reserves.includes("*") ? me.reserves[0] ?? "" : "";
+  const [reserve, setR] = useState(remembered && allowed(remembered) ? remembered : fallback);
   return (
     <SessionCtx.Provider
       value={{
         reserve,
         setReserve: (c) => { setR(c); write("vd.reserve", c); },
-        reviewer,
-        setReviewer: (n) => { setV(n); write("vd.reviewer", n); },
+        reviewer: me?.username ?? initial?.reviewer ?? "",
+        me,
+        can: (p) => !me || me.permissions.includes(p),
       }}
     >
       {children}

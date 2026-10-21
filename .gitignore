@@ -20,3 +20,9 @@ dist/
 # Tools
 .playwright-mcp/
 .DS_Store
+
+# Production secrets and backups (Phase 8)
+deploy/.env.prod
+backups/
+store/
+!deploy/.env.prod.example

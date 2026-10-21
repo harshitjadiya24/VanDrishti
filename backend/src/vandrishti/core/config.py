@@ -46,8 +46,8 @@ class Settings(BaseSettings):
     denoise: bool = False
     upload_max_mb: int = Field(default=50, ge=1)
     watch_interval_seconds: float = Field(default=30.0, ge=1)
-    # Bearer token for write endpoints until login and roles arrive (Phase 8). Unset: writes
-    # are allowed only with env=dev, and the API listens on 127.0.0.1 only.
+    # Bearer token that lets machines (camera stations, scripts) upload images. People sign in
+    # instead. Unset: only signed-in users with the RUN permission can upload.
     ingest_token: SecretStr | None = None
 
     # 5.2 detection (Phase 2). CPU was measured faster than MPS for the compact detector on
@@ -82,6 +82,20 @@ class Settings(BaseSettings):
     alert_webhook_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
     camera_silent_days: int = Field(default=7, ge=1)
 
+    # Sign-in (Phase 8). Sessions live in Postgres; the cookie holds a random token.
+    session_idle_hours: float = Field(default=12, gt=0)
+    session_max_hours: float = Field(default=168, gt=0)  # 7 days, then sign in again
+    login_max_failures: int = Field(default=5, ge=1)
+    login_lock_minutes: int = Field(default=15, ge=1)
+    # Where the API listens. The container sets 0.0.0.0 on the private compose network and
+    # trusts the reverse proxy's forwarded address; nothing else may set it.
+    api_host: str = "127.0.0.1"
+    api_port: int = Field(default=8000, ge=1, le=65535)
+    forwarded_allow_ips: str = "127.0.0.1"
+
+    # Requests per minute per integration key on /v1 (in-process limiter).
+    api_rate_per_minute: int = Field(default=120, ge=1)
+
     @field_validator("alert_webhook_url")
     @classmethod
     def _http_only(cls, value: str | None) -> str | None:
@@ -99,6 +113,21 @@ class Settings(BaseSettings):
     def _anchor_to_repo(cls, value: Path) -> Path:
         value = value.expanduser()
         return value if value.is_absolute() else (REPO_ROOT / value).resolve()
+
+    def production_problems(self) -> list[str]:
+        """Settings that are fine on a laptop but unsafe on a server (checked at API start)."""
+        if self.env != "prod":
+            return []
+        problems = []
+        if self.db_password.get_secret_value() in ("change-me", "", "vandrishti"):
+            problems.append("set VANDRISHTI_DB_PASSWORD to a strong secret")
+        if self.alert_webhook_url and not self.alert_webhook_url.startswith("https://"):
+            problems.append("VANDRISHTI_ALERT_WEBHOOK_URL must use https")
+        if self.alert_webhook_url and self.alert_webhook_secret is None:
+            problems.append("set VANDRISHTI_ALERT_WEBHOOK_SECRET")
+        if self.ingest_token is not None and len(self.ingest_token.get_secret_value()) < 32:
+            problems.append("VANDRISHTI_INGEST_TOKEN must be at least 32 characters")
+        return problems
 
     @property
     def database_url(self) -> URL:

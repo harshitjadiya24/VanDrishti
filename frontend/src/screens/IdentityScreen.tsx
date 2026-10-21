@@ -7,7 +7,7 @@ import { useSession } from "../context";
 
 /** Section 10.5: the model proposes which tiger this is; a person decides. */
 export function IdentityScreen() {
-  const { reserve, reviewer } = useSession();
+  const { reserve, can } = useSession();
   const qc = useQueryClient();
   const proposals = useQuery({ queryKey: ["proposals", reserve], queryFn: () => api.proposals(reserve || undefined) });
   const [index, setIndex] = useState(0);
@@ -27,7 +27,7 @@ export function IdentityScreen() {
     },
   });
   const undo = useMutation({
-    mutationFn: (id: string) => api.undoIdentity(id, reviewer),
+    mutationFn: (id: string) => api.undoIdentity(id),
     onSuccess: () => { setLast(null); refresh(); },
   });
   const matches = items.filter((p) => p.kind === "possible_match").length;
@@ -40,7 +40,7 @@ export function IdentityScreen() {
           joins a tiger, or a new tiger is created, only when you decide. Every decision is in the audit trail and can be undone.
         </p>
       </header>
-      {!reviewer && <p role="alert" className="text-amber">Enter your name in the sidebar first: decisions are signed with it.</p>}
+      {!can("decide_identity") && <p className="text-dim">Your role can see identity checks but not decide them.</p>}
       {proposals.error && <p role="alert" className="text-alarm">{String(proposals.error)}</p>}
       {decide.error && <p role="alert" className="text-alarm">{String(decide.error)}</p>}
       {last && (
@@ -62,15 +62,15 @@ export function IdentityScreen() {
             <button type="button" onClick={() => setIndex(Math.min(items.length - 1, index + 1))} disabled={index >= items.length - 1}
               className="h-8 rounded-md border border-line px-3 hover:bg-raised disabled:opacity-40">Next</button>
           </div>
-          <ProposalCard key={current.id} p={current} busy={decide.isPending || !reviewer}
-            onDecide={(body) => decide.mutate({ p: current, body: { ...body, reviewer } })} />
+          <ProposalCard key={current.id} p={current} busy={decide.isPending || !can("decide_identity")}
+            onDecide={(body) => decide.mutate({ p: current, body })} />
         </>
       )}
     </div>
   );
 }
 
-function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDecide: (b: Omit<IdentityDecision, "reviewer">) => void }) {
+function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDecide: (b: IdentityDecision) => void }) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const likely = p.kind === "possible_match";

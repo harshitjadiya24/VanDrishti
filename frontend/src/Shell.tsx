@@ -1,29 +1,50 @@
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { Activity, Ban, Bell, Eye, FileText, Fingerprint, HelpCircle, LayoutDashboard, PawPrint, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
-import { api, type QueueKind } from "./api";
+import { api, ApiError, setCsrf, type QueueKind } from "./api";
 import { SessionProvider, useSession } from "./context";
+import { LoginScreen } from "./screens/LoginScreen";
 
-const QUEUES: { kind: QueueKind; label: string; icon: ComponentType<{ size?: number }>; tone: string }[] = [
-  { kind: "people_vehicles", label: "People & vehicles", icon: ShieldAlert, tone: "text-alarm" },
-  { kind: "review", label: "To review", icon: Eye, tone: "text-amber" },
-  { kind: "uncertain", label: "Uncertain", icon: HelpCircle, tone: "text-amber" },
-  { kind: "blank", label: "Likely blank (sample)", icon: Ban, tone: "text-dim" },
-  { kind: "quality", label: "Quality", icon: Sparkles, tone: "text-dim" },
+const QUEUES: { kind: QueueKind; label: string; icon: ComponentType<{ size?: number }>; tone: string; perm: string }[] = [
+  { kind: "people_vehicles", label: "People & vehicles", icon: ShieldAlert, tone: "text-alarm", perm: "review_people" },
+  { kind: "review", label: "To review", icon: Eye, tone: "text-amber", perm: "review_species" },
+  { kind: "uncertain", label: "Uncertain", icon: HelpCircle, tone: "text-amber", perm: "review_species" },
+  { kind: "blank", label: "Likely blank (sample)", icon: Ban, tone: "text-dim", perm: "review_species" },
+  { kind: "quality", label: "Quality", icon: Sparkles, tone: "text-dim", perm: "review_species" },
 ];
 
+/** Another person may sign in next: forget everything fetched for the previous one. */
+function dropOtherData(qc: QueryClient) {
+  qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "me" });
+}
+
+/** Signed in: the console. Not signed in (401): the sign-in screen. */
 export function Shell() {
+  const qc = useQueryClient();
+  const me = useQuery({ queryKey: ["me"], queryFn: api.me, retry: false, staleTime: 60_000 });
+  if (me.isPending) return <p className="p-6 text-dim">Loading…</p>;
+  if (me.error) {
+    if (me.error instanceof ApiError && me.error.status === 401) {
+      return <LoginScreen onSignedIn={(m) => { dropOtherData(qc); qc.setQueryData(["me"], m); }} />;
+    }
+    return <p role="alert" className="p-6 text-alarm">Cannot reach the server: {String(me.error)}</p>;
+  }
+  setCsrf(me.data.csrf_token);
   return (
-    <SessionProvider>
+    <SessionProvider key={me.data.username} me={me.data}>
       <Layout />
     </SessionProvider>
   );
 }
 
 function Layout() {
-  const { reserve, setReserve, reviewer, setReviewer } = useSession();
+  const { reserve, setReserve, me, can } = useSession();
+  const qc = useQueryClient();
+  const signOut = async () => {
+    try { await api.logout(); } finally { dropOtherData(qc); await qc.resetQueries({ queryKey: ["me"] }); }
+  };
   const reserves = useQuery({ queryKey: ["reserves"], queryFn: api.reserves });
   const counts = useQuery({
     queryKey: ["counts", reserve],
@@ -36,30 +57,30 @@ function Layout() {
     refetchInterval: 30_000,
   });
   const urgent = (alertCounts.data?.critical ?? 0) + (alertCounts.data?.warning ?? 0);
+  const allReserves = me?.reserves.includes("*") ?? true;
   const settings = (
     <>
-          <label className="grid gap-1 text-[12px] text-dim">
+      <label className="grid gap-1 text-[12px] text-dim">
         Reserve
         <select
           value={reserve}
           onChange={(e) => setReserve(e.target.value)}
           className="h-9 w-full min-w-0 rounded-md border border-line bg-base px-2 text-[14px] text-ink"
         >
-          <option value="">All reserves</option>
+          {allReserves && <option value="">All reserves</option>}
           {(reserves.data ?? []).map((r) => (
             <option key={r.code} value={r.code}>{r.name} ({r.code})</option>
           ))}
         </select>
       </label>
-      <label className="grid gap-1 text-[12px] text-dim">
-        Your name (shown in the audit trail)
-        <input
-          value={reviewer}
-          onChange={(e) => setReviewer(e.target.value.slice(0, 100))}
-          placeholder="e.g. Asha"
-          className="h-9 w-full min-w-0 rounded-md border border-line bg-base px-2 text-[14px] text-ink placeholder:text-dim/60"
-        />
-      </label>
+      <div className="flex items-center gap-2 text-[13px]">
+        <span className="min-w-0 flex-1 truncate">
+          {me?.display_name} <span className="text-dim">({me?.role})</span>
+        </span>
+        <button type="button" onClick={signOut} className="rounded-md border border-line px-2 py-1 text-[12px] text-dim hover:text-ink">
+          Sign out
+        </button>
+      </div>
     </>
   );
   const link = ({ isActive }: { isActive: boolean }) =>
@@ -80,16 +101,18 @@ function Layout() {
         {/* On phones the settings fold away and the queues become a scrolling row. */}
         <details className="group px-4 pb-3 md:hidden">
           <summary className="cursor-pointer list-none text-[13px] text-dim">
-            Settings: {reserve || "all reserves"}, {reviewer || "no name yet"} <span className="text-amber">change</span>
+            {reserve || "All reserves"}, {me?.display_name} <span className="text-amber">change</span>
           </summary>
           <div className="mt-2 grid gap-3">{settings}</div>
         </details>
         <div className="hidden gap-3 px-4 pb-3 md:grid">{settings}</div>
         <nav aria-label="Queues" className="flex gap-1.5 overflow-x-auto px-4 pb-3 md:hidden">
-          {[{ to: "/dashboard", label: "Dashboard", n: undefined }, { to: "/alerts", label: "Alerts", n: urgent || undefined },
-            { to: "/reports", label: "Reports", n: undefined }, { to: "/identity", label: "Tiger identities", n: undefined },
-            { to: "/tigers", label: "Named tigers", n: undefined }, { to: "/routing", label: "Routing", n: undefined }, ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind] })),
-            { to: "/risk", label: "Poaching risk", n: undefined }, { to: "/feedback", label: "Feedback", n: undefined }, { to: "/audit", label: "Audit", n: undefined }].map((x) => (
+          {[{ to: "/dashboard", label: "Dashboard", n: undefined, perm: "view" }, { to: "/alerts", label: "Alerts", n: urgent || undefined, perm: "view" },
+            { to: "/reports", label: "Reports", n: undefined, perm: "view" }, { to: "/identity", label: "Tiger identities", n: undefined, perm: "view" },
+            { to: "/tigers", label: "Named tigers", n: undefined, perm: "view" }, { to: "/routing", label: "Routing", n: undefined, perm: "view" },
+            ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind], perm: q.perm })),
+            { to: "/risk", label: "Poaching risk", n: undefined, perm: "view" }, { to: "/feedback", label: "Feedback", n: undefined, perm: "view" },
+            { to: "/audit", label: "Audit", n: undefined, perm: "view_audit" }].filter((x) => can(x.perm)).map((x) => (
             <NavLink key={x.to} to={x.to}
               className={({ isActive }) => clsx("shrink-0 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap",
                 isActive ? "border-amber text-ink" : "border-line text-dim")}>
@@ -109,7 +132,7 @@ function Layout() {
           <NavLink to="/tigers" className={link}><PawPrint size={17} /> Named tigers</NavLink>
           <NavLink to="/routing" className={link}><Signpost size={17} /> Routing (section 7)</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Review queues (section 8)</div>
-          {QUEUES.map(({ kind, label, icon: Icon, tone }) => {
+          {QUEUES.filter((q) => can(q.perm)).map(({ kind, label, icon: Icon, tone }) => {
             const n = counts.data?.[kind];
             return (
               <NavLink key={kind} to={`/review/${kind}`} className={link}>
@@ -123,7 +146,7 @@ function Layout() {
           <NavLink to="/risk" className={link}><span className="text-alarm"><Siren size={17} /></span> Poaching risk</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Records</div>
           <NavLink to="/feedback" className={link}><Activity size={17} /> Feedback</NavLink>
-          <NavLink to="/audit" className={link}><ScrollText size={17} /> Audit trail</NavLink>
+          {can("view_audit") && <NavLink to="/audit" className={link}><ScrollText size={17} /> Audit trail</NavLink>}
         </nav>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-7">

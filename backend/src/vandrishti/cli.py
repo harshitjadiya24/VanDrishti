@@ -12,6 +12,8 @@ vandrishti alerts run|list [--reserve R] | alerts act <id> --action A --person P
 vandrishti report --reserve R --period weekly --day 2024-03-04 --format pdf --out FILE
 vandrishti export camtrap-dp --reserve R --sampling-design targeted --out FILE [--precise]
 vandrishti apikey create --reserve R --name N --by P [--precise] | apikey list | apikey revoke
+vandrishti user create --username U --role reviewer --reserve R [--reserve R2] --by ADMIN
+vandrishti user list | user update U [--role --reserve --deactivate --activate --password] --by A
 """
 
 from __future__ import annotations
@@ -566,6 +568,58 @@ def cmd_apikey(args: argparse.Namespace) -> None:
             print(f"{args.prefix}: revoked")
 
 
+def _read_password(prompt: str) -> str:
+    import getpass
+
+    if not sys.stdin.isatty():  # scripts: pipe the password in on stdin
+        return sys.stdin.readline().rstrip("\n")
+    first = getpass.getpass(prompt)
+    if getpass.getpass("Again: ") != first:
+        sys.exit("error: the passwords differ")
+    return first
+
+
+def cmd_user(args: argparse.Namespace) -> None:
+    from vandrishti.auth import accounts
+    from vandrishti.auth.passwords import PasswordPolicyError
+    from vandrishti.db.models import Role, UserAccount
+
+    with _session() as s:
+        try:
+            if args.action == "create":
+                user = accounts.create_user(
+                    s,
+                    username=args.username,
+                    display_name=args.name or args.username,
+                    password=_read_password("Password (12+ characters): "),
+                    role=Role(args.role),
+                    reserves=args.reserve or [],
+                    by=args.by,
+                )
+                print(f"created {user.username} ({user.role.value}; {', '.join(user.reserves)})")
+            elif args.action == "list":
+                for u in s.scalars(select(UserAccount).order_by(UserAccount.username)):
+                    state = "active" if u.active else "deactivated"
+                    print(
+                        f"{u.username:20} {u.role.value:9} {','.join(u.reserves):24} {state:12}"
+                        f" last sign-in {u.last_login_at or 'never'}"
+                    )
+            else:
+                active = True if args.activate else False if args.deactivate else None
+                user = accounts.update_user(
+                    s,
+                    args.username,
+                    by=args.by,
+                    role=Role(args.role) if args.role else None,
+                    reserves=args.reserve or None,
+                    active=active,
+                    password=_read_password("New password: ") if args.password else None,
+                )
+                print(f"updated {user.username}; their sessions were ended")
+        except (accounts.AuthError, PasswordPolicyError) as e:
+            sys.exit(f"error: {e}")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="vandrishti")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -736,6 +790,25 @@ def main(argv: list[str] | None = None) -> None:
     akr.add_argument("prefix")
     akr.add_argument("--by", required=True)
     akr.set_defaults(func=cmd_apikey)
+
+    us = sub.add_parser("user").add_subparsers(dest="action", required=True)
+    uc = us.add_parser("create", help="a person who signs in to the console")
+    uc.add_argument("--username", required=True)
+    uc.add_argument("--name", help="display name")
+    uc.add_argument("--role", required=True, choices=["admin", "reviewer", "ranger", "viewer"])
+    uc.add_argument("--reserve", action="append", help="repeatable; admins see every reserve")
+    uc.add_argument("--by", required=True, help="who is creating it (audit trail)")
+    uc.set_defaults(func=cmd_user)
+    us.add_parser("list").set_defaults(func=cmd_user)
+    uu = us.add_parser("update")
+    uu.add_argument("username")
+    uu.add_argument("--role", choices=["admin", "reviewer", "ranger", "viewer"])
+    uu.add_argument("--reserve", action="append")
+    uu.add_argument("--deactivate", action="store_true")
+    uu.add_argument("--activate", action="store_true")
+    uu.add_argument("--password", action="store_true", help="set a new password (prompted)")
+    uu.add_argument("--by", required=True)
+    uu.set_defaults(func=cmd_user)
 
     args = parser.parse_args(argv)
     from vandrishti.alerts.service import AlertError

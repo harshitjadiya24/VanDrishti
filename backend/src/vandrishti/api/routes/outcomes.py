@@ -12,7 +12,8 @@ from sqlalchemy import func, select
 
 from vandrishti.alerts import rules
 from vandrishti.alerts import service as alerts
-from vandrishti.api.deps import DB, Config, Writer
+from vandrishti.api.deps import DB, Config, Scoped, User, check_reserve, guard_alert, require
+from vandrishti.auth.rbac import Permission
 from vandrishti.db.models import Alert, AlertDelivery, AlertKind, AlertState, Camera, Reserve
 from vandrishti.exports import camtrap_dp
 from vandrishti.reports import data as reports
@@ -45,7 +46,6 @@ class AlertOut(BaseModel):
 
 class ActIn(BaseModel):
     action: Literal["acknowledge", "resolve", "reopen"]
-    person: str = Field(min_length=1, max_length=100)
     note: str | None = Field(default=None, max_length=2000)
 
 
@@ -87,7 +87,7 @@ def _alert_query(reserve: str | None) -> Any:
 @router.get("/alerts")
 def list_alerts(
     session: DB,
-    reserve: str | None = None,
+    reserve: Scoped,
     state: Literal["open", "acknowledged", "resolved"] | None = None,
     kind: Literal["tiger_sighting", "poaching_risk", "unusual_activity", "camera_failure"]
     | None = None,
@@ -105,7 +105,7 @@ def list_alerts(
 
 
 @router.get("/alerts/counts")
-def alert_counts(session: DB, reserve: str | None = None) -> dict[str, int]:
+def alert_counts(session: DB, reserve: Scoped) -> dict[str, int]:
     q = (
         select(Alert.severity, func.count())
         .join(Reserve, Reserve.id == Alert.reserve_id)
@@ -117,8 +117,8 @@ def alert_counts(session: DB, reserve: str | None = None) -> dict[str, int]:
     return {k: counts.get(k, 0) for k in ("critical", "warning", "info")}
 
 
-@router.post("/alerts/run", dependencies=[Writer])
-def run_alerts(session: DB, settings: Config, reserve: str | None = None) -> dict[str, Any]:
+@router.post("/alerts/run", dependencies=[require(Permission.RUN)])
+def run_alerts(session: DB, reserve: Scoped, settings: Config) -> dict[str, Any]:
     cfg = rules.AlertConfig(camera_silent_days=settings.camera_silent_days)
     made = rules.evaluate(session, reserve=reserve, cfg=cfg)
     try:
@@ -128,10 +128,11 @@ def run_alerts(session: DB, settings: Config, reserve: str | None = None) -> dic
     return {"rules": made, "webhook": sent}
 
 
-@router.post("/alerts/{alert_id}/act", dependencies=[Writer])
-def act(alert_id: uuid.UUID, body: ActIn, session: DB) -> AlertOut:
+@router.post("/alerts/{alert_id}/act", dependencies=[require(Permission.ACT_ALERTS)])
+def act(alert_id: uuid.UUID, body: ActIn, session: DB, user: User) -> AlertOut:
+    guard_alert(session, user, alert_id)
     try:
-        alerts.act(session, alert_id, body.action, body.person.strip(), body.note)
+        alerts.act(session, alert_id, body.action, user.name, body.note)
     except alerts.AlertError as e:
         raise HTTPException(409, str(e)) from e
     return _alert_rows(session, _alert_query(None).where(Alert.id == alert_id))[0]
@@ -166,18 +167,24 @@ def report_response(
 def report(
     reserve: str,
     session: DB,
+    user: User,
     period: reports.Period = "weekly",
     day: date | None = None,
     start: date | None = None,
     end: date | None = None,
     format: Literal["json", "xlsx", "pdf"] = "json",
 ) -> Any:
+    check_reserve(user, reserve)
     return report_response(session, reserve, period, day, start, end, format)
 
 
-@router.get("/exports/{reserve}/camtrap-dp")
-def camtrap(reserve: str, session: DB, sampling_design: camtrap_dp.SamplingDesign) -> Response:
-    """Rounded coordinates only here; exact ones need an API key granted precise locations."""
+@router.get("/exports/{reserve}/camtrap-dp", dependencies=[require(Permission.EXPORT)])
+def camtrap(
+    reserve: str, session: DB, user: User, sampling_design: camtrap_dp.SamplingDesign
+) -> Response:
+    """Rounded coordinates only here; exact ones need an API key granted precise locations
+    or the command line."""
+    check_reserve(user, reserve)
     try:
         body, _ = camtrap_dp.build(session, reserve, sampling_design=sampling_design)
     except camtrap_dp.ExportError as e:

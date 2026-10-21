@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import sessionmaker
 
+from tests.helpers import sign_in_as
 from tests.images import write_jpeg
 from vandrishti.api.app import create_app
 from vandrishti.core.config import Settings, get_settings
@@ -132,6 +133,8 @@ def test_species_semantics_mask_and_explained_decision(engine: Engine, tmp_path:
         assert seg is not None and storage.exists(seg.mask_key) and seg.box_fill > 0.3
 
     app = create_app()
+
+    sign_in_as(app, "asha", "admin")
 
     def session_dep() -> Any:
         with factory() as sess:

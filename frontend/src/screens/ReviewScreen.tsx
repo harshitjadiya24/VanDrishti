@@ -47,7 +47,6 @@ export function ReviewScreen() {
     mutationFn: (v: { action: Action; taxon?: Taxon }) => api.review({
       image_id: item!.image_id,
       action: v.action,
-      reviewer,
       human_label: v.taxon?.common_name,
       human_taxon: v.taxon?.taxon,
       poaching_activity: poaching,
@@ -66,7 +65,7 @@ export function ReviewScreen() {
   });
 
   const undo = useMutation({
-    mutationFn: () => api.undo(last!.id, reviewer),
+    mutationFn: () => api.undo(last!.id),
     onSuccess: () => {
       setLast(null);
       qc.invalidateQueries({ queryKey: ["queue", kind, reserve] });
@@ -109,11 +108,6 @@ export function ReviewScreen() {
         </span>
       </header>
 
-      {!reviewer && (
-        <p role="alert" className="mb-4 rounded-md border border-amber/60 px-3 py-2 text-[14px] text-amber">
-          Enter your name in the sidebar first: every review is recorded with it.
-        </p>
-      )}
       {error && <p role="alert" className="mb-4 rounded-md border border-alarm/60 px-3 py-2 text-[14px] text-alarm">{error}</p>}
       {last && (
         <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-panel px-3 py-2 text-[14px]">

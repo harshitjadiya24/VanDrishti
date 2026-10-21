@@ -110,6 +110,18 @@ In the console, "Alerts" lists what needs a person (acknowledge, resolve, reopen
 "Reports and exports" downloads PDF/Excel reports and the Camtrap DP package. Other systems
 use the `/v1` API with a key: see [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
 
+## Sign-in, deployment and backups
+
+```bash
+uv run vandrishti user create --username admin --name "Your name" --role admin --by setup   # prompts
+uv run vandrishti user create --username asha --role reviewer --reserve KAN --by admin
+python3 scripts/backup.py create && python3 scripts/backup.py verify "$(ls -d backups/20* | tail -1)"
+```
+The console asks everyone to sign in. Roles are admin, reviewer, ranger and viewer, each
+limited to their reserves. Production runs with
+`docker compose -f deploy/compose.prod.yml --env-file deploy/.env.prod up -d --build --wait`.
+See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for installing, backups, restores and upgrades.
+
 ## Layout
 ```
 backend/src/vandrishti/
@@ -124,9 +136,11 @@ backend/src/vandrishti/
   reports/   report data per period, Excel and PDF rendering
   exports/   Camtrap DP 1.0.2
   integration/ API keys for the /v1 integration API
+  auth/      accounts, Argon2id passwords, sessions, roles and reserve scope
   privacy/   whole-body blur
   api/       FastAPI app: health, reserves and cameras, uploads, batches, images
   cli.py     `vandrishti` command
+deploy/      production compose, Caddyfile, env template
 docker/      database image (Postgres 16 + PostGIS on arm64 and amd64)
 tools/       speciesnet/: isolated SpeciesNet environment and bridge script
 frontend/    review console (React, TypeScript, Vite, Tailwind)

@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from tests.helpers import sign_in_as
 from vandrishti.api.app import create_app
 from vandrishti.core.config import Settings, get_settings
 from vandrishti.db.models import (
@@ -156,6 +157,8 @@ def test_events_risk_and_reviewer_overrides(world, tmp_path: Path) -> None:  # t
         assert assess(s, reserve=code) == {"high": 1, "low": 1}
 
     app = create_app()
+
+    sign_in_as(app, "asha", "admin")
 
     def session_dep() -> Iterator[Session]:
         with factory() as sess:

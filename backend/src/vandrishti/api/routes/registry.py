@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from vandrishti.api.deps import DB, Writer
-from vandrishti.db.models import Camera, CameraStatus, Reserve, Sensitivity
+from vandrishti import audit
+from vandrishti.api.deps import DB, Scoped, User, check_reserve, guard_camera, require
+from vandrishti.auth.rbac import Permission, can, may_see, round_coord
+from vandrishti.db.models import Camera, CameraStatus, Reserve, Sensitivity, UserAccount
 
 router = APIRouter(tags=["registry"])
 
@@ -66,13 +68,13 @@ class CameraPatch(BaseModel):
     sensitivity: Sensitivity | None = None  # section 6: location sensitivity
 
 
-def _camera_out(c: Camera, reserve_code: str) -> CameraOut:
+def _camera_out(c: Camera, reserve_code: str, user: UserAccount) -> CameraOut:
     return CameraOut(
         id=c.id,
         reserve=reserve_code,
         code=c.code,
-        latitude=c.latitude,
-        longitude=c.longitude,
+        latitude=round_coord(c.latitude, user),
+        longitude=round_coord(c.longitude, user),
         model=c.model,
         serial=c.serial,
         status=c.status,
@@ -83,19 +85,33 @@ def _camera_out(c: Camera, reserve_code: str) -> CameraOut:
 
 
 @router.get("/reserves")
-def list_reserves(session: DB) -> list[ReserveOut]:
+def list_reserves(session: DB, user: User) -> list[ReserveOut]:
     rows = session.scalars(select(Reserve).order_by(Reserve.code))
     return [
         ReserveOut(id=r.id, code=r.code, name=r.name, timezone=r.timezone, country=r.country)
         for r in rows
+        if may_see(user.user, r.code)
     ]
 
 
-@router.post("/reserves", status_code=status.HTTP_201_CREATED, dependencies=[Writer])
-def create_reserve(body: ReserveIn, session: DB) -> ReserveOut:
+@router.post(
+    "/reserves",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[require(Permission.MANAGE_REGISTRY)],
+)
+def create_reserve(body: ReserveIn, session: DB, user: User) -> ReserveOut:
     r = Reserve(**body.model_dump())
     session.add(r)
     try:
+        session.flush()
+        audit.append(
+            session,
+            actor=f"user:{user.name}",
+            action="reserve_create",
+            entity="reserve",
+            entity_id=str(r.id),
+            payload={"code": r.code},
+        )
         session.commit()
     except IntegrityError:
         raise HTTPException(status.HTTP_409_CONFLICT, f"reserve {body.code} exists") from None
@@ -103,31 +119,50 @@ def create_reserve(body: ReserveIn, session: DB) -> ReserveOut:
 
 
 @router.get("/cameras")
-def list_cameras(session: DB, reserve: str | None = None) -> list[CameraOut]:
+def list_cameras(session: DB, user: User, reserve: Scoped) -> list[CameraOut]:
     q = select(Camera, Reserve.code).join(Reserve, Reserve.id == Camera.reserve_id)
     if reserve:
         q = q.where(Reserve.code == reserve)
     return [
-        _camera_out(c, code) for c, code in session.execute(q.order_by(Reserve.code, Camera.code))
+        _camera_out(c, code, user.user)
+        for c, code in session.execute(q.order_by(Reserve.code, Camera.code))
     ]
 
 
-@router.post("/cameras", status_code=status.HTTP_201_CREATED, dependencies=[Writer])
-def create_camera(body: CameraIn, session: DB) -> CameraOut:
+@router.post(
+    "/cameras",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[require(Permission.MANAGE_REGISTRY)],
+)
+def create_camera(body: CameraIn, session: DB, user: User) -> CameraOut:
+    check_reserve(user, body.reserve)
     reserve = session.scalar(select(Reserve).where(Reserve.code == body.reserve))
     if reserve is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"no reserve {body.reserve}")
     c = Camera(reserve_id=reserve.id, **body.model_dump(exclude={"reserve"}))
     session.add(c)
     try:
+        session.flush()
+        audit.append(
+            session,
+            actor=f"user:{user.name}",
+            action="camera_create",
+            entity="camera",
+            entity_id=str(c.id),
+            payload={"code": c.code},
+        )
         session.commit()
     except IntegrityError:
         raise HTTPException(status.HTTP_409_CONFLICT, f"camera {body.code} exists") from None
-    return _camera_out(c, reserve.code)
+    return _camera_out(c, reserve.code, user.user)
 
 
-@router.patch("/cameras/{camera_id}", dependencies=[Writer])
-def update_camera(camera_id: uuid.UUID, body: CameraPatch, session: DB) -> CameraOut:
+@router.patch("/cameras/{camera_id}", dependencies=[require(Permission.ACT_ALERTS)])
+def update_camera(camera_id: uuid.UUID, body: CameraPatch, session: DB, user: User) -> CameraOut:
+    """Rangers report a camera's state (faulty, stolen); sensitivity is an admin decision."""
+    guard_camera(session, user, camera_id)
+    if body.sensitivity is not None and not can(user.user, Permission.MANAGE_REGISTRY):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "only admins set location sensitivity")
     row = session.execute(
         select(Camera, Reserve.code)
         .join(Reserve, Reserve.id == Camera.reserve_id)
@@ -140,5 +175,13 @@ def update_camera(camera_id: uuid.UUID, body: CameraPatch, session: DB) -> Camer
         camera.status = body.status
     if body.sensitivity is not None:
         camera.sensitivity = body.sensitivity
+    audit.append(
+        session,
+        actor=f"user:{user.name}",
+        action="camera_update",
+        entity="camera",
+        entity_id=str(camera.id),
+        payload=body.model_dump(mode="json", exclude_none=True),
+    )
     session.commit()
-    return _camera_out(camera, code)
+    return _camera_out(camera, code, user.user)

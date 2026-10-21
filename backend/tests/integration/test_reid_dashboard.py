@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from tests.helpers import sign_in_as
 from vandrishti.analytics import dashboard
 from vandrishti.analytics.labels import TIGER, settled_labels
 from vandrishti.api.app import create_app
@@ -227,6 +228,7 @@ def test_identity_api(world, no_torch) -> None:  # type: ignore[no-untyped-def]
     with factory() as s:
         service.match(s, model_name=MODEL, threshold=0.76, reserve=code)
     app = create_app()
+    sign_in_as(app, "asha", "admin")
 
     def session_override() -> Iterator[Session]:
         with factory() as s:
@@ -237,6 +239,10 @@ def test_identity_api(world, no_torch) -> None:  # type: ignore[no-untyped-def]
         props = client.get("/identity/proposals", params={"reserve": code}).json()
         assert len(props) == 5
         pid = props[0]["id"]
+        sign_in_as(app, "ravi", "ranger", [code])  # rangers do not decide identities
+        refused = client.post(f"/identity/proposals/{pid}/decide", json={"action": "not_tiger"})
+        assert refused.status_code == 403
+        sign_in_as(app, "asha", "reviewer", [code])
         bad = client.post(
             f"/identity/proposals/{pid}/decide", json={"action": "new", "reviewer": "asha"}
         )

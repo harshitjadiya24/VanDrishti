@@ -2,19 +2,34 @@
 
 from __future__ import annotations
 
+import secrets
 import shutil
 import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from vandrishti.api.deps import DB, Config, Storage, Writer
+from vandrishti import audit
+from vandrishti.api.deps import (
+    COOKIE,
+    DB,
+    Config,
+    Scoped,
+    Storage,
+    User,
+    audit_view,
+    authenticated,
+    guard_camera,
+    guard_image,
+    require,
+)
+from vandrishti.auth.rbac import Permission, can, round_coord
 from vandrishti.db.models import (
     Camera,
     Decision,
@@ -23,11 +38,17 @@ from vandrishti.db.models import (
     IngestBatch,
     IngestSource,
     QualityStatus,
+    Reserve,
+    ScreenOutcome,
     Segmentation,
 )
 from vandrishti.ingest.service import IMAGE_SUFFIXES, ingest_files
 
 router = APIRouter(tags=["images"])
+# Uploads also accept the ingest token (camera stations, scripts), so this router is not
+# behind the session check as a whole.
+upload_router = APIRouter(tags=["images"])
+GPS_KEYS = ("GPSInfo", "gps", "GPS", "latitude", "longitude")
 
 
 class BatchOut(BaseModel):
@@ -94,11 +115,44 @@ def _batch_out(b: IngestBatch) -> BatchOut:
     )
 
 
-@router.post(
-    "/cameras/{camera_id}/images", status_code=status.HTTP_201_CREATED, dependencies=[Writer]
-)
+def _uploader(
+    request: Request,
+    session: DB,
+    settings: Config,
+    camera_id: uuid.UUID,
+    authorization: Annotated[str | None, Header()] = None,
+    x_csrf_token: Annotated[str | None, Header()] = None,
+) -> str:
+    """A signed-in person with RUN permission, or a machine with the ingest token."""
+    if request.cookies.get(COOKIE):
+        user = authenticated(request, session, settings, x_csrf_token)
+        if not can(user.user, Permission.RUN):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "your role cannot upload")
+        guard_camera(session, user, camera_id)
+        return f"user:{user.name}"
+    token = settings.ingest_token
+    given = (authorization or "").removeprefix("Bearer ").strip()
+    if (
+        token is None
+        or not given
+        or not secrets.compare_digest(given.encode(), token.get_secret_value().encode())
+    ):
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "sign in or send the ingest token",
+            {"WWW-Authenticate": "Bearer"},
+        )
+    return "ingest-token"
+
+
+@upload_router.post("/cameras/{camera_id}/images", status_code=status.HTTP_201_CREATED)
 def upload_images(
-    camera_id: uuid.UUID, files: list[UploadFile], session: DB, storage: Storage, settings: Config
+    camera_id: uuid.UUID,
+    files: list[UploadFile],
+    session: DB,
+    storage: Storage,
+    settings: Config,
+    who: Annotated[str, Depends(_uploader)],
 ) -> BatchOut:
     """Upload one or more images from one camera; they go through the same pipeline."""
     camera = session.get(Camera, camera_id)
@@ -123,6 +177,15 @@ def upload_images(
         result = ingest_files(
             session, storage, settings, camera, staged, source=IngestSource.UPLOAD, path=None
         )
+    audit.append(
+        session,
+        actor=who,
+        action="upload",
+        entity="batch",
+        entity_id=result.batch_id,
+        payload={"camera": camera.code, "files": len(files)},
+    )
+    session.commit()
     batch = session.get(IngestBatch, uuid.UUID(result.batch_id))
     if batch is None:  # pragma: no cover - ingest_files always commits its batch
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "batch missing")
@@ -130,18 +193,29 @@ def upload_images(
 
 
 @router.get("/batches/{batch_id}")
-def get_batch(batch_id: uuid.UUID, session: DB) -> BatchOut:
+def get_batch(batch_id: uuid.UUID, session: DB, user: User) -> BatchOut:
     batch = session.get(IngestBatch, batch_id)
-    if batch is None:
+    if batch is None or (
+        batch.camera_id is None and not can(user.user, Permission.MANAGE_REGISTRY)
+    ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "batch not found")
+    if batch.camera_id is not None:
+        guard_camera(session, user, batch.camera_id)
     return _batch_out(batch)
 
 
 @router.get("/images/{image_id}")
-def get_image(image_id: uuid.UUID, session: DB) -> ImageOut:
+def get_image(image_id: uuid.UUID, session: DB, user: User) -> ImageOut:
+    guard_image(session, user, image_id)
     img = session.get(Image, image_id)
     if img is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "image not found")
+    return _image_out(img, user)
+
+
+def _image_out(img: Image, user: Any) -> ImageOut:
+    precise = can(user.user, Permission.PRECISE_LOCATIONS)
+    exif = img.exif if precise else {k: v for k, v in img.exif.items() if k not in GPS_KEYS}
     return ImageOut(
         id=img.id,
         sha256=img.sha256,
@@ -150,14 +224,14 @@ def get_image(image_id: uuid.UUID, session: DB) -> ImageOut:
         original_filename=img.original_filename,
         captured_at=img.captured_at,
         time_source=img.time_source.value,
-        latitude=img.latitude,
-        longitude=img.longitude,
+        latitude=round_coord(img.latitude, user.user),
+        longitude=round_coord(img.longitude, user.user),
         gps_source=img.gps_source.value,
         width=img.width,
         height=img.height,
         format=img.format,
         file_size=img.file_size,
-        exif=img.exif,
+        exif=exif,
         is_corrupt=img.is_corrupt,
         corrupt_reason=img.corrupt_reason,
         preprocess=img.preprocess,
@@ -170,8 +244,9 @@ def get_image(image_id: uuid.UUID, session: DB) -> ImageOut:
 
 
 @router.get("/images/{image_id}/detections")
-def get_detections(image_id: uuid.UUID, session: DB) -> list[DetectionOut]:
+def get_detections(image_id: uuid.UUID, session: DB, user: User) -> list[DetectionOut]:
     """Boxes from the config the image was last screened with (5.2)."""
+    guard_image(session, user, image_id)
     img = session.get(Image, image_id)
     if img is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "image not found")
@@ -192,27 +267,43 @@ def get_detections(image_id: uuid.UUID, session: DB) -> list[DetectionOut]:
     ]
 
 
-@router.get("/quality/review")
+@router.get("/quality/review", dependencies=[require(Permission.REVIEW_SPECIES)])
 def quality_review(
-    session: DB, camera: uuid.UUID | None = None, limit: int = 100
+    session: DB, user: User, reserve: Scoped, camera: uuid.UUID | None = None, limit: int = 100
 ) -> list[ImageOut]:
     """5.1 FAIL queue: images a person should look at (nothing is deleted)."""
-    q = select(Image).where(Image.quality_status == QualityStatus.FAIL)
+    q = (
+        select(Image)
+        .join(Camera, Camera.id == Image.camera_id)
+        .join(Reserve, Reserve.id == Camera.reserve_id)
+        .where(Image.quality_status == QualityStatus.FAIL)
+    )
+    if reserve:
+        q = q.where(Reserve.code == reserve)
     if camera:
+        guard_camera(session, user, camera)
         q = q.where(Image.camera_id == camera)
     return [
-        get_image(i.id, session)
+        _image_out(i, user)
         for i in session.scalars(q.order_by(Image.captured_at).limit(min(limit, 500)))
     ]
 
 
 @router.get("/images/{image_id}/display")
-def get_display(image_id: uuid.UUID, session: DB, storage: Storage) -> FileResponse:
-    """The normalised copy, already blurred if people or vehicles were detected. Never the
-    original: locked originals get role checks and audit in Phase 8."""
+def get_display(image_id: uuid.UUID, session: DB, storage: Storage, user: User) -> FileResponse:
+    """The normalised copy, already blurred if people or vehicles were detected. Originals are
+    never served over HTTP. Frames with people or vehicles need a role that reviews them or
+    acts on alerts, and every view of one is audited."""
+    guard_image(session, user, image_id)
     img = session.get(Image, image_id)
     if img is None or not img.display_key:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no display copy for this image")
+    if img.screen is ScreenOutcome.HUMAN_VEHICLE:
+        if not (can(user.user, Permission.REVIEW_PEOPLE) or can(user.user, Permission.ACT_ALERTS)):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, "frames with people need a reviewing role"
+            )
+        audit_view(session, user, "people_frame", str(img.id))
     return FileResponse(storage.path(img.display_key), media_type="image/jpeg")
 
 
@@ -228,8 +319,9 @@ class DecisionOut(BaseModel):
 
 
 @router.get("/images/{image_id}/decision")
-def get_decision(image_id: uuid.UUID, session: DB) -> DecisionOut:
+def get_decision(image_id: uuid.UUID, session: DB, user: User) -> DecisionOut:
     """5.6 label + confidence and the 5.7 explanation (newest engine config)."""
+    guard_image(session, user, image_id)
     d = session.scalar(
         select(Decision).where(Decision.image_id == image_id).order_by(Decision.created_at.desc())
     )
@@ -249,8 +341,9 @@ def get_decision(image_id: uuid.UUID, session: DB) -> DecisionOut:
 
 
 @router.get("/images/{image_id}/mask")
-def get_mask(image_id: uuid.UUID, session: DB, storage: Storage) -> FileResponse:
+def get_mask(image_id: uuid.UUID, session: DB, storage: Storage, user: User) -> FileResponse:
     """5.5 SAM 2 mask (PNG, original resolution of the analysis copy) for visualisation."""
+    guard_image(session, user, image_id)
     seg = session.scalar(
         select(Segmentation)
         .where(Segmentation.image_id == image_id)

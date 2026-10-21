@@ -13,6 +13,7 @@ from sqlalchemy import Engine, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from tests.helpers import sign_in_as
 from tests.images import write_jpeg
 from vandrishti.api.app import create_app
 from vandrishti.core.config import Settings, get_settings
@@ -123,8 +124,12 @@ def test_manifest_supplies_times_when_exif_has_none(
         assert img is not None and img.captured_at.isoformat() == "2017-10-20T23:33:46+00:00"
 
 
-def _client(factory: sessionmaker[Session], settings: Settings) -> TestClient:
+def _client(
+    factory: sessionmaker[Session], settings: Settings, role: str | None = "admin"
+) -> TestClient:
     app = create_app()
+    if role:
+        sign_in_as(app, "asha", role)
 
     def session_dep() -> Iterator[Session]:
         with factory() as s:
@@ -138,7 +143,7 @@ def _client(factory: sessionmaker[Session], settings: Settings) -> TestClient:
 def test_upload_needs_the_token_and_runs_the_pipeline(
     factory: sessionmaker[Session], camera: Camera, tmp_path: Path
 ) -> None:
-    c = _client(factory, _settings(tmp_path, ingest_token="t" * 32))
+    c = _client(factory, _settings(tmp_path, ingest_token="t" * 32), role=None)
     pic = write_jpeg(tmp_path / "up.jpg", taken="2024:02:01 12:00:00")
     url = f"/cameras/{camera.id}/images"
 
@@ -155,6 +160,8 @@ def test_upload_needs_the_token_and_runs_the_pipeline(
     with factory() as s:
         img = s.scalar(select(Image).where(Image.camera_id == camera.id))
         assert img is not None and img.original_filename == "up.jpg"  # path parts dropped
+    assert c.get(f"/images/{img.id}").status_code == 401  # the token only uploads
+    sign_in_as(c.app, "asha", "viewer")  # type: ignore[arg-type]
     assert c.get(f"/images/{img.id}").json()["time_source"] == "exif"
     shown = c.get(f"/images/{img.id}/display")
     assert shown.status_code == 200 and shown.headers["content-type"] == "image/jpeg"
@@ -171,17 +178,18 @@ def test_upload_needs_the_token_and_runs_the_pipeline(
     assert bad.status_code == 415
 
 
-def test_writes_refused_outside_dev_without_a_token(
+def test_registry_needs_sign_in_and_the_right_role(
     factory: sessionmaker[Session], tmp_path: Path
 ) -> None:
-    c = _client(factory, _settings(tmp_path, env="test"))
-    r = c.post("/reserves", json={"code": "NOPE", "name": "x"})
-    assert r.status_code == 403
-    assert c.get("/reserves").status_code == 200
+    anonymous = _client(factory, _settings(tmp_path), role=None)
+    assert anonymous.get("/reserves").status_code == 401
+    assert anonymous.post("/reserves", json={"code": "NOPE", "name": "x"}).status_code == 401
+    reviewer = _client(factory, _settings(tmp_path), role="reviewer")
+    assert reviewer.post("/reserves", json={"code": "NOPE", "name": "x"}).status_code == 403
 
 
 def test_registry_api(factory: sessionmaker[Session], tmp_path: Path) -> None:
-    c = _client(factory, _settings(tmp_path))  # env=dev, no token: local writes allowed
+    c = _client(factory, _settings(tmp_path))  # an admin
     code = f"API{uuid.uuid4().hex[:5]}"
     assert (
         c.post("/reserves", json={"code": code, "name": "A", "timezone": "Mars/Base"}).status_code
@@ -196,6 +204,11 @@ def test_registry_api(factory: sessionmaker[Session], tmp_path: Path) -> None:
     patched = c.patch(f"/cameras/{cam.json()['id']}", json={"status": "faulty"})
     assert patched.json()["status"] == "faulty"
     assert [x["code"] for x in c.get("/cameras", params={"reserve": code}).json()] == ["S-01"]
+    sign_in_as(c.app, "ravi", "ranger", [code])  # type: ignore[arg-type]
+    listed = c.get("/cameras").json()  # one reserve: filled in, coordinates rounded
+    assert [(x["code"], x["latitude"]) for x in listed] == [("S-01", 22.0)]
+    assert c.patch(f"/cameras/{cam.json()['id']}", json={"status": "stolen"}).status_code == 200
+    assert c.patch(f"/cameras/{cam.json()['id']}", json={"sensitivity": "core"}).status_code == 403
 
 
 def test_inbox_watch_ingests_registered_cameras_only(

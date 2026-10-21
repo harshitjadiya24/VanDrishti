@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { QueueItem } from "../api";
+import { setCsrf, type QueueItem } from "../api";
 import { SessionProvider } from "../context";
 import { ReviewScreen } from "./ReviewScreen";
 
@@ -16,12 +16,12 @@ const item = (over: Partial<QueueItem> = {}): QueueItem => ({
   has_mask: false, allowed_actions: ["confirm", "correct", "not_animal", "skip"], risk: null, ...over,
 });
 
-let calls: { url: string; body: unknown }[] = [];
+let calls: { url: string; body: unknown; headers: Record<string, string> }[] = [];
 function mockApi(queue: QueueItem[]) {
   calls = [];
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-    calls.push({ url, body });
+    calls.push({ url, body, headers: (init?.headers ?? {}) as Record<string, string> });
     const json = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
     if (url.startsWith("/api/review/queue")) return json(queue);
@@ -43,7 +43,7 @@ function renderAt(kind: string, reviewer = "Asha") {
 }
 
 describe("review screen", () => {
-  beforeEach(() => mockApi([item(), item({ image_id: "img-2" })]));
+  beforeEach(() => { setCsrf("csrf-1"); mockApi([item(), item({ image_id: "img-2" })]); });
   afterEach(() => vi.unstubAllGlobals());
 
   it("shows the model's answer and why it needs a person", async () => {
@@ -62,7 +62,9 @@ describe("review screen", () => {
     await user.keyboard("p2y");  // poaching on, severity medium, confirm
     await waitFor(() => expect(calls.some((c) => c.url === "/api/reviews")).toBe(true));
     const sent = calls.find((c) => c.url === "/api/reviews")!.body as Record<string, unknown>;
-    expect(sent).toMatchObject({ image_id: "img-1", action: "confirm", reviewer: "Asha", poaching_activity: true, severity: "medium" });
+    expect(sent).toMatchObject({ image_id: "img-1", action: "confirm", poaching_activity: true, severity: "medium" });
+    expect(sent).not.toHaveProperty("reviewer");  // the server signs with the signed-in user
+    expect(calls.find((c) => c.url === "/api/reviews")!.headers["X-CSRF-Token"]).toBe("csrf-1");
     expect(await screen.findByRole("status")).toHaveTextContent("Saved");
     await user.keyboard("u");
     await waitFor(() => expect(calls.some((c) => c.url === "/api/reviews/rev-1/undo")).toBe(true));
@@ -81,11 +83,4 @@ describe("review screen", () => {
     expect(screen.getByText("at night, after sunset at this camera")).toBeInTheDocument();
   });
 
-  it("needs a reviewer name before anything is saved", async () => {
-    const user = userEvent.setup();
-    renderAt("review", "");
-    await screen.findByText(/Enter your name/);
-    await user.keyboard("y");
-    expect(calls.some((c) => c.url === "/api/reviews")).toBe(false);
-  });
 });

@@ -19,7 +19,7 @@ const SEVERITY_TONE: Record<AlertItem["severity"], string> = {
 
 /** Section 11: alerts for a person to acknowledge and resolve. */
 export function AlertsScreen() {
-  const { reserve, reviewer } = useSession();
+  const { reserve, can } = useSession();
   const qc = useQueryClient();
   const [state, setState] = useState<AlertState>("open");
   const [kind, setKind] = useState<string>("");
@@ -31,7 +31,7 @@ export function AlertsScreen() {
   const run = useMutation({ mutationFn: () => api.runAlerts(reserve || undefined), onSuccess: refresh });
   const act = useMutation({
     mutationFn: ({ id, action, note }: { id: string; action: "acknowledge" | "resolve" | "reopen"; note?: string }) =>
-      api.actAlert(id, action, reviewer, note),
+      api.actAlert(id, action, note),
     onSuccess: refresh,
   });
   const webhook = run.data?.webhook;
@@ -45,12 +45,11 @@ export function AlertsScreen() {
             resolve when done; a resolved alert can be reopened. Alerts never contain coordinates.
           </p>
         </div>
-        <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
+        {can("run") && <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
           className="h-9 rounded-md border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-50">
           {run.isPending ? "Checking…" : "Check rules now"}
-        </button>
+        </button>}
       </header>
-      {!reviewer && <p role="alert" className="text-amber">Enter your name in the sidebar first: actions are signed with it.</p>}
       {run.data && (
         <p role="status" className="text-[13px] text-dim">
           New or changed: {Object.entries(run.data.rules).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(", ") || "nothing"}.
@@ -81,7 +80,7 @@ export function AlertsScreen() {
       {alerts.data && alerts.data.length === 0 && <p className="text-dim">No {state} alerts.</p>}
       <ul className="grid gap-2">
         {(alerts.data ?? []).map((a) => (
-          <AlertRow key={a.id} a={a} busy={act.isPending || !reviewer}
+          <AlertRow key={a.id} a={a} busy={act.isPending || !can("act_alerts")}
             onAct={(action, note) => act.mutate({ id: a.id, action, note })} />
         ))}
       </ul>

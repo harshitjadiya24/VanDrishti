@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AlertItem } from "../api";
+import type { AlertItem, Me } from "../api";
 import { SessionProvider } from "../context";
 import { AlertsScreen } from "./AlertsScreen";
 
@@ -28,10 +28,14 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-function renderWith(reviewer: string) {
+const person = (role: Me["role"], permissions: string[]): Me => ({
+  username: "asha", display_name: "Asha", role, reserves: ["KAN"], permissions, csrf_token: "t",
+});
+
+function renderWith(me: Me) {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      <SessionProvider initial={{ reviewer, reserve: "KAN" }}>
+      <SessionProvider me={me} initial={{ reserve: "KAN" }}>
         <AlertsScreen />
       </SessionProvider>
     </QueryClientProvider>,
@@ -39,20 +43,20 @@ function renderWith(reviewer: string) {
 }
 
 describe("alerts screen", () => {
-  it("shows reasons and times in the reserve's zone, and signs actions with the name", async () => {
-    renderWith("Asha");
+  it("shows reasons and times in the reserve's zone, and acts as the signed-in person", async () => {
+    renderWith(person("ranger", ["view", "review_people", "act_alerts"]));
     expect(await screen.findByText("HIGH poaching risk at camera S-07")).toBeInTheDocument();
     expect(screen.getByText("at night")).toBeInTheDocument();
     expect(screen.getByText(/23:10 \(Asia\/Kolkata\)/)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Note"), "team sent");
     await userEvent.click(screen.getByRole("button", { name: "Acknowledge" }));
     await waitFor(() => expect(calls.some((c) => c.url === "/api/alerts/al-1/act")).toBe(true));
-    expect(calls.find((c) => c.url.endsWith("/act"))?.body).toEqual({ action: "acknowledge", person: "Asha", note: "team sent" });
+    expect(calls.find((c) => c.url.endsWith("/act"))?.body).toEqual({ action: "acknowledge", note: "team sent" });
   });
 
-  it("refuses actions until the person has given a name", async () => {
-    renderWith("");
-    expect(await screen.findByText(/Enter your name/)).toBeInTheDocument();
+  it("lets a viewer read alerts but not act on them or run the rules", async () => {
+    renderWith(person("viewer", ["view"]));
     expect(await screen.findByRole("button", { name: "Acknowledge" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Check rules now" })).not.toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@ const OTHER = [
 
 /** Section 7: where every screened image went, and why. */
 export function RoutingScreen() {
-  const { reserve } = useSession();
+  const { reserve, can } = useSession();
   const qc = useQueryClient();
   const summary = useQuery({ queryKey: ["routing", reserve], queryFn: () => api.routingSummary(reserve || undefined) });
   const run = useMutation({
@@ -38,10 +38,10 @@ export function RoutingScreen() {
             {total ? `${total} screened images.` : "No routed images yet."} AI proposes; people decide anything uncertain or consequential.
           </p>
         </div>
-        <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
+        {can("run") && <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
           className="h-9 rounded-md border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-50">
           {run.isPending ? "Routing…" : "Re-run routing"}
-        </button>
+        </button>}
       </header>
       {run.isSuccess && <p role="status" className="text-[13px] text-dim">Routing updated. Images a person already reviewed keep their route.</p>}
       {summary.error && <p role="alert" className="text-alarm">{String(summary.error)}</p>}

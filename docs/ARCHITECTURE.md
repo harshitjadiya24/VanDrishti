@@ -32,7 +32,7 @@ records how each part is built; it grows phase by phase.
 | 5 | Human/vehicle activity, poaching risk | built |
 | 6 | Dashboard, re-identification | built |
 | 7 | Alerts, reports (PDF/Excel), integration API | built |
-| 8 | Hardening and production | next |
+| 8 | Hardening and production | built |
 
 ## 3. Foundations (Phase 0)
 
@@ -267,4 +267,47 @@ integration/keys + api/routes/v1 → read-only /v1/* per reserve key, every read
   count of open warning + critical), Reports and exports (period preview, PDF/Excel download,
   Camtrap DP with a chosen sampling design).
 - Scheduling is not built in: run `vandrishti alerts run` from cron (or the watcher host).
+
+## 11. Hardening: sign-in, roles, privacy by role, deployment, backups (Phase 8, ADR 0009)
+
+```
+browser ──HTTPS──► Caddy (CSP, HSTS, no third parties) ──/api──► API (1 worker, uid 10001, read-only fs)
+                     │ serves the built console                        │
+                     │                                                  ├─► Postgres/PostGIS (private network)
+                     │                                                  └─► image store (host dir)
+other systems ──► /v1 (integration key, rate-limited, audited)
+camera stations ──► POST /cameras/{id}/images (ingest token) ── same pipeline
+```
+
+- **Sign-in.** `POST /auth/login` checks an Argon2id password. It returns a 256-bit session
+  token as an HttpOnly, SameSite=Strict (Secure in prod) cookie; Postgres stores only its
+  SHA-256. Writes must carry `X-CSRF-Token`, which comes from the session.
+  - Lockout after 5 failures for 15 minutes; 10 attempts a minute per address.
+  - Sessions end after 12 h idle or 7 days in all, and immediately on sign-out,
+    deactivation, or a role, reserve or password change.
+- **Roles** (`auth/rbac.py`): admin, reviewer, ranger, viewer → permissions. Every console
+  router requires a signed-in user, and each endpoint asks for its permission.
+- **Reserve scope:** `Scoped` for `reserve` query parameters, plus `guard_*` for items
+  addressed by id.
+- **Privacy by role:**
+  - non-admins get coordinates rounded to 0.1° (camera lists, map, image metadata) and EXIF
+    without GPS;
+  - frames with people need a people-reviewing or alert role, and each view is audited
+    (`view_people_frame`);
+  - the full audit trail is admin-only;
+  - actions are signed with the signed-in user, never a name typed by the client.
+- **Integration:** `/v1` is limited to 120 requests a minute per key; refused keys are audited
+  (prefix only, at most 30 a minute per client).
+- **Production guard:** in `env=prod` the API refuses to start with the default database
+  password, an http webhook, a webhook without a secret, or a short ingest token. The API
+  browser is off.
+- **Deployment** (`deploy/compose.prod.yml`):
+  - `db`, then a one-shot `migrate`, then `api`, then `web`;
+  - only `web` publishes ports;
+  - API image without PyTorch; model stages run as batch jobs elsewhere.
+- **Backups** (`scripts/backup.py`):
+  - `pg_dump -Fc`, plus the store copied with hard links to the previous backup, plus a
+    manifest;
+  - `verify` restores into a throwaway database and checks the schema, the audit chain and
+    every original's SHA-256. A real restore is manual (docs/RUNBOOK.md).
 

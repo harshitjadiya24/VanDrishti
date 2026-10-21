@@ -1,0 +1,41 @@
+# VanDrishti web front: serves the console and proxies /api to the API container.
+# VANDRISHTI_DOMAIN set to a real name → automatic HTTPS (Let's Encrypt).
+# Left as "localhost" → Caddy's own local certificate (for trying it out on one machine).
+{
+	admin off
+}
+
+{$VANDRISHTI_DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# Everything is served from this origin: no third-party scripts, fonts or tiles.
+		Content-Security-Policy "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+		-Server
+	}
+
+	handle_path /api/* {
+		request_body {
+			max_size 60MB
+		}
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

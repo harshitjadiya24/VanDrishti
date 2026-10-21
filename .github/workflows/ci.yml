@@ -60,3 +60,19 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build   # includes tsc -b (strict type check)
+
+  images:
+    # The production images build, and the production compose file is valid.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - run: VANDRISHTI_DB_PASSWORD=ci docker compose -f deploy/compose.prod.yml config --quiet
+      - run: docker build -t vandrishti/api:ci backend
+      - run: docker build -t vandrishti/web:ci -f frontend/Dockerfile .
+      - name: API image starts only with safe production settings
+        run: |
+          docker run --rm vandrishti/api:ci python -c "import vandrishti.api.app" 2>&1 \
+            | grep -q "refusing to start in prod"

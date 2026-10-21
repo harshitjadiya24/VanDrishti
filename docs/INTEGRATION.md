@@ -13,7 +13,10 @@ uv run vandrishti apikey revoke <prefix> --by "admin name"
 
 `--precise` grants exact camera coordinates. Without it, coordinates are rounded to 0.1 degree.
 Send the key as `X-API-Key: vd_...` (or `Authorization: Bearer vd_...`). Every read is
-recorded in VanDrishti's audit trail.
+recorded in VanDrishti's audit trail, and so are refused keys (prefix only).
+
+Each key may make 120 requests a minute (`VANDRISHTI_API_RATE_PER_MINUTE`). Beyond that the
+answer is `429` with `Retry-After: 60`.
 
 ## Read endpoints (all `GET`, JSON unless noted)
 

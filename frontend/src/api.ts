@@ -73,7 +73,6 @@ export interface RiskSummary {
 export interface ReviewIn {
   image_id: string;
   action: Action;
-  reviewer: string;
   human_label?: string;
   human_taxon?: string;
   poaching_activity?: boolean;
@@ -165,7 +164,7 @@ export interface Proposal {
   candidates: Candidate[];
   outcome: string | null;
 }
-export interface IdentityDecision { action: "same" | "new" | "not_tiger"; reviewer: string; individual_id?: string; code?: string; name?: string }
+export interface IdentityDecision { action: "same" | "new" | "not_tiger"; individual_id?: string; code?: string; name?: string }
 export interface Individual {
   id: string;
   code: string;
@@ -205,14 +204,34 @@ export interface ReportSummary {
 }
 export type ReportPeriod = "daily" | "weekly" | "monthly";
 
+export interface Me {
+  username: string;
+  display_name: string;
+  role: "admin" | "reviewer" | "ranger" | "viewer";
+  reserves: string[];
+  permissions: string[];
+  csrf_token: string;
+}
+
+// The session lives in an HttpOnly cookie the page cannot read; writes must also carry the
+// CSRF token the server returned at sign-in (or from /auth/me).
+let csrfToken = "";
+export const setCsrf = (token: string) => { csrfToken = token; };
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const write = (init.method ?? "GET") !== "GET";
   const res = await fetch(`/api${path}`, {
     ...init,
-    headers: { ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers },
+    credentials: "same-origin",
+    headers: {
+      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(write && csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+      ...init.headers,
+    },
   });
   if (!res.ok) {
     let detail = res.statusText;
@@ -230,14 +249,19 @@ const qs = (params: Record<string, string | number | undefined | null>) => {
 };
 
 export const api = {
+  me: () => request<Me>("/auth/me"),
+  login: (username: string, password: string) =>
+    request<Me>("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  logout: () => request<{ status: string }>("/auth/logout", { method: "POST" }),
+  changePassword: (current: string, next: string) =>
+    request<{ status: string }>("/auth/password", { method: "POST", body: JSON.stringify({ current, new: next }) }),
   reserves: () => request<Reserve[]>("/reserves"),
   routingSummary: (reserve?: string) => request<RouteCount[]>(`/routing/summary${qs({ reserve })}`),
   runRouting: (reserve?: string) => request<Record<string, number>>(`/routing/run${qs({ reserve })}`, { method: "POST" }),
   counts: (reserve?: string) => request<Record<QueueKind, number>>(`/review/counts${qs({ reserve })}`),
   queue: (kind: QueueKind, reserve?: string) => request<QueueItem[]>(`/review/queue${qs({ kind, reserve, limit: 100 })}`),
   review: (body: ReviewIn) => request<ReviewOut>("/reviews", { method: "POST", body: JSON.stringify(body) }),
-  undo: (id: string, reviewer: string) =>
-    request<ReviewOut>(`/reviews/${id}/undo`, { method: "POST", body: JSON.stringify({ reviewer }) }),
+  undo: (id: string) => request<ReviewOut>(`/reviews/${id}/undo`, { method: "POST" }),
   taxa: (q: string, reserve?: string) => request<Taxon[]>(`/taxa${qs({ q, reserve })}`),
   feedback: (reserve?: string) => request<Feedback>(`/feedback/stats${qs({ reserve })}`),
   audit: () => request<AuditEvent[]>("/audit/events?limit=200"),
@@ -254,8 +278,7 @@ export const api = {
   proposals: (reserve?: string) => request<Proposal[]>(`/identity/proposals${qs({ reserve, limit: 200 })}`),
   decideIdentity: (id: string, body: IdentityDecision) =>
     request<Proposal>(`/identity/proposals/${id}/decide`, { method: "POST", body: JSON.stringify(body) }),
-  undoIdentity: (id: string, reviewer: string) =>
-    request<Proposal>(`/identity/proposals/${id}/undo`, { method: "POST", body: JSON.stringify({ reviewer }) }),
+  undoIdentity: (id: string) => request<Proposal>(`/identity/proposals/${id}/undo`, { method: "POST" }),
   individuals: (reserve?: string) => request<Individual[]>(`/identity/individuals${qs({ reserve })}`),
   sightings: (id: string) => request<Sighting[]>(`/identity/individuals/${id}/sightings`),
   similarTigers: (reserve?: string) => request<{ a: string; b: string; similarity: number }[]>(`/identity/similar${qs({ reserve })}`),
@@ -263,8 +286,8 @@ export const api = {
     request<AlertItem[]>(`/alerts${qs({ reserve, state, kind })}`),
   alertCounts: (reserve?: string) => request<Record<"critical" | "warning" | "info", number>>(`/alerts/counts${qs({ reserve })}`),
   runAlerts: (reserve?: string) => request<{ rules: Record<string, number>; webhook: Record<string, unknown> }>(`/alerts/run${qs({ reserve })}`, { method: "POST" }),
-  actAlert: (id: string, action: "acknowledge" | "resolve" | "reopen", person: string, note?: string) =>
-    request<AlertItem>(`/alerts/${id}/act`, { method: "POST", body: JSON.stringify({ action, person, note: note || undefined }) }),
+  actAlert: (id: string, action: "acknowledge" | "resolve" | "reopen", note?: string) =>
+    request<AlertItem>(`/alerts/${id}/act`, { method: "POST", body: JSON.stringify({ action, note: note || undefined }) }),
   report: (reserve: string, period: ReportPeriod, day: string) =>
     request<ReportSummary>(`/reports/${encodeURIComponent(reserve)}${qs({ period, day, format: "json" })}`),
   reportUrl: (reserve: string, period: ReportPeriod, day: string, format: "pdf" | "xlsx") =>

@@ -1,7 +1,7 @@
 """Sections 7-8 over HTTP: routing, review queues, review actions, feedback, audit.
 
-Until login and roles (Phase 8), the reviewer names themselves in each request and writes
-need the ingest token (or env=dev on 127.0.0.1); every action is in the audit trail.
+Every action is signed with the signed-in user's name and is in the audit trail. Species
+queues need REVIEW_SPECIES, the people/vehicle queue REVIEW_PEOPLE.
 """
 
 from __future__ import annotations
@@ -15,7 +15,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from vandrishti import audit, species_names
-from vandrishti.api.deps import DB, Config, Writer
+from vandrishti.api.deps import (
+    DB,
+    Config,
+    Scoped,
+    User,
+    guard_image,
+    guard_review,
+    require,
+)
+from vandrishti.auth.rbac import Permission, can
 from vandrishti.db.models import (
     AuditEvent,
     Camera,
@@ -24,8 +33,10 @@ from vandrishti.db.models import (
     PresenceEvent,
     Reserve,
     ReserveSpecies,
+    Review,
     ReviewAction,
     RiskAssessment,
+    Route,
     RouteState,
     Routing,
     Severity,
@@ -69,14 +80,14 @@ class RouteCount(BaseModel):
     count: int
 
 
-@router.post("/routing/run", dependencies=[Writer])
-def routing_run(session: DB, reserve: str | None = None) -> dict[str, int]:
+@router.post("/routing/run", dependencies=[require(Permission.RUN)])
+def routing_run(session: DB, reserve: Scoped) -> dict[str, int]:
     """(Re)route every screened image; reviewed routes are never reopened."""
     return run_routing(session, reserve=reserve)
 
 
 @router.get("/routing/summary")
-def routing_summary(session: DB, reserve: str | None = None) -> list[RouteCount]:
+def routing_summary(session: DB, reserve: Scoped) -> list[RouteCount]:
     q = (
         select(Routing.route, Routing.state, func.count())
         .join(Image, Image.id == Routing.image_id)
@@ -88,10 +99,17 @@ def routing_summary(session: DB, reserve: str | None = None) -> list[RouteCount]
     return [RouteCount(route=r.value, state=s.value, count=n) for r, s, n in rows]
 
 
+def _may_review(user: User, people: bool) -> None:
+    perm = Permission.REVIEW_PEOPLE if people else Permission.REVIEW_SPECIES
+    if not can(user.user, perm):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, f"your role cannot do this ({perm.value})")
+
+
 @router.get("/review/queue")
 def review_queue(
-    session: DB, kind: QueueKind = "review", reserve: str | None = None, limit: int = 50
+    session: DB, reserve: Scoped, user: User, kind: QueueKind = "review", limit: int = 50
 ) -> list[QueueItem]:
+    _may_review(user, kind == "people_vehicles")
     out = []
     zones: dict[uuid.UUID, str] = {}
     for routing, img, decision, camera in service.queue(
@@ -168,7 +186,6 @@ def _risk_for(session: Any, image_id: uuid.UUID) -> dict[str, Any] | None:
 class ReviewIn(BaseModel):
     image_id: uuid.UUID
     action: ReviewAction
-    reviewer: str = Field(min_length=1, max_length=100)
     human_label: str | None = Field(default=None, max_length=200)
     human_taxon: str | None = Field(default=None, max_length=300)
     poaching_activity: bool = False
@@ -196,29 +213,37 @@ def _out(r: Any) -> ReviewOut:
     )
 
 
-@router.post("/reviews", status_code=status.HTTP_201_CREATED, dependencies=[Writer])
-def create_review(body: ReviewIn, session: DB) -> ReviewOut:
+def _is_people(session: Any, image_id: uuid.UUID) -> bool:
+    route = session.scalar(select(Routing.route).where(Routing.image_id == image_id))
+    return route is Route.PEOPLE_VEHICLES
+
+
+@router.post("/reviews", status_code=status.HTTP_201_CREATED)
+def create_review(body: ReviewIn, session: DB, user: User) -> ReviewOut:
+    guard_image(session, user, body.image_id)
+    _may_review(user, _is_people(session, body.image_id))
     try:
-        review = service.submit(session, service.ReviewInput(**body.model_dump()))
+        review = service.submit(
+            session, service.ReviewInput(**body.model_dump(), reviewer=user.name)
+        )
     except service.ReviewError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
     return _out(review)
 
 
-class UndoIn(BaseModel):
-    reviewer: str = Field(min_length=1, max_length=100)
-
-
-@router.post("/reviews/{review_id}/undo", dependencies=[Writer])
-def undo_review(review_id: uuid.UUID, body: UndoIn, session: DB) -> ReviewOut:
+@router.post("/reviews/{review_id}/undo")
+def undo_review(review_id: uuid.UUID, session: DB, user: User) -> ReviewOut:
+    guard_review(session, user, review_id)
+    image_id = session.scalar(select(Review.image_id).where(Review.id == review_id))
+    _may_review(user, image_id is not None and _is_people(session, image_id))
     try:
-        return _out(service.undo(session, review_id, body.reviewer))
+        return _out(service.undo(session, review_id, user.name))
     except service.ReviewError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from None
 
 
 @router.get("/feedback/stats")
-def feedback(session: DB, reserve: str | None = None) -> dict[str, Any]:
+def feedback(session: DB, reserve: Scoped) -> dict[str, Any]:
     """Section 8 feedback: human agreement with the model per confidence band."""
     return service.feedback_stats(session, reserve=reserve)
 
@@ -231,7 +256,7 @@ class TaxonOut(BaseModel):
 
 
 @router.get("/taxa")
-def taxa(q: str, session: DB, settings: Config, reserve: str | None = None) -> list[TaxonOut]:
+def taxa(q: str, session: DB, reserve: Scoped, settings: Config) -> list[TaxonOut]:
     """Names for corrections (SpeciesNet's label list); the reserve's own species first."""
     listed: frozenset[str] = frozenset()
     country = None
@@ -265,7 +290,7 @@ class AuditOut(BaseModel):
     payload: dict[str, Any]
 
 
-@router.get("/audit/events")
+@router.get("/audit/events", dependencies=[require(Permission.VIEW_AUDIT)])
 def audit_events(session: DB, limit: int = 100) -> list[AuditOut]:
     rows = session.scalars(
         select(AuditEvent).order_by(AuditEvent.seq.desc()).limit(min(limit, 500))
@@ -291,7 +316,7 @@ def audit_verify(session: DB) -> dict[str, Any]:
 
 
 @router.get("/review/counts")
-def open_counts(session: DB, reserve: str | None = None) -> dict[str, int]:
+def open_counts(session: DB, reserve: Scoped) -> dict[str, int]:
     """Open items per queue (for the navigation badges)."""
     counts = {}
     for kind, routes in service.QUEUES.items():

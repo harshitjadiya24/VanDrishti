@@ -12,6 +12,7 @@ from sqlalchemy import Engine, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
+from tests.helpers import sign_in_as
 from tests.images import write_jpeg
 from vandrishti import audit
 from vandrishti.api.app import create_app
@@ -124,6 +125,21 @@ def test_review_undo_feedback_and_audit_chain(world, tmp_path: Path) -> None:  #
     app.dependency_overrides[get_session] = session_dep
     app.dependency_overrides[get_settings] = lambda: Settings(storage_root=tmp_path / "store")  # type: ignore[arg-type]
     c = TestClient(app)
+    # A ranger may not open the species queue or confirm a species; a viewer reviews nothing.
+    sign_in_as(app, "ravi", "ranger", [code])
+    assert c.get("/review/queue", params={"kind": "review", "reserve": code}).status_code == 403
+    assert (
+        c.post("/reviews", json={"image_id": str(ids["medium"]), "action": "confirm"}).status_code
+        == 403
+    )
+    sign_in_as(app, "vic", "viewer", [code])
+    assert (
+        c.get("/review/queue", params={"kind": "people_vehicles", "reserve": code}).status_code
+        == 403
+    )
+    sign_in_as(app, "asha", "reviewer", ["OTHER"])
+    assert c.get("/review/queue", params={"kind": "review", "reserve": code}).status_code == 403
+    sign_in_as(app, "asha", "reviewer", [code])
 
     queue = c.get("/review/queue", params={"kind": "review", "reserve": code}).json()
     assert [q["image_id"] for q in queue] == [str(ids["medium"])]
@@ -158,6 +174,7 @@ def test_review_undo_feedback_and_audit_chain(world, tmp_path: Path) -> None:  #
         },
     )
     assert fix.status_code == 201
+    sign_in_as(app, "ravi", "ranger", [code])  # rangers review people and vehicles
     alarm = c.post(
         "/reviews",
         json={
@@ -170,6 +187,7 @@ def test_review_undo_feedback_and_audit_chain(world, tmp_path: Path) -> None:  #
         },
     )
     assert alarm.status_code == 201
+    sign_in_as(app, "asha", "reviewer", [code])
     assert (
         c.post(
             "/reviews", json={"image_id": str(ids["medium"]), "action": "confirm", "reviewer": "x"}
@@ -199,7 +217,11 @@ def test_review_undo_feedback_and_audit_chain(world, tmp_path: Path) -> None:  #
         done = s.scalar(select(Routing).where(Routing.image_id == ids["people"]))
         assert done is not None and done.state is RouteState.DONE
 
+    assert c.get("/audit/events").status_code == 403  # the full trail is for admins
+    sign_in_as(app, "root", "admin")
     events = c.get("/audit/events").json()
+    actors = {e["actor"] for e in events if e["action"].startswith("review_")}
+    assert {"reviewer:asha", "reviewer:ravi"} <= actors  # signed by who was signed in
     assert {"review_confirm", "review_correct", "review_confirm_people", "review_undo"} <= {
         e["action"] for e in events
     }

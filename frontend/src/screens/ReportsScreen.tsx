@@ -7,7 +7,7 @@ const DESIGNS = ["targeted", "opportunistic", "systematicRandom", "simpleRandom"
 
 /** Section 11: reports (PDF/Excel) and the Camtrap DP export. */
 export function ReportsScreen() {
-  const { reserve } = useSession();
+  const { reserve, can } = useSession();
   const [period, setPeriod] = useState<ReportPeriod>("weekly");
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10));
   const [design, setDesign] = useState("");
@@ -74,7 +74,7 @@ export function ReportsScreen() {
         )}
       </section>
 
-      <section aria-labelledby="ctdp-h" className="grid gap-3">
+      {can("export") && <section aria-labelledby="ctdp-h" className="grid gap-3">
         <h2 id="ctdp-h" className="text-[16px] font-medium">Camtrap DP export</h2>
         <p className="max-w-3xl text-[14px] text-dim">
           The TDWG standard package for camera-trap data (GBIF can publish it). People and vehicles are never exported;
@@ -96,7 +96,7 @@ export function ReportsScreen() {
             <span className="text-[13px] text-dim">Choose a sampling design to download.</span>
           )}
         </div>
-      </section>
+      </section>}
 
       <section aria-labelledby="int-h" className="grid gap-2">
         <h2 id="int-h" className="text-[16px] font-medium">Integration API</h2>

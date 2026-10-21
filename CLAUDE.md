@@ -111,4 +111,16 @@ history, old Docker volumes). Do not look for it; build from the image.
   guessed: the caller states it. People/vehicle frames are never exported.
 - urllib title-cases header names (`X-vandrishti-timestamp`): compare headers case-insensitively.
 - Python type stubs and packages follow the same "≥ 14 days old" pin rule as npm.
+- Every console route needs a signed-in user (`api/deps.authenticated`, added per router in
+  `app.py`); writes need `X-CSRF-Token`. New endpoints: `require(Permission.X)`, `Scoped` for a
+  `reserve` query, `guard_*` for ids; sensitive views call `audit_view`. Sign actions with
+  `user.name`, never a client-sent name. API tests: `tests.helpers.sign_in_as(app, ...)`.
+- Rate limiters are in-process (`api/ratelimit.py`): tests that sign in must `LOGIN.reset()`;
+  the API must run one worker (or move limits to Redis).
+- Non-admins get coordinates rounded to 0.1° and EXIF without GPS (`rbac.round_coord`).
+- Originals are stored read-only: tamper tests must copy and `chmod u+w` the copy. Backups
+  hard-link only to the previous backup, never to the live store (derived files change).
+- Docker Hub pulls can fail here with "short read"/stall: retry, keep base images few, and pin
+  tags (python 3.11.15-slim-bookworm, node 24.12.0-alpine, caddy 2.11.4-alpine, uv 0.12.23).
+- Local dev admin credentials live in `data/local/admin_credentials.txt` (git-ignored).
 

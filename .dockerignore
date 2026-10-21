@@ -1,0 +1,8 @@
+# Allow-list: only what the web image needs. data/ (images, some with people) must never
+# enter a build context.
+*
+!frontend
+!deploy/Caddyfile
+frontend/node_modules
+frontend/dist
+frontend/.vite

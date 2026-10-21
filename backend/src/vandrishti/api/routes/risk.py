@@ -11,7 +11,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from vandrishti.api.deps import DB, Config, Writer
+from vandrishti.api.deps import DB, Config, Scoped, require
+from vandrishti.auth.rbac import Permission
 from vandrishti.db.models import Camera, PresenceEvent, Reserve, RiskAssessment, RiskLevel
 from vandrishti.pipeline.risk import RiskConfig, assess, build_events
 
@@ -50,8 +51,8 @@ def _rows(session: Any, reserve: str | None) -> list[Any]:
     return list(session.execute(q).all())
 
 
-@router.post("/risk/run", dependencies=[Writer])
-def risk_run(session: DB, settings: Config, reserve: str | None = None) -> dict[str, Any]:
+@router.post("/risk/run", dependencies=[require(Permission.RUN)])
+def risk_run(session: DB, reserve: Scoped, settings: Config) -> dict[str, Any]:
     """Group people/vehicle frames into events and (re)score them all."""
     created = build_events(session, settings, reserve=reserve)
     return {"new_events": created, "levels": assess(session, reserve=reserve)}
@@ -60,7 +61,7 @@ def risk_run(session: DB, settings: Config, reserve: str | None = None) -> dict[
 @router.get("/risk/events")
 def risk_events(
     session: DB,
-    reserve: str | None = None,
+    reserve: Scoped,
     level: Literal["low", "medium", "high"] | None = None,
     include_dismissed: bool = False,
     limit: int = 200,
@@ -99,7 +100,7 @@ def risk_events(
 
 
 @router.get("/risk/summary")
-def risk_summary(session: DB, reserve: str | None = None) -> dict[str, Any]:
+def risk_summary(session: DB, reserve: Scoped) -> dict[str, Any]:
     rows = [r for r in _rows(session, reserve) if not r[1].dismissed]
     levels = Counter(a.level.value for _, a, _, _ in rows)
     cams: dict[str, Counter[str]] = defaultdict(Counter)

@@ -11,7 +11,7 @@ const LEVELS = ["high", "medium", "low"] as const;
 
 /** Section 6: people/vehicle events, most urgent first, each with its reasons. */
 export function RiskScreen() {
-  const { reserve } = useSession();
+  const { reserve, can } = useSession();
   const qc = useQueryClient();
   const [level, setLevel] = useState<string | undefined>(undefined);
   const [showDismissed, setShowDismissed] = useState(false);
@@ -34,10 +34,10 @@ export function RiskScreen() {
             Each burst with people or vehicles is one event. Its level comes from points with reasons. {s?.note}
           </p>
         </div>
-        <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
+        {can("run") && <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
           className="h-9 rounded-md border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-50">
           {run.isPending ? "Scoring…" : "Re-score events"}
-        </button>
+        </button>}
       </header>
 
       {s && (

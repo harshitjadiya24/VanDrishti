@@ -16,7 +16,18 @@ from PIL import Image as PILImage
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from vandrishti.api.deps import DB, Config, Storage, Writer
+from vandrishti.api.deps import (
+    DB,
+    Config,
+    Scoped,
+    Storage,
+    User,
+    guard_embedding,
+    guard_individual,
+    guard_proposal,
+    require,
+)
+from vandrishti.auth.rbac import Permission
 from vandrishti.db.models import (
     Camera,
     Image,
@@ -49,14 +60,9 @@ class ProposalOut(BaseModel):
 
 class DecideIn(BaseModel):
     action: Literal["same", "new", "not_tiger"]
-    reviewer: str = Field(min_length=1, max_length=100)
     individual_id: uuid.UUID | None = None
     code: str | None = Field(default=None, max_length=32)
     name: str | None = Field(default=None, max_length=100)
-
-
-class UndoIn(BaseModel):
-    reviewer: str = Field(min_length=1, max_length=100)
 
 
 def _when(img: Image) -> datetime | None:
@@ -91,10 +97,7 @@ def _proposal_out(session: Any, p: ReidProposal) -> ProposalOut:
 
 @router.get("/identity/proposals")
 def proposals(
-    session: DB,
-    reserve: str | None = None,
-    state: Literal["open", "done"] = "open",
-    limit: int = 100,
+    session: DB, reserve: Scoped, state: Literal["open", "done"] = "open", limit: int = 100
 ) -> list[ProposalOut]:
     q = (
         select(ReidProposal)
@@ -112,15 +115,19 @@ def proposals(
     return [_proposal_out(session, p) for p in session.scalars(q)]
 
 
-@router.post("/identity/proposals/{proposal_id}/decide", dependencies=[Writer])
-def decide(proposal_id: uuid.UUID, body: DecideIn, session: DB) -> ProposalOut:
+@router.post(
+    "/identity/proposals/{proposal_id}/decide",
+    dependencies=[require(Permission.DECIDE_IDENTITY)],
+)
+def decide(proposal_id: uuid.UUID, body: DecideIn, session: DB, user: User) -> ProposalOut:
+    guard_proposal(session, user, proposal_id)
     try:
         p = service.decide(
             session,
             service.DecisionInput(
                 proposal_id=proposal_id,
                 action=body.action,
-                reviewer=body.reviewer.strip(),
+                reviewer=user.name,
                 individual_id=body.individual_id,
                 code=body.code,
                 name=body.name,
@@ -131,17 +138,21 @@ def decide(proposal_id: uuid.UUID, body: DecideIn, session: DB) -> ProposalOut:
     return _proposal_out(session, p)
 
 
-@router.post("/identity/proposals/{proposal_id}/undo", dependencies=[Writer])
-def undo(proposal_id: uuid.UUID, body: UndoIn, session: DB) -> ProposalOut:
+@router.post(
+    "/identity/proposals/{proposal_id}/undo", dependencies=[require(Permission.DECIDE_IDENTITY)]
+)
+def undo(proposal_id: uuid.UUID, session: DB, user: User) -> ProposalOut:
+    guard_proposal(session, user, proposal_id)
     try:
-        p = service.undo(session, proposal_id, body.reviewer.strip())
+        p = service.undo(session, proposal_id, user.name)
     except service.ReidError as e:
         raise HTTPException(409, str(e)) from e
     return _proposal_out(session, p)
 
 
 @router.get("/identity/embeddings/{embedding_id}/crop")
-def crop(embedding_id: uuid.UUID, session: DB, storage: Storage) -> Response:
+def crop(embedding_id: uuid.UUID, session: DB, storage: Storage, user: User) -> Response:
+    guard_embedding(session, user, embedding_id)
     """The tiger crop, cut from the display copy (already blurred where people were)."""
     row = session.execute(
         select(ReidEmbedding.crop_box, Image.display_key)
@@ -166,12 +177,13 @@ def crop(embedding_id: uuid.UUID, session: DB, storage: Storage) -> Response:
 
 
 @router.get("/identity/individuals")
-def individuals(session: DB, reserve: str | None = None) -> list[dict[str, Any]]:
+def individuals(session: DB, reserve: Scoped) -> list[dict[str, Any]]:
     return service.individuals(session, reserve=reserve)
 
 
 @router.get("/identity/individuals/{individual_id}/sightings")
-def sightings(individual_id: uuid.UUID, session: DB) -> list[dict[str, Any]]:
+def sightings(individual_id: uuid.UUID, session: DB, user: User) -> list[dict[str, Any]]:
+    guard_individual(session, user, individual_id)
     rows = session.execute(
         select(ReidEmbedding, Image, Camera)
         .join(Image, Image.id == ReidEmbedding.image_id)
@@ -193,7 +205,7 @@ def sightings(individual_id: uuid.UUID, session: DB) -> list[dict[str, Any]]:
 
 
 @router.get("/identity/similar")
-def similar(session: DB, settings: Config, reserve: str | None = None) -> list[dict[str, Any]]:
+def similar(session: DB, reserve: Scoped, settings: Config) -> list[dict[str, Any]]:
     """Named tigers that look alike: maybe one tiger named twice. A person checks."""
     return service.similar_individuals(
         session,

@@ -17,7 +17,8 @@ from sqlalchemy import select
 from vandrishti import audit
 from vandrishti.analytics import dashboard
 from vandrishti.analytics.labels import settled_labels
-from vandrishti.api.deps import DB
+from vandrishti.api.deps import DB, Config
+from vandrishti.api.ratelimit import RateLimiter
 from vandrishti.api.routes.outcomes import AlertOut, _alert_query, _alert_rows, report_response
 from vandrishti.db.models import (
     Alert,
@@ -38,22 +39,48 @@ router = APIRouter(prefix="/v1", tags=["integration v1"])
 TIMED = (TimeSource.EXIF, TimeSource.MANIFEST)
 
 
+_LIMITS: dict[int, RateLimiter] = {}
+REFUSED = RateLimiter(30)  # audit at most 30 refused attempts a minute per client
+
+
+def _limiter(per_minute: int) -> RateLimiter:
+    return _LIMITS.setdefault(per_minute, RateLimiter(per_minute))
+
+
 def api_key(
     request: Request,
     session: DB,
+    settings: Config,
     x_api_key: Annotated[str | None, Header()] = None,
     authorization: Annotated[str | None, Header()] = None,
 ) -> tuple[ApiKey, Reserve]:
     given = x_api_key or (authorization or "").removeprefix("Bearer ").strip()
     row = keys.verify(session, given) if given else None
     if row is None:
+        client = request.client.host if request.client else "unknown"
+        if REFUSED.allow(client):  # recorded, but a flood cannot fill the audit trail
+            parts = given.split("_") if given else []
+            audit.append(
+                session,
+                actor=f"client:{client}",
+                action="api_key_refused",
+                entity="v1",
+                entity_id=request.url.path[:64],
+                payload={"prefix": parts[1][:16] if len(parts) > 2 else None},
+            )
+            session.commit()
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "missing, wrong or revoked API key",
             {"WWW-Authenticate": "Bearer"},
         )
+    if not _limiter(settings.api_rate_per_minute).allow(row.prefix):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS, "rate limit: slow down", {"Retry-After": "60"}
+        )
     res = session.get(Reserve, row.reserve_id)
-    assert res is not None  # noqa: S101 (foreign key)
+    if res is None:  # pragma: no cover - foreign key
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "key has no reserve")
     audit.append(
         session,
         actor=f"apikey:{row.name}({row.prefix})",
