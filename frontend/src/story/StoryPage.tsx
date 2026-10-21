@@ -1,36 +1,63 @@
+import { useRef } from "react";
+import { ForkSection } from "./fork/ForkSection";
+import { Rivets } from "./parts";
+import { PipelineSection } from "./PipelineSection";
+import { gsap, prefersReducedMotion, useGSAP, useSmoothScroll } from "./scroll";
+import {
+  CloseSection,
+  DecideSection,
+  EngineeringSection,
+  IdentitySection,
+  OutcomesSection,
+  PrivacySection,
+  RiskSection,
+} from "./sections";
 import { stripeField } from "./stripes";
 
 const MILESTONES = [
-  { n: 1, label: "Camera" },
-  { n: 2, label: "Detect" },
-  { n: 3, label: "Decide" },
-  { n: 4, label: "Review" },
-  { n: 5, label: "Act" },
+  { n: 1, label: "See how it works ↓", href: "#how" },
+  { n: 2, label: "Detect", href: "#how" },
+  { n: 3, label: "Decide", href: "#stage-3" },
+  { n: 4, label: "Review", href: "#stage-4" },
+  { n: 5, label: "Act", href: "#stage-5" },
 ];
 
 /** The public story site. It makes no API calls and loads nothing from third parties. */
 export default function StoryPage() {
+  useSmoothScroll();
   return (
     <div className="min-h-dvh bg-board-deep text-on-board">
       <Hero />
+      <main>
+        <PipelineSection />
+        <ForkSection />
+        <DecideSection />
+        <PrivacySection />
+        <RiskSection />
+        <IdentitySection />
+        <OutcomesSection />
+        <EngineeringSection />
+        <CloseSection />
+      </main>
     </div>
   );
 }
 
-/** Small screws at the corners of an enamel plate or board. */
-function Rivets({ className = "bg-on-board/70" }: { className?: string }) {
-  return (
-    <>
-      {["left-2 top-2", "right-2 top-2", "left-2 bottom-2", "right-2 bottom-2"].map((p) => (
-        <span key={p} aria-hidden className={`absolute size-1.5 rounded-full ${p} ${className}`} />
-      ))}
-    </>
-  );
-}
-
 function Hero() {
+  const root = useRef<HTMLElement>(null);
+  // The board swings up on its posts, the stencil paints on, the verdict plate stamps down.
+  // Everything is visible without this; it only plays when motion is welcome.
+  useGSAP(() => {
+    if (prefersReducedMotion()) return;
+    const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+    tl.fromTo("[data-hero-board]", { rotateX: 14, y: 26, transformPerspective: 900, transformOrigin: "50% 100%" }, { rotateX: 0, y: 0, duration: 1.1 })
+      .fromTo("#hero-title", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.0, ease: "power3.inOut" }, 0.2)
+      .fromTo("[data-hero-box]", { strokeDashoffset: 936 }, { strokeDashoffset: 0, duration: 0.9, ease: "power2.inOut" }, 0.7)
+      .fromTo("[data-hero-verdict]", { scale: 1.08, y: -8, opacity: 0.2 }, { scale: 1, y: 0, opacity: 1, duration: 0.45, ease: "power4.out" }, 1.35)
+      .fromTo("[data-milestone]", { y: 18 }, { y: 0, stagger: 0.07, duration: 0.6, ease: "expo.out" }, 0.9);
+  }, { scope: root });
   return (
-    <section aria-labelledby="hero-title" className="flex min-h-dvh flex-col px-4 pt-4 md:px-10 md:pt-6">
+    <section ref={root} aria-labelledby="hero-title" className="flex min-h-dvh flex-col px-4 pt-4 md:px-10 md:pt-6">
       <header className="flex items-center justify-between">
         <span className="board-title text-[22px] tracking-wide">VanDrishti</span>
         <a href="/app" className="rounded-[10px] bg-on-board px-4 py-2 text-[15px] font-semibold text-board shadow-[0_2px_0_rgb(0_0_0/0.3)] hover:bg-white">
@@ -40,7 +67,7 @@ function Hero() {
 
       {/* The board: one painted forest-department sign, standing on two posts. */}
       <div className="mt-4 flex flex-1 flex-col">
-        <div className="relative rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] md:p-4">
+        <div data-hero-board className="relative rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] md:p-4">
           <Rivets />
           <div className="rounded-[8px] border-[3px] border-on-board/90 px-5 pt-5 pb-5 md:px-10 md:pt-6 md:pb-7">
             <h1 id="hero-title" className="board-title text-[clamp(3.6rem,11vw,6rem)] uppercase">VanDrishti</h1>
@@ -70,12 +97,12 @@ function Hero() {
 
       <nav aria-label="The road through VanDrishti" className="border-t-2 border-board-line pt-4 pb-6">
         <ol className="flex items-end gap-2 overflow-x-auto pb-1 md:gap-4">
-          {MILESTONES.map((m, i) => (
-            <li key={m.n} className="shrink-0">
-              <a href={i === 0 ? "#how" : `#stage-${m.n}`}
+          {MILESTONES.map((m) => (
+            <li key={m.n} data-milestone className="shrink-0">
+              <a href={m.href}
                 className="block w-[112px] overflow-hidden rounded-t-[56px] rounded-b-md bg-on-board text-center text-board shadow-[0_3px_0_rgb(0_0_0/0.35)] transition-transform duration-[var(--duration-base)] ease-[var(--ease-board)] hover:-translate-y-1 md:w-[132px]">
                 <span className="block bg-board-line pt-3 pb-1 text-[13px] font-semibold text-on-board">{m.n}</span>
-                <span className="block px-2 py-2 text-[15px] leading-tight font-semibold">{i === 0 ? "See how it works ↓" : m.label}</span>
+                <span className="block px-2 py-2 text-[15px] leading-tight font-semibold">{m.label}</span>
               </a>
             </li>
           ))}
@@ -107,7 +134,7 @@ function FramePlate() {
             <rect x="78" y="22" width="290" height="150" fill="url(#flank)" />
             <g transform="translate(60 8)">{stripes.map((s, i) => <path key={i} d={s.d} fill="#151515" />)}</g>
           </g>
-          <rect x="70" y="16" width="306" height="162" fill="none" stroke="#f2c230" strokeWidth="3" />
+          <rect data-hero-box x="70" y="16" width="306" height="162" fill="none" stroke="#f2c230" strokeWidth="3" strokeDasharray="936" />
         </svg>
         <span className="absolute top-0 left-[16.6%] rounded-b-sm bg-check px-1.5 text-[12px] font-semibold text-on-check">animal 0.94</span>
         <figcaption className="flex justify-between bg-black/80 px-3 py-1 font-[ui-monospace,monospace] text-[11px] tracking-wide text-[#d7ddd8]">
@@ -121,7 +148,7 @@ function FramePlate() {
 /** The model's proposal for that frame, in three fixed tiers: verdict, label, reason. */
 function VerdictPlate() {
   return (
-    <div className="relative rounded-[12px] bg-on-board px-5 pt-4 pb-5 text-[#142019] shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
+    <div data-hero-verdict className="relative rounded-[12px] bg-on-board px-5 pt-4 pb-5 text-[#142019] shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
       <Rivets className="bg-[#9aa79c]" />
       <span className="inline-block rounded bg-board px-2 py-0.5 text-[13px] font-semibold text-on-board">Auto-accepted</span>
       <p className="mt-2 text-[22px] leading-tight font-semibold">Tiger <span className="tabular text-[#4e5f53]">0.97</span></p>

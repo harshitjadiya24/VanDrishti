@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
+    // The story's numbers are tested against docs/EVALUATION.md; that folder (and only it) may be read.
+    fs: { allow: [".", "../docs"] },
     proxy: {
       "/api": {
         target: process.env.VANDRISHTI_API ?? "http://127.0.0.1:8000",

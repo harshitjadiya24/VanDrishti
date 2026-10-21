@@ -123,4 +123,17 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Docker Hub pulls can fail here with "short read"/stall: retry, keep base images few, and pin
   tags (python 3.11.15-slim-bookworm, node 24.12.0-alpine, caddy 2.11.4-alpine, uv 0.12.23).
 - Local dev admin credentials live in `data/local/admin_credentials.txt` (git-ignored).
+- Frontend design (F0+): world "The Forest Board" (PRODUCT.md, .impeccable/surfaces/). Story at
+  `/` (public, no API calls, lazy), console at `/app/*`. Every story number lives in
+  `src/story/results.ts` and a test checks it against docs/EVALUATION.md (`?raw` import; Vite
+  `server.fs.allow` includes `../docs`). Illustrative frames are stripe geometry, labelled synthetic.
+- three.js: one scene (`story/fork`), its own chunk, imported only when the section nears view.
+  Each mount creates its own canvas (React StrictMode mounts twice; two renderers on one canvas
+  showed stale frames). `frustumCulled = false` on moving InstancedMeshes. THREE.Clock is
+  deprecated: time with performance.now().
+- GSAP + ScrollTrigger + Lenis only on the story page (`story/scroll.ts`); everything is visible
+  without animation, and reduced motion shows final states. Privacy visuals never depend on an
+  animation (blur is always on). jsdom lacks matchMedia: `src/test/setup.ts` provides one.
+- Playwright screenshots are written asynchronously: wait ~2 s before reading the file, or
+  you review the previous capture.
 

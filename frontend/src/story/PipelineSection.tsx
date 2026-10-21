@@ -31,6 +31,18 @@ const TOP5 = [
   { label: "wild boar", score: 0.003 },
 ];
 
+/** What each stage added, in one line: the phone's readout under the pinned frame. */
+const SHORT = [
+  "Fingerprinted and locked",
+  "Usable · night infrared",
+  "Animal found · 0.94",
+  "Species: tiger 0.97 (top of five)",
+  "Second opinion 0.88 (shown, not used)",
+  "Outline traced",
+  "Confidence 0.97, with four reasons",
+  "Auto-accepted, with its explanation",
+];
+
 const FACTORS = [
   { name: "SpeciesNet score", value: "0.97" },
   { name: "On this reserve's species list", value: "× 1.00" },
@@ -43,16 +55,18 @@ export function PipelineSection() {
   const [step, setStep] = useState(0);
   const root = useRef<HTMLElement>(null);
 
+  // The stage follows scroll progress through the list of plates, so there is always
+  // exactly one current stage, even between plates.
   useGSAP(
     () => {
-      const items = root.current?.querySelectorAll<HTMLElement>("[data-step]") ?? [];
-      items.forEach((el) => {
-        ScrollTrigger.create({
-          trigger: el,
-          start: "top 62%",
-          end: "bottom 62%",
-          onToggle: (self) => { if (self.isActive) setStep(Number(el.dataset.step)); },
-        });
+      const list = root.current?.querySelector<HTMLElement>("[data-steps]");
+      if (!list) return;
+      ScrollTrigger.create({
+        trigger: list,
+        start: "top 55%",
+        end: "bottom 55%",
+        onUpdate: (self) => setStep(Math.min(STEPS.length - 1, Math.floor(self.progress * STEPS.length))),
+        onLeaveBack: () => setStep(0),
       });
     },
     { scope: root },
@@ -70,11 +84,11 @@ export function PipelineSection() {
         <div className="sticky top-3 z-10 self-start md:top-10">
           <StageFrame step={step} />
         </div>
-        <ol className="grid gap-[28vh] pb-[20vh] md:pt-[6vh]">
+        <ol data-steps className="grid gap-[16vh] pb-[16vh] md:pt-[4vh]">
           {STEPS.map((s, i) => (
-            <li key={s.title} data-step={i}
-              className={clsx("transition-opacity duration-[var(--duration-board)]", i === step ? "opacity-100" : "opacity-45")}>
-              <Plate className="max-w-[46ch]">
+            <li key={s.title} aria-current={i === step ? "step" : undefined}
+              className={clsx("transition-transform duration-[var(--duration-board)] ease-[var(--ease-board)]", i === step ? "translate-x-0" : "md:translate-x-3")}>
+              <Plate className={clsx("max-w-[46ch] transition-shadow duration-[var(--duration-board)]", i === step ? "ring-4 ring-check" : "")}>
                 <p className="text-[13px] font-semibold text-[#4e5f53]">{s.recipe}</p>
                 <h3 className="mt-1 text-[24px] leading-tight font-semibold">{s.title}</h3>
                 <p className="mt-2 text-[16px] leading-relaxed text-[#2f3d33]">{s.body}</p>
@@ -129,7 +143,8 @@ function StageFrame({ step }: { step: number }) {
         </figcaption>
       </div>
 
-      <div className="mt-3 grid min-h-[178px] gap-3 sm:grid-cols-2">
+      <p className="mt-2 text-[15px] font-semibold md:hidden" aria-live="polite">{SHORT[step]}</p>
+      <div className="mt-3 hidden min-h-[178px] gap-3 sm:grid-cols-2 md:grid">
         <Readout show={shown(3)} title="Species, top five">
           <ul className="grid gap-1">
             {TOP5.map((t) => (
@@ -156,7 +171,7 @@ function StageFrame({ step }: { step: number }) {
           </ul>
         </Readout>
       </div>
-      <div className={clsx("mt-3 rounded-[8px] border-2 border-board px-3 py-2 text-[14px] transition-[opacity,transform] duration-[var(--duration-board)] ease-[var(--ease-stamp)]",
+      <div className={clsx("mt-3 hidden rounded-[8px] border-2 border-board px-3 py-2 text-[14px] transition-[opacity,transform] md:block duration-[var(--duration-board)] ease-[var(--ease-stamp)]",
         shown(7) ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0")}>
         <b>Auto-accepted:</b> tiger 0.97 because SpeciesNet is confident, the reserve lists tigers, they are active at
         night, and the box is clear. Stored with every model's name and version.

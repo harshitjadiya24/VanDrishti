@@ -40,7 +40,7 @@
 
   /* Motion: one source for CSS, Motion and GSAP (mirrored in src/motion/tokens.ts). */
   --ease-board: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-boom: cubic-bezier(0.34, 1.25, 0.64, 1);
+  --ease-boom: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-stamp: cubic-bezier(0.2, 0.9, 0.1, 1);
   --duration-quick: 140ms;
   --duration-base: 240ms;
@@ -122,6 +122,10 @@ a { text-underline-offset: 0.2em; }
   text-wrap: balance;
 }
 .deva { font-family: var(--font-deva); }
+
+/* Digits a non-admin never sees: animated away on the story page, simply absent under reduced motion. */
+.drop-digit { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 1ch; }
+@media (prefers-reduced-motion: reduce) { .drop-digit { display: none; } }
 
 kbd {
   display: inline-grid; place-items: center; min-width: 1.25rem; padding: 0 0.3rem;

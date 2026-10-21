@@ -41,8 +41,9 @@ export function StageTitle({ id, milestone, children }: { id: string; milestone?
   return (
     <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
       {milestone && (
-        <span aria-hidden className="mb-1 grid h-12 w-10 place-items-end rounded-t-[20px] rounded-b-sm bg-on-board pb-1 text-[13px] font-bold text-board">
-          {milestone}
+        <span aria-hidden className="mb-1.5 block w-12 overflow-hidden rounded-t-[24px] rounded-b-[4px] bg-on-board text-center shadow-[0_3px_0_rgb(0_0_0/0.35)]">
+          <span className="block bg-board-line pt-2 pb-0.5 text-[15px] font-bold text-on-board">{milestone}</span>
+          <span className="block h-4" />
         </span>
       )}
       <h2 id={id} className="board-title text-[clamp(2.4rem,6vw,4.25rem)] uppercase">{children}</h2>
