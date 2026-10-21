@@ -2,9 +2,12 @@ import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-quer
 import clsx from "clsx";
 import { Activity, Ban, Bell, Eye, FileText, Fingerprint, HelpCircle, LayoutDashboard, PawPrint, ScrollText, ShieldAlert, Signpost, Siren, Sparkles } from "lucide-react";
 import type { ComponentType } from "react";
-import { NavLink, Outlet } from "react-router";
+import { useSyncExternalStore } from "react";
+import { NavLink } from "react-router";
 import { api, ApiError, setCsrf, type QueueKind } from "./api";
 import { SessionProvider, useSession } from "./context";
+import { PageTransition } from "./motion/PageTransition";
+import { getTheme, setTheme, subscribeTheme, type ThemeChoice } from "./motion/theme";
 import { LoginScreen } from "./screens/LoginScreen";
 
 const QUEUES: { kind: QueueKind; label: string; icon: ComponentType<{ size?: number }>; tone: string; perm: string }[] = [
@@ -73,6 +76,7 @@ function Layout() {
           ))}
         </select>
       </label>
+      <ThemeSwitch />
       <div className="flex items-center gap-2 text-[13px]">
         <span className="min-w-0 flex-1 truncate">
           {me?.display_name} <span className="text-dim">({me?.role})</span>
@@ -107,12 +111,12 @@ function Layout() {
         </details>
         <div className="hidden gap-3 px-4 pb-3 md:grid">{settings}</div>
         <nav aria-label="Queues" className="flex gap-1.5 overflow-x-auto px-4 pb-3 md:hidden">
-          {[{ to: "/dashboard", label: "Dashboard", n: undefined, perm: "view" }, { to: "/alerts", label: "Alerts", n: urgent || undefined, perm: "view" },
-            { to: "/reports", label: "Reports", n: undefined, perm: "view" }, { to: "/identity", label: "Tiger identities", n: undefined, perm: "view" },
-            { to: "/tigers", label: "Named tigers", n: undefined, perm: "view" }, { to: "/routing", label: "Routing", n: undefined, perm: "view" },
-            ...QUEUES.map((q) => ({ to: `/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind], perm: q.perm })),
-            { to: "/risk", label: "Poaching risk", n: undefined, perm: "view" }, { to: "/feedback", label: "Feedback", n: undefined, perm: "view" },
-            { to: "/audit", label: "Audit", n: undefined, perm: "view_audit" }].filter((x) => can(x.perm)).map((x) => (
+          {[{ to: "/app/dashboard", label: "Dashboard", n: undefined, perm: "view" }, { to: "/app/alerts", label: "Alerts", n: urgent || undefined, perm: "view" },
+            { to: "/app/reports", label: "Reports", n: undefined, perm: "view" }, { to: "/app/identity", label: "Tiger identities", n: undefined, perm: "view" },
+            { to: "/app/tigers", label: "Named tigers", n: undefined, perm: "view" }, { to: "/app/routing", label: "Routing", n: undefined, perm: "view" },
+            ...QUEUES.map((q) => ({ to: `/app/review/${q.kind}`, label: q.label, n: counts.data?.[q.kind], perm: q.perm })),
+            { to: "/app/risk", label: "Poaching risk", n: undefined, perm: "view" }, { to: "/app/feedback", label: "Feedback", n: undefined, perm: "view" },
+            { to: "/app/audit", label: "Audit", n: undefined, perm: "view_audit" }].filter((x) => can(x.perm)).map((x) => (
             <NavLink key={x.to} to={x.to}
               className={({ isActive }) => clsx("shrink-0 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap",
                 isActive ? "border-amber text-ink" : "border-line text-dim")}>
@@ -121,21 +125,21 @@ function Layout() {
           ))}
         </nav>
         <nav aria-label="Main" className="hidden gap-0.5 px-2 pb-4 md:grid">
-          <NavLink to="/dashboard" className={link}><LayoutDashboard size={17} /> Dashboard</NavLink>
-          <NavLink to="/alerts" className={link}>
+          <NavLink to="/app/dashboard" className={link}><LayoutDashboard size={17} /> Dashboard</NavLink>
+          <NavLink to="/app/alerts" className={link}>
             <span className={urgent ? "text-alarm" : undefined}><Bell size={17} /></span>
             <span className="flex-1">Alerts</span>
             {urgent ? <span className="rounded-full bg-base px-2 text-[12px] tabular-nums text-ink">{urgent}</span> : null}
           </NavLink>
-          <NavLink to="/reports" className={link}><FileText size={17} /> Reports and exports</NavLink>
-          <NavLink to="/identity" className={link}><span className="text-amber"><Fingerprint size={17} /></span> Tiger identities</NavLink>
-          <NavLink to="/tigers" className={link}><PawPrint size={17} /> Named tigers</NavLink>
-          <NavLink to="/routing" className={link}><Signpost size={17} /> Routing (section 7)</NavLink>
+          <NavLink to="/app/reports" className={link}><FileText size={17} /> Reports and exports</NavLink>
+          <NavLink to="/app/identity" className={link}><span className="text-amber"><Fingerprint size={17} /></span> Tiger identities</NavLink>
+          <NavLink to="/app/tigers" className={link}><PawPrint size={17} /> Named tigers</NavLink>
+          <NavLink to="/app/routing" className={link}><Signpost size={17} /> Routing (section 7)</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Review queues (section 8)</div>
           {QUEUES.filter((q) => can(q.perm)).map(({ kind, label, icon: Icon, tone }) => {
             const n = counts.data?.[kind];
             return (
-              <NavLink key={kind} to={`/review/${kind}`} className={link}>
+              <NavLink key={kind} to={`/app/review/${kind}`} className={link}>
                 <span className={tone}><Icon size={17} /></span>
                 <span className="flex-1">{label}</span>
                 {n ? <span className="rounded-full bg-base px-2 text-[12px] tabular-nums text-ink">{n}</span> : null}
@@ -143,17 +147,40 @@ function Layout() {
             );
           })}
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Section 6</div>
-          <NavLink to="/risk" className={link}><span className="text-alarm"><Siren size={17} /></span> Poaching risk</NavLink>
+          <NavLink to="/app/risk" className={link}><span className="text-alarm"><Siren size={17} /></span> Poaching risk</NavLink>
           <div className="mt-3 px-2.5 pb-1 text-[12px] text-dim">Records</div>
-          <NavLink to="/feedback" className={link}><Activity size={17} /> Feedback</NavLink>
-          {can("view_audit") && <NavLink to="/audit" className={link}><ScrollText size={17} /> Audit trail</NavLink>}
+          <NavLink to="/app/feedback" className={link}><Activity size={17} /> Feedback</NavLink>
+          {can("view_audit") && <NavLink to="/app/audit" className={link}><ScrollText size={17} /> Audit trail</NavLink>}
         </nav>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-7">
-        <Outlet />
+        <PageTransition />
       </main>
     </div>
   );
 }
 
 export { QUEUES };
+
+const THEMES: { value: ThemeChoice; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Daylight" },
+  { value: "dark", label: "Night" },
+];
+
+/** Daylight for field and desk work; night patrol for long night-IR sessions. */
+function ThemeSwitch() {
+  const choice = useSyncExternalStore(subscribeTheme, getTheme);
+  return (
+    <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-1 rounded-md border border-line p-0.5 text-[12px]">
+      {THEMES.map((t) => (
+        <button key={t.value} type="button" role="radio" aria-checked={choice === t.value}
+          onClick={() => setTheme(t.value)}
+          className={clsx("rounded px-2 py-1", choice === t.value ? "bg-raised text-ink" : "text-dim hover:text-ink")}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+

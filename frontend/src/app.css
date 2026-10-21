@@ -1,27 +1,139 @@
 @import "tailwindcss";
+@import "@fontsource/mukta/400.css";
+@import "@fontsource/mukta/500.css";
+@import "@fontsource/mukta/600.css";
+@import "@fontsource/mukta/700.css";
+@import "@fontsource-variable/big-shoulders-stencil/index.css";
+@import "@fontsource/baloo-2/600.css";
 
-/* VanDrishti console tokens: a night-forest palette. Amber = needs a person; red = people,
-   vehicles and failures; green = confirmed. Never colour alone: every state also has a word. */
+/* The Forest Board. Forest-department signboards, check-posts and milestones.
+   - Board green is the story's ground; white enamel is the console's daylight ground.
+   - Check-post yellow means "a person decides here"; signboard red is only for people,
+     vehicles and failures. Every state also carries a word, never colour alone.
+   - Night patrol (dark) follows the system, or [data-theme] when someone chooses. */
+
 @theme {
-  --color-ink: #e7ece9;
-  --color-dim: #9fb0a8;
-  --color-base: #121b17;
-  --color-panel: #1a2621;
-  --color-raised: #22322b;
-  --color-line: #31443b;
-  --color-amber: #e3a33b;
-  --color-alarm: #e5585c;
-  --color-ok: #5fae7f;
-  --color-sky: #6b94b8;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Sans Devanagari", sans-serif;
+  /* Fixed world colours (both themes). */
+  --color-board: #14532d;
+  --color-board-deep: #0e3d21;
+  --color-board-line: #2c6b45;
+  --color-on-board: #f5f6f1;
+  --color-on-board-dim: #b9cdbd;
+  --color-check: #f2c230;
+  --color-on-check: #15170f;
+
+  /* Theme-driven roles (values below). Old names kept so existing screens keep working. */
+  --color-base: var(--ground);
+  --color-panel: var(--plate);
+  --color-raised: var(--plate-raised);
+  --color-ink: var(--ink);
+  --color-dim: var(--dim);
+  --color-line: var(--line);
+  --color-amber: var(--check-text);
+  --color-alarm: var(--alarm);
+  --color-ok: var(--ok);
+  --color-sky: var(--neutral-mark);
+
+  --font-sans: "Mukta", "Noto Sans Devanagari", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Big Shoulders Stencil Variable", "Mukta", ui-sans-serif, sans-serif;
+  --font-deva: "Baloo 2", "Mukta", "Noto Sans Devanagari", sans-serif;
+
+  /* Motion: one source for CSS, Motion and GSAP (mirrored in src/motion/tokens.ts). */
+  --ease-board: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-boom: cubic-bezier(0.34, 1.25, 0.64, 1);
+  --ease-stamp: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --duration-quick: 140ms;
+  --duration-base: 240ms;
+  --duration-board: 520ms;
 }
 
-html, body { background: var(--color-base); color: var(--color-ink); }
-body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
-:focus-visible { outline: 2px solid var(--color-amber); outline-offset: 2px; border-radius: 4px; }
+/* Daylight: white enamel boards, green and black paint. Readable in outdoor light. */
+:root {
+  color-scheme: light;
+  --ground: #f3f4ee;
+  --plate: #ffffff;
+  --plate-raised: #e8ebe3;
+  --ink: #142019;
+  --dim: #4e5f53;
+  --line: #cfd6cb;
+  --check-text: #7a5800;
+  --alarm: #b3271c;
+  --ok: #1e6b3c;
+  --neutral-mark: #3f6f8f;
+  --shadow-plate: 0 1px 2px rgb(20 32 25 / 0.08), 0 6px 16px -6px rgb(20 32 25 / 0.18);
+}
+
+/* Night patrol: dark ground for long night-IR review; yellow and red stay legible. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0b130e;
+    --plate: #121d16;
+    --plate-raised: #1a281f;
+    --ink: #e7efe9;
+    --dim: #9db1a3;
+    --line: #2a3a30;
+    --check-text: #f2c230;
+    --alarm: #f0705f;
+    --ok: #5fbf85;
+    --neutral-mark: #7fa8c4;
+    --shadow-plate: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px -8px rgb(0 0 0 / 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0b130e;
+  --plate: #121d16;
+  --plate-raised: #1a281f;
+  --ink: #e7efe9;
+  --dim: #9db1a3;
+  --line: #2a3a30;
+  --check-text: #f2c230;
+  --alarm: #f0705f;
+  --ok: #5fbf85;
+  --neutral-mark: #7fa8c4;
+  --shadow-plate: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px -8px rgb(0 0 0 / 0.6);
+}
+
+html, body { background: var(--ground); color: var(--ink); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Browser surfaces carry the design too. */
+::selection { background: var(--color-check); color: var(--color-on-check); }
+:root { caret-color: var(--ok); accent-color: var(--color-board); }
+* { scrollbar-color: var(--line) transparent; }
+:focus-visible { outline: 2px solid var(--color-check); outline-offset: 2px; border-radius: 4px; }
+a { text-underline-offset: 0.2em; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Board lettering: stencilled titles. Display sizes cap at 6rem; tracking never below -0.02em. */
+.board-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+  text-wrap: balance;
+}
+.deva { font-family: var(--font-deva); }
+
 kbd {
   display: inline-grid; place-items: center; min-width: 1.25rem; padding: 0 0.3rem;
-  border: 1px solid var(--color-line); border-radius: 4px; font-size: 11px; line-height: 18px;
-  color: var(--color-dim); background: var(--color-base);
+  border: 1px solid var(--line); border-radius: 4px; font-size: 11px; line-height: 18px;
+  color: var(--dim); background: var(--ground); font-family: var(--font-sans);
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -81,6 +81,25 @@ reviewer a second); people and vehicles are blurred from 0.1 (privacy errs on th
   one model loaded at a time.
 
 
+## Section 7 — confidence routing on the sample (Phase 4, re-counted 2026-10-21)
+
+The 252 LILA sample frames, routed with the defaults (auto-accept ≥ 0.9 with a 5% random
+spot check, review 0.6–0.9, uncertain < 0.6, a 10% random sample of likely-blank frames,
+people and vehicles always to a person):
+
+| Route | Frames | Waiting for a person |
+|---|---|---|
+| Auto-accepted | 86 | 5 (random spot checks) |
+| Review (0.6–0.9) | 27 | 27 |
+| Uncertain (< 0.6) | 12 | 12 |
+| People or vehicles | 66 | 66 |
+| Likely blank | 61 | 7 (random sample) |
+| **Total** | **252** | **117** |
+
+**Caveat:** the sample was drawn to include vehicles and empty frames on purpose (at most 4
+frames per location; vehicles up to 15). These proportions describe this sample, not any
+reserve's real stream.
+
 ## Section 6 — people/vehicle events and risk (Phase 5, 2026-10-21)
 
 - **No ground truth exists** for poaching risk here, so there is no accuracy number. What

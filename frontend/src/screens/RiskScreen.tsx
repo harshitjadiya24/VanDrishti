@@ -80,7 +80,7 @@ export function RiskScreen() {
                 <span className="text-[13px] text-dim">score {e.score}</span>
               </div>
               <RiskReasons factors={e.factors} />
-              <Link to="/review/people_vehicles" className="text-[13px] text-amber underline-offset-4 hover:underline">
+              <Link to="/app/review/people_vehicles" className="text-[13px] text-amber underline-offset-4 hover:underline">
                 Review in the people &amp; vehicles queue
               </Link>
             </div>

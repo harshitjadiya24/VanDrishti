@@ -253,7 +253,7 @@ function TrendsSection({ reserve }: { reserve?: string }) {
         </p>
       )}
       <p className="text-[12px] text-dim">
-        Identity checks waiting: <Link to="/identity" className="text-amber underline-offset-4 hover:underline">tiger identities</Link>.
+        Identity checks waiting: <Link to="/app/identity" className="text-amber underline-offset-4 hover:underline">tiger identities</Link>.
       </p>
     </section>
   );

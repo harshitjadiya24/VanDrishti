@@ -48,7 +48,7 @@ export function RoutingScreen() {
 
       <section aria-label="Confidence bands" className="grid gap-3 md:grid-cols-3">
         {BANDS.map((b) => (
-          <Link key={b.route} to={`/review/${b.queue}`} className={clsx("rounded-md border-t-4 bg-panel p-4 hover:bg-raised", b.tone)}>
+          <Link key={b.route} to={`/app/review/${b.queue}`} className={clsx("rounded-md border-t-4 bg-panel p-4 hover:bg-raised", b.tone)}>
             <div className="text-[13px] text-dim">{b.title} <span className="text-ink">{b.range}</span></div>
             <div className="mt-1 text-[32px] font-semibold tabular-nums">{count(b.route)}</div>
             <div className="text-[13px] text-dim">{b.outcome}</div>
@@ -61,7 +61,7 @@ export function RoutingScreen() {
       </section>
       <section aria-label="Other routes" className="grid gap-3 md:grid-cols-3">
         {OTHER.map((o) => (
-          <Link key={o.route} to={`/review/${o.queue}`} className="rounded-md bg-panel p-4 hover:bg-raised">
+          <Link key={o.route} to={`/app/review/${o.queue}`} className="rounded-md bg-panel p-4 hover:bg-raised">
             <div className="text-[13px] text-dim">{o.title}</div>
             <div className="mt-1 text-[24px] font-semibold tabular-nums">{count(o.route)}</div>
             <div className="text-[13px] text-dim">{o.outcome}</div>

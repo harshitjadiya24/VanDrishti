@@ -26,3 +26,7 @@ deploy/.env.prod
 backups/
 store/
 !deploy/.env.prod.example
+
+# Design review captures can show console frames (some with people): never commit them
+.impeccable/review/
+.impeccable/questions/
