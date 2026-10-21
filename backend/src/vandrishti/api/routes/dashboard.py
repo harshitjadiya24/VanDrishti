@@ -19,6 +19,12 @@ def overview(session: DB, reserve: Scoped) -> dict[str, Any]:
     return dashboard.overview(session, reserve=reserve)
 
 
+@router.get("/pipeline")
+def pipeline(session: DB, reserve: Scoped) -> dict[str, Any]:
+    """Exact counts at each stage of the road, for the console's pipeline view."""
+    return dashboard.pipeline(session, reserve=reserve)
+
+
 @router.get("/map")
 def camera_map(session: DB, reserve: Scoped, user: User) -> dict[str, Any]:
     """Exact positions only for roles granted precise locations; others get 0.1 degree."""

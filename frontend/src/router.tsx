@@ -6,6 +6,7 @@ import { AuditScreen } from "./screens/AuditScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
 import { FeedbackScreen } from "./screens/FeedbackScreen";
 import { IdentityScreen, TigersScreen } from "./screens/IdentityScreen";
+import { PipelineScreen } from "./screens/PipelineScreen";
 import { ReportsScreen } from "./screens/ReportsScreen";
 import { RiskScreen } from "./screens/RiskScreen";
 import { RoutingScreen } from "./screens/RoutingScreen";
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/app/dashboard" replace /> },
       { path: "dashboard", element: <DashboardScreen /> },
+      { path: "pipeline", element: <PipelineScreen /> },
       { path: "alerts", element: <AlertsScreen /> },
       { path: "reports", element: <ReportsScreen /> },
       { path: "identity", element: <IdentityScreen /> },

@@ -157,6 +157,14 @@ def test_settled_labels_and_dashboard(world) -> None:  # type: ignore[no-untyped
         assert d["hourly_tiger_images"][:5] == [1, 1, 1, 1, 1]
         assert d["hourly_animal_images"][0] == 2
         assert d["untimed_animal_images"] == 1
+        pipe = dashboard.pipeline(s, reserve=code)
+        assert pipe["ingest"]["images"] == 9 and pipe["detect"]["animal"] == 9
+        assert pipe["decided"] == 9
+        assert (
+            pipe["routes"]["auto_accept"]["total"] == 7 and pipe["routes"]["review"]["total"] == 2
+        )
+        assert pipe["reviews_done"] == 1  # the leopard correction
+        assert dashboard.pipeline(s, reserve="NO-SUCH")["ingest"]["images"] == 0
         t = dashboard.trends(s, reserve=code, period="week")
         assert [b["start"] for b in t["buckets"]] == ["2024-03-04"]  # local Monday
         assert t["buckets"][0]["animal_images"] == 7  # 5 tigers, chital, leopard; not untimed

@@ -302,3 +302,116 @@ def trends(
         "untimed_animal_images": untimed,
         "untimed_people_vehicle_events": untimed_events,
     }
+
+
+def pipeline(session: Session, *, reserve: str | None = None) -> dict[str, Any]:
+    """The road as counts: how many frames reached each stage and where they are waiting.
+    Every number is an exact count from the database (no estimates)."""
+    from vandrishti.db.models import (
+        Alert,
+        AlertState,
+        Decision,
+        QualityStatus,
+        Review,
+        ReviewAction,
+        Route,
+        RouteState,
+        Routing,
+    )
+
+    def scoped(q: Any, image_col: Any = Image.id) -> Any:
+        q = q.join(Image, Image.id == image_col) if image_col is not Image.id else q
+        q = q.join(Camera, Camera.id == Image.camera_id).join(
+            Reserve, Reserve.id == Camera.reserve_id
+        )
+        return q.where(Reserve.code == reserve) if reserve else q
+
+    def count(q: Any) -> int:
+        return int(session.scalar(q) or 0)
+
+    images = scoped(select(func.count()).select_from(Image))
+    ingested = count(images)
+    corrupt = count(images.where(Image.is_corrupt.is_(True)))
+    quality = dict(
+        session.execute(
+            scoped(select(Image.quality_status, func.count()).select_from(Image)).group_by(
+                Image.quality_status
+            )
+        ).all()
+    )
+    screen = dict(
+        session.execute(
+            scoped(select(Image.screen, func.count()).select_from(Image)).group_by(Image.screen)
+        ).all()
+    )
+    decided = count(
+        scoped(
+            select(func.count(func.distinct(Decision.image_id))).select_from(Decision),
+            Decision.image_id,
+        )
+    )
+    routes: dict[str, dict[str, int]] = defaultdict(dict)
+    for route, state, n in session.execute(
+        scoped(
+            select(Routing.route, Routing.state, func.count()).select_from(Routing),
+            Routing.image_id,
+        ).group_by(Routing.route, Routing.state)
+    ):
+        routes[route.value][state.value] = n
+    reviews = count(
+        scoped(select(func.count()).select_from(Review), Review.image_id).where(
+            Review.undone_at.is_(None), Review.action != ReviewAction.SKIP
+        )
+    )
+    levels = Counter(a.level.value for _, a in _events(session, reserve))
+    emb = scoped(select(func.count()).select_from(ReidEmbedding), ReidEmbedding.image_id)
+    proposals_open = count(
+        scoped(
+            select(func.count())
+            .select_from(ReidProposal)
+            .join(ReidEmbedding, ReidEmbedding.id == ReidProposal.embedding_id),
+            ReidEmbedding.image_id,
+        ).where(ReidProposal.state == ProposalState.OPEN)
+    )
+    ind_q = (
+        select(func.count())
+        .select_from(Individual)
+        .join(Reserve, Reserve.id == Individual.reserve_id)
+    )
+    al_q = (
+        select(Alert.severity, func.count())
+        .join(Reserve, Reserve.id == Alert.reserve_id)
+        .where(Alert.state == AlertState.OPEN)
+    )
+    if reserve:
+        ind_q, al_q = ind_q.where(Reserve.code == reserve), al_q.where(Reserve.code == reserve)
+    alerts = {s.value: n for s, n in session.execute(al_q.group_by(Alert.severity))}
+
+    def route_counts(r: Route) -> dict[str, int]:
+        d = routes.get(r.value, {})
+        waiting = d.get(RouteState.OPEN.value, 0)
+        return {"total": sum(d.values()), "waiting": waiting}
+
+    return {
+        "ingest": {"images": ingested, "corrupt": corrupt},
+        "quality": {
+            k: quality.get(getattr(QualityStatus, k.upper()), 0)
+            for k in ("pass", "fail", "pending")
+        },
+        "detect": {
+            "animal": screen.get(ScreenOutcome.ANIMAL, 0),
+            "people_vehicles": screen.get(ScreenOutcome.HUMAN_VEHICLE, 0),
+            "blank": screen.get(ScreenOutcome.NO_OBJECT, 0),
+            "not_screened": screen.get(None, 0),
+        },
+        "decided": decided,
+        "routes": {r.value: route_counts(r) for r in Route},
+        "reviews_done": reviews,
+        "risk": {k: levels.get(k, 0) for k in ("high", "medium", "low")},
+        "identity": {
+            "embedded": count(emb),
+            "proposals_open": proposals_open,
+            "named_tigers": count(ind_q),
+        },
+        "alerts_open": {k: alerts.get(k, 0) for k in ("critical", "warning", "info")},
+    }

@@ -2,7 +2,7 @@ import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-quer
 import clsx from "clsx";
 import {
   Activity, Ban, Bell, Eye, FileText, Fingerprint, HelpCircle, LayoutDashboard, Menu, PawPrint, ScrollText,
-  ShieldAlert, Signpost, Siren, Sparkles, X,
+  ShieldAlert, Signpost, Siren, Sparkles, Workflow, X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentType, type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -77,6 +77,7 @@ function Layout() {
       { to: "/app/feedback", label: "Feedback", icon: Activity, perm: "view" },
     ] },
     { title: "Decide", milestone: 3, items: [
+      { to: "/app/pipeline", label: "The road, live", icon: Workflow, perm: "view" },
       { to: "/app/routing", label: "Routing", icon: Signpost, perm: "view" },
     ] },
     { title: "Review", milestone: 4, items: [

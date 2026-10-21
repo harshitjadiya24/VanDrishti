@@ -218,6 +218,19 @@ export interface Me {
 let csrfToken = "";
 export const setCsrf = (token: string) => { csrfToken = token; };
 
+export interface RouteCount2 { total: number; waiting: number }
+export interface Pipeline {
+  ingest: { images: number; corrupt: number };
+  quality: { pass: number; fail: number; pending: number };
+  detect: { animal: number; people_vehicles: number; blank: number; not_screened: number };
+  decided: number;
+  routes: Record<"auto_accept" | "review" | "uncertain" | "likely_blank" | "people_vehicles" | "quality", RouteCount2>;
+  reviews_done: number;
+  risk: Record<"high" | "medium" | "low", number>;
+  identity: { embedded: number; proposals_open: number; named_tigers: number };
+  alerts_open: Record<"critical" | "warning" | "info", number>;
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
@@ -274,6 +287,7 @@ export const api = {
   cameraMap: (reserve?: string) =>
     request<{ cameras: MapCamera[]; without_location: MapCamera[] }>(`/dashboard/map${qs({ reserve })}`),
   cameraDetail: (id: string) => request<CameraDetail>(`/dashboard/cameras/${id}`),
+  pipeline: (reserve?: string) => request<Pipeline>(`/dashboard/pipeline${qs({ reserve })}`),
   trends: (reserve: string | undefined, period: "day" | "week") => request<Trends>(`/dashboard/trends${qs({ reserve, period })}`),
   proposals: (reserve?: string) => request<Proposal[]>(`/identity/proposals${qs({ reserve, limit: 200 })}`),
   decideIdentity: (id: string, body: IdentityDecision) =>
