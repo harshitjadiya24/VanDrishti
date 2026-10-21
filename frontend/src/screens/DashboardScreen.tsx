@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import { useState } from "react";
 import { Link } from "react-router";
+import { MapPin } from "lucide-react";
 import { api, type MapCamera } from "../api";
+import { EmptyState, StatTile } from "../components/kit";
 import { localTime } from "../components/FrameView";
 import { RiskBadge } from "../components/RiskBadge";
 import { useSession } from "../context";
@@ -31,12 +33,12 @@ export function DashboardScreen() {
         <section aria-labelledby="overview-h" className="grid gap-3">
           <h2 id="overview-h" className="text-[16px] font-medium">Overview</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Tile label="Images" value={o.images} note={`${o.cameras_active} of ${o.cameras} cameras active`} />
-            <Tile label="Animal frames" value={o.screen.animal}
+            <StatTile label="Images" value={o.images} note={`${o.cameras_active} of ${o.cameras} cameras active`} />
+            <StatTile label="Animal frames" value={o.screen.animal}
               note={`${o.animal_images_settled} settled, ${o.animal_images_unsettled} waiting for a person`} />
-            <Tile label="Tiger frames" value={o.tiger_images}
+            <StatTile label="Tiger frames" value={o.tiger_images}
               note={`${o.named_tigers} named tiger${o.named_tigers === 1 ? "" : "s"}, ${o.open_identity_proposals} identity checks open`} />
-            <Tile label="People or vehicle events" value={o.people_vehicle_events} tone="alarm"
+            <StatTile label="People or vehicle events" value={o.people_vehicle_events} tone="alarm"
               note={`${o.risk_levels.high} high, ${o.risk_levels.medium} medium, ${o.risk_levels.low} low risk`} />
           </div>
           {o.top_species.length > 0 && (
@@ -98,24 +100,17 @@ export function DashboardScreen() {
   );
 }
 
-function Tile({ label, value, note, tone }: { label: string; value: number; note: string; tone?: "alarm" }) {
-  return (
-    <div className="rounded-md bg-panel p-4">
-      <div className="text-[13px] text-dim">{label}</div>
-      <div className={clsx("mt-1 text-[28px] font-semibold tabular-nums", tone === "alarm" && value > 0 && "text-alarm")}>
-        {value.toLocaleString()}
-      </div>
-      <div className="mt-1 text-[12px] text-dim">{note}</div>
-    </div>
-  );
-}
 
 const RISK_FILL = { high: "var(--color-alarm)", medium: "var(--color-amber)", low: "var(--color-dim)" } as const;
 
 /** Cameras placed by their coordinates on a plain grid: no map tiles, nothing sent to a third party. */
 export function CameraMap({ cameras, selected, onSelect }: { cameras: MapCamera[]; selected: string | null; onSelect: (id: string) => void }) {
   if (cameras.length === 0) {
-    return <p className="rounded-md bg-panel p-4 text-[14px] text-dim">No camera in this view has coordinates yet, so there is nothing to place.</p>;
+    return (
+      <EmptyState icon={<MapPin size={20} />} title="No camera has coordinates yet">
+        The map places cameras by their registered latitude and longitude, and never guesses a position.
+      </EmptyState>
+    );
   }
   const lats = cameras.map((c) => c.latitude as number);
   const lons = cameras.map((c) => c.longitude as number);

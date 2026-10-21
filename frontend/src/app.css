@@ -123,6 +123,11 @@ a { text-underline-offset: 0.2em; }
 }
 .deva { font-family: var(--font-deva); }
 
+/* Loading sheen: slow, low contrast, off under reduced motion. */
+.skeleton { background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--plate) 70%, transparent) 50%, transparent 70%); background-size: 220% 100%; animation: sheen 1.6s var(--ease-board) infinite; }
+@keyframes sheen { from { background-position: 120% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; background-image: none; } }
+
 /* Digits a non-admin never sees: animated away on the story page, simply absent under reduced motion. */
 .drop-digit { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 1ch; }
 @media (prefers-reduced-motion: reduce) { .drop-digit { display: none; } }

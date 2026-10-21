@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
+import { MotionGlobalConfig } from "motion/react";
 import { afterEach } from "vitest";
 
 // Unmount after each test: mounted screens keep keyboard listeners alive otherwise.
@@ -19,3 +20,6 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+// jsdom does not run animation frames reliably: Motion finishes every animation at once in tests.
+MotionGlobalConfig.skipAnimations = true;

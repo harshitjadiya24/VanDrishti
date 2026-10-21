@@ -79,7 +79,7 @@ describe("review screen", () => {
     expect(await screen.findByRole("button", { name: /Confirm people\/vehicle/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Confirm Y/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /False alarm/ })).toBeInTheDocument();
-    expect(screen.getByText("high risk")).toBeInTheDocument();
+    expect(screen.getByText("High risk")).toBeInTheDocument();
     expect(screen.getByText("at night, after sunset at this camera")).toBeInTheDocument();
   });
 

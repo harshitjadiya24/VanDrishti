@@ -1,13 +1,16 @@
 import clsx from "clsx";
+import { motion, useReducedMotion } from "motion/react";
+import { DURATION, EASE_BOARD } from "../motion/tokens";
 import { api, type QueueItem } from "../api";
 
-const BOX_COLOUR: Record<string, string> = { animal: "#e7ece9", person: "#e5585c", vehicle: "#e3a33b" };
+const BOX_COLOUR: Record<string, string> = { animal: "#f2c230", person: "#e2553c", vehicle: "#e2553c" };
 
 /** The display copy (already blurred for people/vehicles), numbered boxes, optional SAM outline. */
 export function FrameView({ item, showMask }: { item: QueueItem; showMask: boolean }) {
   const maskUrl = api.maskUrl(item.image_id);
+  const reduce = useReducedMotion();
   return (
-    <figure className="m-0">
+    <figure className="m-0 overflow-hidden rounded-[12px] bg-panel shadow-[var(--shadow-plate)]">
       <div className="relative overflow-hidden bg-black">
         <img
           src={api.displayUrl(item.image_id)}
@@ -22,9 +25,13 @@ export function FrameView({ item, showMask }: { item: QueueItem; showMask: boole
           />
         )}
         <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+          {/* Each box draws itself on, the detector's mark being made; reduced motion shows it whole. */}
           {item.boxes.map((b, i) => (
-            <rect key={i} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} fill="none"
-              stroke={BOX_COLOUR[b.category] ?? "#fff"} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+            <motion.rect key={`${item.image_id}-${i}`} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} fill="none"
+              stroke={BOX_COLOUR[b.category] ?? "#fff"} strokeWidth={2.5} vectorEffect="non-scaling-stroke"
+              pathLength={1} strokeDasharray="1"
+              initial={reduce ? false : { strokeDashoffset: 1 }} animate={{ strokeDashoffset: 0 }}
+              transition={{ duration: DURATION.board * 1.4, ease: EASE_BOARD, delay: 0.08 * i }} />
           ))}
         </svg>
         {item.boxes.map((b, i) => (
@@ -32,18 +39,18 @@ export function FrameView({ item, showMask }: { item: QueueItem; showMask: boole
             key={i}
             aria-hidden
             className={clsx("pointer-events-none absolute px-1 text-[11px] font-semibold leading-4",
-              b.category === "person" ? "bg-alarm text-white" : b.category === "vehicle" ? "bg-amber text-black" : "bg-ink text-black")}
+              b.category === "animal" ? "bg-check text-on-check" : "bg-[#e2553c] text-white")}
             style={{ left: `${b.box[0] * 100}%`, top: `${b.box[1] * 100}%`, transform: b.box[1] > 0.05 ? "translateY(-100%)" : undefined }}
           >
             {i + 1} {b.category} {b.confidence.toFixed(2)}
           </span>
         ))}
       </div>
-      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-panel px-3 py-2 text-[12px] text-dim">
+      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-[13px] text-dim">
         <span>Camera <b className="font-medium text-ink">{item.camera}</b></span>
         <span>{localTime(item.captured_at, item.timezone)}</span>
         <span>{item.boxes.length} box{item.boxes.length === 1 ? "" : "es"}</span>
-        {item.route === "people_vehicles" && <span className="text-alarm">People/vehicles blurred</span>}
+        {item.route === "people_vehicles" && <span className="font-semibold text-alarm">People and vehicles blurred</span>}
         {item.quality_flags.filter((f) => f !== "night_ir").map((f) => (
           <span key={f} className="rounded border border-line px-1.5">{f.replace(/_/g, " ")}</span>
         ))}

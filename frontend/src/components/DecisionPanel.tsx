@@ -1,6 +1,8 @@
-import clsx from "clsx";
 import { CircleAlert, CircleCheck, Info } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import type { QueueItem } from "../api";
+import { DURATION, EASE_BOARD } from "../motion/tokens";
+import { ConfidenceDial } from "./kit";
 import { RiskBadge, RiskReasons } from "./RiskBadge";
 
 export function band(c: number | null): { word: string; tone: string } {
@@ -14,6 +16,7 @@ export function band(c: number | null): { word: string; tone: string } {
 export function DecisionPanel({ item }: { item: QueueItem }) {
   const ex = item.explanation;
   const b = band(item.confidence);
+  const reduce = useReducedMotion();
   return (
     <section aria-label="Model decision" className="grid gap-4">
       <div>
@@ -23,15 +26,11 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
         </div>
         <div className="mt-0.5 text-[26px] font-semibold leading-tight">{item.label ?? routeTitle(item.route)}</div>
         {item.confidence !== null && (
-          <div className="mt-2">
-            <div className="mb-1 flex justify-between text-[12px] text-dim">
-              <span>Confidence: <span className={b.tone}>{b.word}</span></span>
-              <span className="tabular-nums text-ink">{item.confidence.toFixed(2)}</span>
-            </div>
-            <div role="meter" aria-label={`Confidence ${item.confidence.toFixed(2)}`} aria-valuenow={item.confidence} aria-valuemin={0} aria-valuemax={1}
-              className="h-1.5 overflow-hidden rounded-full bg-base">
-              <div className={clsx("h-full rounded-full", item.confidence >= 0.9 ? "bg-ok" : item.confidence >= 0.6 ? "bg-amber" : "bg-alarm")}
-                style={{ width: `${item.confidence * 100}%` }} />
+          <div className="mt-2 flex items-end gap-3">
+            <ConfidenceDial key={item.image_id} value={item.confidence} size={104} />
+            <div className="pb-1">
+              <span className="tabular block text-[28px] leading-none font-semibold">{item.confidence.toFixed(2)}</span>
+              <span className="text-[13px] text-dim">Confidence: <span className={b.tone}>{b.word}</span></span>
             </div>
           </div>
         )}
@@ -54,8 +53,10 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
         <div>
           <h3 className="mb-1.5 text-[12px] font-normal text-dim">How the confidence was built</h3>
           <ul className="grid gap-1.5">
-            {ex.factors.map((f) => (
-              <li key={f.name} className="flex items-start gap-2 text-[13px]">
+            {ex.factors.map((f, i) => (
+              <motion.li key={`${item.image_id}-${f.name}`} className="flex items-start gap-2 text-[13px]"
+                initial={reduce ? false : { opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: DURATION.base, ease: EASE_BOARD, delay: 0.05 * i }}>
                 {f.factor === null ? <Info size={15} className="mt-0.5 shrink-0 text-dim" aria-hidden />
                   : f.factor < 1 ? <CircleAlert size={15} className="mt-0.5 shrink-0 text-amber" aria-hidden />
                     : <CircleCheck size={15} className="mt-0.5 shrink-0 text-ok" aria-hidden />}
@@ -63,7 +64,7 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
                   <span className="text-dim">{f.name}{f.factor !== null && f.factor < 1 ? ` (×${f.factor})` : ""}: </span>
                   {f.reason}
                 </span>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </div>

@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { useState } from "react";
 import { api, type AlertItem, type AlertState } from "../api";
 import { localTime } from "../components/FrameView";
+import { useToast } from "../components/kit";
 import { useSession } from "../context";
 
 const KIND_LABEL: Record<AlertItem["kind"], string> = {
@@ -21,6 +22,7 @@ const SEVERITY_TONE: Record<AlertItem["severity"], string> = {
 export function AlertsScreen() {
   const { reserve, can } = useSession();
   const qc = useQueryClient();
+  const toast = useToast();
   const [state, setState] = useState<AlertState>("open");
   const [kind, setKind] = useState<string>("");
   const alerts = useQuery({
@@ -32,7 +34,16 @@ export function AlertsScreen() {
   const act = useMutation({
     mutationFn: ({ id, action, note }: { id: string; action: "acknowledge" | "resolve" | "reopen"; note?: string }) =>
       api.actAlert(id, action, note),
-    onSuccess: refresh,
+    onSuccess: (a, v) => {
+      refresh();
+      if (v.action === "reopen") { toast.show({ message: "Alert reopened.", tone: "info" }); return; }
+      // Undo reopens the alert: a new, audited action, never an erased one.
+      toast.show({
+        message: v.action === "acknowledge" ? `Acknowledged: ${a.title}` : `Resolved: ${a.title}`,
+        tone: "ok",
+        action: { label: "Undo", run: () => act.mutate({ id: v.id, action: "reopen" }) },
+      });
+    },
   });
   const webhook = run.data?.webhook;
   return (

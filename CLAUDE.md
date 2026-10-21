@@ -136,4 +136,10 @@ history, old Docker volumes). Do not look for it; build from the image.
   animation (blur is always on). jsdom lacks matchMedia: `src/test/setup.ts` provides one.
 - Playwright screenshots are written asynchronously: wait ~2 s before reading the file, or
   you review the previous capture.
+- Console kit (`frontend/src/components/kit.tsx`): Plate, StatTile/CountNumber, CountBadge,
+  StageBadge (always a word), ConfidenceDial, Skeleton, EmptyState, ToastProvider/useToast. Undo
+  toasts never time out (WCAG timing); undo is a new audited action, never an erase.
+- Tests: `MotionGlobalConfig.skipAnimations` is on in `src/test/setup.ts` (jsdom cannot finish
+  Motion exits). Reviewers with several reserves must pass `reserve=` to list endpoints.
+- Browser checks against dev data: undo any action you take (reopen alerts, undo reviews).
 
