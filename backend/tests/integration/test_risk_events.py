@@ -178,6 +178,7 @@ def test_events_risk_and_reviewer_overrides(world, tmp_path: Path) -> None:  # t
         summary["levels"] == {"high": 1, "medium": 0, "low": 1}
         and summary["cameras"][0]["camera"] == "CORE-1"
     )
+    assert summary["thresholds"] == {"medium": 4, "high": 8}
 
     # A reviewer says the daytime person was a false alarm, and marks the night one as poaching.
     with factory() as s:

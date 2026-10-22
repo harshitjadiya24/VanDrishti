@@ -1,14 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Undo2 } from "lucide-react";
+import { Inbox, Undo2 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { api, ApiError, type Action, type QueueKind, type ReviewOut, type Severity, type Taxon } from "../api";
 import { DecisionPanel } from "../components/DecisionPanel";
 import { FrameView } from "../components/FrameView";
+import { EmptyState, Plate, Skeleton, StageBadge, type Stage } from "../components/kit";
 import { TaxonPicker } from "../components/TaxonPicker";
 import { useSession } from "../context";
+import { DURATION, EASE_BOARD } from "../motion/tokens";
 import { QUEUES } from "../Shell";
+
+const QUEUE_STAGE: Record<QueueKind, Stage> = {
+  people_vehicles: "people", review: "review", uncertain: "uncertain", blank: "blank", quality: "quality",
+};
 
 // Keys: the first matching allowed action wins. Shown on every button.
 const ACTIONS: { action: Action; label: string; key: string; tone: "primary" | "plain" | "danger" }[] = [
@@ -25,6 +32,7 @@ const SEVERITY: Severity[] = ["low", "medium", "high"];
 
 export function ReviewScreen() {
   const kind = (useParams().kind ?? "review") as QueueKind;
+  const reduce = useReducedMotion();
   const { reserve, reviewer } = useSession();
   const qc = useQueryClient();
   const queue = useQuery({ queryKey: ["queue", kind, reserve], queryFn: () => api.queue(kind, reserve || undefined) });
@@ -99,68 +107,89 @@ export function ReviewScreen() {
     return () => window.removeEventListener("keydown", onKey);
   }, [item, items.length, last, act, undo]);
 
+  const position = items.length ? Math.min(index, items.length - 1) + 1 : 0;
   return (
     <div>
-      <header className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h1 className="text-[24px] font-semibold">{title}</h1>
-        <span className="text-[13px] text-dim">
-          {items.length ? `${Math.min(index, items.length - 1) + 1} of ${items.length} waiting` : ""}
-        </span>
+      <header className="mb-5 grid gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-[26px] font-semibold">{title}</h1>
+          <StageBadge stage={QUEUE_STAGE[kind]} />
+          {items.length > 0 && <span className="tabular text-[15px] text-dim">{position} of {items.length} waiting</span>}
+        </div>
+        {items.length > 1 && (
+          <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-raised">
+            <motion.div className="h-full rounded-full bg-board" initial={false}
+              animate={{ width: `${(position / items.length) * 100}%` }}
+              transition={{ duration: reduce ? 0 : DURATION.board, ease: EASE_BOARD }} />
+          </div>
+        )}
       </header>
 
-      {error && <p role="alert" className="mb-4 rounded-md border border-alarm/60 px-3 py-2 text-[14px] text-alarm">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-[10px] bg-alarm px-4 py-2.5 text-[15px] text-white">{error}</p>}
       {last && (
-        <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-md bg-panel px-3 py-2 text-[14px]">
-          <span>Saved: <b className="font-medium">{last.action.replace(/_/g, " ")}</b>{last.human_label ? ` (${last.human_label})` : ""}.</span>
+        <Plate role="status" className="mb-4 flex flex-wrap items-center gap-3 px-4 py-2.5 text-[15px]">
+          <StageBadge stage="done">Saved</StageBadge>
+          <span><b className="font-semibold">{last.action.replace(/_/g, " ")}</b>{last.human_label ? ` (${last.human_label})` : ""}</span>
           <button type="button" onClick={() => undo.mutate()} disabled={undo.isPending}
-            className="inline-flex items-center gap-1.5 rounded-md border border-line px-2.5 py-1 text-[13px] hover:bg-raised">
-            <Undo2 size={14} aria-hidden /> Undo <kbd>U</kbd>
+            className="ml-auto inline-flex items-center gap-1.5 rounded-[8px] border border-line px-3 py-1 text-[14px] hover:bg-raised">
+            <Undo2 size={15} aria-hidden /> Undo <kbd>U</kbd>
           </button>
-        </div>
+        </Plate>
       )}
 
       {queue.isLoading ? (
-        <div className="h-[60vh] animate-pulse rounded-md bg-panel" aria-busy="true" />
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]" aria-busy="true">
+          <Skeleton className="aspect-[4/3]" /><Skeleton className="h-[480px]" />
+        </div>
       ) : queue.error ? (
         <p role="alert" className="text-alarm">{String(queue.error)}</p>
       ) : !item ? (
-        <div className="grid place-items-center rounded-md bg-panel px-6 py-20 text-center">
-          <p className="text-[18px]">Nothing waiting here.</p>
-          <p className="mt-1 text-[14px] text-dim">New images appear after they are ingested, screened and routed.</p>
-        </div>
+        <EmptyState icon={<Inbox size={20} />} title="Nothing waiting here"
+          action={<Link to="/app/pipeline" className="text-[15px] font-semibold text-ok underline">See the road, live</Link>}>
+          New frames arrive here after they are ingested, screened and routed.
+        </EmptyState>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="min-w-0">
-            <FrameView item={item} showMask={showMask} />
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-dim pointer-coarse:hidden">
+            {/* A new frame slides in like a board being hung; its boxes then draw themselves on. */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.div key={item.image_id}
+                initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
+                transition={{ duration: DURATION.board * 0.7, ease: EASE_BOARD }}>
+                <FrameView item={item} showMask={showMask} />
+              </motion.div>
+            </AnimatePresence>
+            <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-dim pointer-coarse:hidden">
               <span><kbd>J</kbd> <kbd>K</kbd> next / previous</span>
               <span><kbd>M</kbd> {showMask ? "hide" : "show"} outline</span>
               <span><kbd>P</kbd> poaching activity</span>
               <span><kbd>1</kbd>–<kbd>3</kbd> severity</span>
             </p>
           </div>
-          <aside className="grid content-start gap-5 rounded-md bg-panel p-4">
+          {/* Wide screens: the plate stays in view and scrolls inside; the actions dock at its foot. */}
+          <Plate as="aside" rivets className="grid content-start gap-5 p-5 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto">
             <DecisionPanel item={item} />
 
-            <div className="grid gap-2 border-t border-line pt-4">
-              <label className="flex items-center gap-2 text-[14px]">
-                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="accent-alarm" />
+            <div className="grid gap-3 border-t border-line pt-4">
+              <label className="flex items-center gap-2 text-[15px]">
+                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="size-4 accent-[var(--alarm)]" />
                 Mark poaching activity <kbd>P</kbd>
               </label>
-              <div role="group" aria-label="Severity" className="flex flex-wrap items-center gap-1.5 text-[13px]">
+              <div role="group" aria-label="Severity" className="flex flex-wrap items-center gap-1.5 text-[14px]">
                 <span className="text-dim">Severity</span>
                 {SEVERITY.map((s, i) => (
                   <button key={s} type="button" aria-pressed={severity === s} onClick={() => setSeverity(severity === s ? null : s)}
-                    className={clsx("rounded-full border px-2.5 py-0.5",
-                      severity === s ? "border-amber text-ink" : "border-line text-dim hover:text-ink")}>
+                    className={clsx("rounded-[8px] border px-2.5 py-0.5 capitalize",
+                      severity === s ? "border-ink bg-ink text-base" : "border-line text-dim hover:text-ink")}>
                     {s} <kbd>{i + 1}</kbd>
                   </button>
                 ))}
               </div>
-              <label className="grid gap-1 text-[12px] text-dim">
+              <label className="grid gap-1 text-[13px] text-dim">
                 Notes for the record (optional)
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-                  className="rounded-md border border-line bg-base px-2 py-1.5 text-[14px] text-ink" />
+                  className="rounded-[8px] border border-line bg-base px-2.5 py-1.5 text-[15px] text-ink" />
               </label>
             </div>
 
@@ -168,21 +197,21 @@ export function ReviewScreen() {
               <TaxonPicker reserve={reserve || undefined} onCancel={() => setCorrecting(false)}
                 onPick={(t) => submit.mutate({ action: "correct", taxon: t })} />
             ) : (
-              <div className="grid gap-2">
+              <div className="sticky -bottom-5 -mx-5 -mb-5 grid gap-2 border-t border-line bg-panel px-5 pt-3 pb-5">
                 {ACTIONS.filter((a) => item.allowed_actions.includes(a.action)).map((a) => (
                   <button key={a.action} type="button" onClick={() => act(a.action)} disabled={!reviewer || submit.isPending}
                     className={clsx(
-                      "flex h-10 items-center justify-between rounded-md border px-3 text-[14px] disabled:opacity-40",
-                      a.tone === "primary" && "border-ok bg-ok/15 font-medium hover:bg-ok/25",
-                      a.tone === "danger" && "border-alarm bg-alarm/15 font-medium hover:bg-alarm/25",
-                      a.tone === "plain" && "border-line hover:bg-raised",
+                      "flex h-11 items-center justify-between rounded-[10px] px-4 text-[15px] transition-transform duration-[var(--duration-quick)] active:translate-y-px disabled:opacity-40",
+                      a.tone === "primary" && "bg-ok font-semibold text-white shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
+                      a.tone === "danger" && "bg-alarm font-semibold text-white shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
+                      a.tone === "plain" && "border border-line bg-base hover:bg-raised",
                     )}>
                     {a.label} <kbd>{a.key === "y" ? "Y / Enter" : a.key.toUpperCase()}</kbd>
                   </button>
                 ))}
               </div>
             )}
-          </aside>
+          </Plate>
         </div>
       )}
     </div>

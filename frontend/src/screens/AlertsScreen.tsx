@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
+import { BellOff } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { api, type AlertItem, type AlertState } from "../api";
 import { localTime } from "../components/FrameView";
-import { useToast } from "../components/kit";
+import { BUTTON, CountBadge, EmptyState, FIELD, PageHeader, Plate, Segmented, Skeleton, useToast } from "../components/kit";
 import { useSession } from "../context";
+import { DURATION, EASE_BOARD } from "../motion/tokens";
 
 const KIND_LABEL: Record<AlertItem["kind"], string> = {
   tiger_sighting: "Tiger sighting",
@@ -12,11 +15,12 @@ const KIND_LABEL: Record<AlertItem["kind"], string> = {
   unusual_activity: "Unusual activity",
   camera_failure: "Camera problem",
 };
-const SEVERITY_TONE: Record<AlertItem["severity"], string> = {
-  critical: "border-alarm bg-alarm/15 text-alarm",
-  warning: "border-amber text-amber",
-  info: "border-line text-dim",
-};
+const SEVERITY = {
+  critical: { word: "Critical", heading: "Critical: act first", badge: "bg-alarm text-white", stripe: "bg-alarm" },
+  warning: { word: "Warning", heading: "Warnings", badge: "bg-check text-on-check", stripe: "bg-check" },
+  info: { word: "Information", heading: "For information", badge: "bg-raised text-ink", stripe: "bg-line" },
+} as const;
+const ORDER = ["critical", "warning", "info"] as const;
 
 /** Section 11: alerts for a person to acknowledge and resolve. */
 export function AlertsScreen() {
@@ -46,110 +50,129 @@ export function AlertsScreen() {
     },
   });
   const webhook = run.data?.webhook;
+  const items = alerts.data ?? [];
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-center gap-3">
-        <div className="flex-1">
-          <h1 className="text-[24px] font-semibold">Alerts</h1>
-          <p className="mt-1 max-w-3xl text-[14px] text-dim">
-            Each alert is a prompt for a person, not a confirmed finding. Acknowledge when you are acting on it,
-            resolve when done; a resolved alert can be reopened. Alerts never contain coordinates.
-          </p>
-        </div>
-        {can("run") && <button type="button" onClick={() => run.mutate()} disabled={run.isPending}
-          className="h-9 rounded-md border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-50">
-          {run.isPending ? "Checking…" : "Check rules now"}
-        </button>}
-      </header>
+      <PageHeader title="Alerts"
+        badges={state === "open" && items.length > 0 && <CountBadge n={items.length} tone="alarm" label="open alerts" />}
+        actions={can("run") && (
+          <button type="button" onClick={() => run.mutate()} disabled={run.isPending} className={BUTTON}>
+            {run.isPending ? "Checking…" : "Check rules now"}
+          </button>
+        )}>
+        Each alert is a prompt for a person, not a confirmed finding. Acknowledge when you are acting on it, resolve
+        when done; a resolved alert can be reopened. Alerts never contain coordinates.
+      </PageHeader>
       {run.data && (
-        <p role="status" className="text-[13px] text-dim">
+        <p role="status" className="text-[14px] text-dim">
           New or changed: {Object.entries(run.data.rules).map(([k, n]) => `${k.replace(/_/g, " ")} ${n}`).join(", ") || "nothing"}.
           {" "}Webhook: {webhook && "skipped_no_webhook" in webhook ? "not configured" : JSON.stringify(webhook)}.
         </p>
       )}
-      {(run.error || act.error) && <p role="alert" className="text-alarm">{String(run.error ?? act.error)}</p>}
+      {(run.error || act.error) && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-white">{String(run.error ?? act.error)}</p>}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="State" className="flex gap-1">
-          {(["open", "acknowledged", "resolved"] as const).map((s) => (
-            <button key={s} type="button" aria-pressed={state === s} onClick={() => setState(s)}
-              className={clsx("h-8 rounded-md border px-3 text-[13px] capitalize", state === s ? "border-amber text-ink" : "border-line text-dim")}>
-              {s}
-            </button>
-          ))}
-        </div>
-        <label className="ml-auto flex items-center gap-2 text-[13px] text-dim">
+      <div className="flex flex-wrap items-center gap-3">
+        <Segmented label="State" value={state} onChange={setState}
+          options={[{ value: "open", label: "Open" }, { value: "acknowledged", label: "Acknowledged" }, { value: "resolved", label: "Resolved" }]} />
+        <label className="ml-auto flex items-center gap-2 text-[14px] text-dim">
           Kind
-          <select value={kind} onChange={(e) => setKind(e.target.value)}
-            className="h-8 rounded-md border border-line bg-base px-2 text-[13px] text-ink">
+          <select value={kind} onChange={(e) => setKind(e.target.value)} className={FIELD}>
             <option value="">All</option>
             {Object.entries(KIND_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
         </label>
       </div>
 
-      {alerts.data && alerts.data.length === 0 && <p className="text-dim">No {state} alerts.</p>}
-      <ul className="grid gap-2">
-        {(alerts.data ?? []).map((a) => (
-          <AlertRow key={a.id} a={a} busy={act.isPending || !can("act_alerts")}
-            onAct={(action, note) => act.mutate({ id: a.id, action, note })} />
-        ))}
-      </ul>
+      {alerts.error && <p role="alert" className="text-alarm">{String(alerts.error)}</p>}
+      {!alerts.data && !alerts.error && <div className="grid gap-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-28" />)}</div>}
+      {alerts.data && items.length === 0 && (
+        <EmptyState icon={<BellOff size={20} />} title={`No ${state} alerts`}>
+          {state === "open" ? "Nothing is waiting for a person here. Rules run after each pipeline step, or with “Check rules now”." : "Choose another state to see the rest."}
+        </EmptyState>
+      )}
+      {ORDER.map((sev) => {
+        const group = items.filter((a) => a.severity === sev);
+        if (group.length === 0) return null;
+        return (
+          <section key={sev} aria-labelledby={`sev-${sev}`} className="grid gap-3">
+            <h2 id={`sev-${sev}`} className="flex items-center gap-2 text-[18px] font-semibold">
+              {SEVERITY[sev].heading} <span className="tabular text-[15px] font-normal text-dim">{group.length}</span>
+            </h2>
+            <ul className="grid gap-3">
+              <AnimatePresence initial={false}>
+                {group.map((a) => (
+                  <AlertRow key={a.id} a={a} busy={act.isPending || !can("act_alerts")}
+                    onAct={(action, note) => act.mutate({ id: a.id, action, note })} />
+                ))}
+              </AnimatePresence>
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }
 
 function AlertRow({ a, busy, onAct }: { a: AlertItem; busy: boolean; onAct: (action: "acknowledge" | "resolve" | "reopen", note?: string) => void }) {
+  const reduce = useReducedMotion();
   const [note, setNote] = useState("");
   const firstImage = a.kind === "tiger_sighting" ? a.detail.image_ids?.[0] : undefined;
+  const sev = SEVERITY[a.severity];
   return (
-    <li className="grid gap-3 rounded-md bg-panel p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="grid content-start gap-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={clsx("rounded-full border px-2 text-[12px]", SEVERITY_TONE[a.severity])}>{a.severity}</span>
-          <span className="text-[12px] text-dim">{KIND_LABEL[a.kind]}</span>
-          <span className="text-[14px] font-medium">{a.title}</span>
-        </div>
-        <div className="text-[13px] text-dim">
-          {a.occurred_at ? localTime(a.occurred_at, a.timezone) : "time not reliable"}; raised {localTime(a.created_at, a.timezone)}
-          {a.webhook && `; webhook ${a.webhook.replace("_", " ")}`}
-        </div>
-        {a.detail.reasons && (
-          <ul className="list-disc pl-5 text-[13px]">
-            {a.detail.reasons.map((r, i) => <li key={i}>{r}</li>)}
-          </ul>
-        )}
-        {a.acted_by && (
-          <div className="text-[12px] text-dim">
-            {a.state} by {a.acted_by}{a.acted_at ? ` at ${localTime(a.acted_at, a.timezone)}` : ""}{a.note ? `: ${a.note}` : ""}
+    <motion.li layout={!reduce} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      exit={reduce ? { opacity: 0 } : { opacity: 0, x: 40, transition: { duration: DURATION.base } }}
+      transition={{ duration: DURATION.base, ease: EASE_BOARD }}>
+      <Plate className="grid gap-4 overflow-hidden py-4 pr-4 pl-6 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <span aria-hidden className={clsx("absolute inset-y-0 left-0 w-1.5", sev.stripe)} />
+        <div className="grid content-start gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={clsx("rounded-[6px] px-2 py-0.5 text-[13px] font-semibold", sev.badge)}>{sev.word}</span>
+            <span className="text-[13px] text-dim">{KIND_LABEL[a.kind]}</span>
           </div>
-        )}
-      </div>
-      <div className="flex flex-wrap items-start gap-2 sm:w-72 sm:flex-col sm:items-stretch">
-        {firstImage && (
-          <a href={api.displayUrl(firstImage)} target="_blank" rel="noreferrer" className="text-[13px] text-amber underline-offset-4 hover:underline">
-            View frame
-          </a>
-        )}
-        {a.state !== "resolved" && (
-          <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 2000))} placeholder="Note (optional)"
-            aria-label="Note" className="h-8 rounded-md border border-line bg-base px-2 text-[13px] text-ink" />
-        )}
-        <div className="flex gap-2">
-          {a.state === "open" && (
-            <button type="button" disabled={busy} onClick={() => onAct("acknowledge", note)}
-              className="h-8 flex-1 rounded-md border border-line px-3 text-[13px] hover:bg-raised disabled:opacity-40">Acknowledge</button>
+          <p className="text-[17px] font-semibold">{a.title}</p>
+          <p className="text-[14px] text-dim">
+            {a.occurred_at ? localTime(a.occurred_at, a.timezone) : "time not reliable"}; raised {localTime(a.created_at, a.timezone)}
+            {a.webhook && `; webhook ${a.webhook.replace("_", " ")}`}
+          </p>
+          {a.detail.reasons && (
+            <ul className="grid gap-1 text-[14px]">
+              {a.detail.reasons.map((r, i) => (
+                <li key={i} className="flex gap-2"><span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-dim" />{r}</li>
+              ))}
+            </ul>
+          )}
+          {a.acted_by && (
+            <p className="text-[13px] text-dim">
+              {a.state} by {a.acted_by}{a.acted_at ? ` at ${localTime(a.acted_at, a.timezone)}` : ""}{a.note ? `: ${a.note}` : ""}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap items-start gap-2 sm:w-72 sm:flex-col sm:items-stretch">
+          {firstImage && (
+            <a href={api.displayUrl(firstImage)} target="_blank" rel="noreferrer" className="text-[14px] font-medium underline underline-offset-4">
+              View frame
+            </a>
           )}
           {a.state !== "resolved" && (
-            <button type="button" disabled={busy} onClick={() => onAct("resolve", note)}
-              className="h-8 flex-1 rounded-md border border-line px-3 text-[13px] hover:bg-raised disabled:opacity-40">Resolve</button>
+            <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 2000))} placeholder="Note (optional)"
+              aria-label="Note" className={FIELD} />
           )}
-          {a.state !== "open" && (
-            <button type="button" disabled={busy} onClick={() => onAct("reopen")}
-              className="h-8 flex-1 rounded-md border border-line px-3 text-[13px] hover:bg-raised disabled:opacity-40">Reopen</button>
-          )}
+          <div className="flex gap-2">
+            {a.state === "open" && (
+              <button type="button" disabled={busy} onClick={() => onAct("acknowledge", note)}
+                className="h-9 flex-1 rounded-[8px] bg-board px-3 text-[14px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-40">
+                Acknowledge
+              </button>
+            )}
+            {a.state !== "resolved" && (
+              <button type="button" disabled={busy} onClick={() => onAct("resolve", note)} className={clsx(BUTTON, "flex-1")}>Resolve</button>
+            )}
+            {a.state !== "open" && (
+              <button type="button" disabled={busy} onClick={() => onAct("reopen")} className={clsx(BUTTON, "flex-1")}>Reopen</button>
+            )}
+          </div>
         </div>
-      </div>
-    </li>
+      </Plate>
+    </motion.li>
   );
 }

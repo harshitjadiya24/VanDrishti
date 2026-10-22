@@ -68,6 +68,8 @@ export interface RiskSummary {
   night_share: number | null;
   dismissed: number;
   cameras: { camera: string; high: number; medium: number; low: number }[];
+  /** Points at which a total becomes MEDIUM or HIGH (floors can still raise a level). */
+  thresholds: { medium: number; high: number };
   note: string;
 }
 export interface ReviewIn {
@@ -89,7 +91,7 @@ export interface Feedback {
   by_band: Record<string, { agreed?: number; changed?: number; agreement: number }>;
   top_corrections: { model: string; human: string; count: number }[];
 }
-export interface AuditEvent { seq: number; at: string; actor: string; action: string; entity: string; entity_id: string | null; payload: Record<string, unknown> }
+export interface AuditEvent { seq: number; at: string; actor: string; action: string; entity: string; entity_id: string | null; payload: Record<string, unknown>; prev_hash: string; hash: string }
 
 export interface Overview {
   images: number;

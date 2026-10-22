@@ -288,6 +288,8 @@ class AuditOut(BaseModel):
     entity: str
     entity_id: str | None
     payload: dict[str, Any]
+    prev_hash: str
+    hash: str
 
 
 @router.get("/audit/events", dependencies=[require(Permission.VIEW_AUDIT)])
@@ -304,6 +306,8 @@ def audit_events(session: DB, limit: int = 100) -> list[AuditOut]:
             entity=e.entity,
             entity_id=e.entity_id,
             payload=e.payload,
+            prev_hash=e.prev_hash,
+            hash=e.hash,
         )
         for e in rows
     ]

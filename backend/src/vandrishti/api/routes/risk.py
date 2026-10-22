@@ -118,6 +118,9 @@ def risk_summary(session: DB, reserve: Scoped) -> dict[str, Any]:
             {"camera": c, **{k: n.get(k, 0) for k in ("high", "medium", "low")}}
             for c, n in top[:10]
         ],
+        # The points where a total becomes MEDIUM or HIGH (a floor, such as a reviewer's
+        # poaching mark, can still raise the level).
+        "thresholds": {"medium": RiskConfig().medium_from, "high": RiskConfig().high_from},
         "note": (
             "A way to decide what to look at first, not a prediction:"
             " the weights are not fitted to poaching outcomes."

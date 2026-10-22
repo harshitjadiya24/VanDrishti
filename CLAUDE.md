@@ -139,6 +139,9 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Console kit (`frontend/src/components/kit.tsx`): Plate, StatTile/CountNumber, CountBadge,
   StageBadge (always a word), ConfidenceDial, Skeleton, EmptyState, ToastProvider/useToast. Undo
   toasts never time out (WCAG timing); undo is a new audited action, never an erase.
+  Screens start with `PageHeader`; filters use `Segmented`; buttons/fields use `BUTTON`/`FIELD`.
+  Visuals draw from real API values: risk thresholds come from `/risk/summary` `thresholds`, audit
+  links from `/audit/events` `prev_hash`/`hash` (verification stays server-side).
 - Tests: `MotionGlobalConfig.skipAnimations` is on in `src/test/setup.ts` (jsdom cannot finish
   Motion exits). Reviewers with several reserves must pass `reserve=` to list endpoints.
 - Browser checks against dev data: undo any action you take (reopen alerts, undo reviews).

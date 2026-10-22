@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterator
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -225,6 +226,8 @@ def test_review_undo_feedback_and_audit_chain(world, tmp_path: Path) -> None:  #
     assert {"review_confirm", "review_correct", "review_confirm_people", "review_undo"} <= {
         e["action"] for e in events
     }
+    # Newest first: each entry links to the hash of the one before it.
+    assert all(a["prev_hash"] == b["hash"] for a, b in pairwise(events))
     assert c.get("/audit/verify").json()["ok"] is True
     # The database refuses to rewrite history.
     with factory() as s, pytest.raises(DBAPIError, match="append-only"):

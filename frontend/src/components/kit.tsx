@@ -4,12 +4,12 @@
 
 import clsx from "clsx";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { DURATION, EASE_BOARD, EASE_STAMP } from "../motion/tokens";
 
 /** An enamel plate: the console's card. Rivets mark plates that hold a record or decision. */
 export function Plate({ children, className, rivets = false, as: As = "div", ...rest }:
-  { children: ReactNode; className?: string; rivets?: boolean; as?: "div" | "section" | "article" | "li" } & Record<string, unknown>) {
+  { children: ReactNode; className?: string; rivets?: boolean; as?: "div" | "section" | "article" | "aside" | "li" } & Record<string, unknown>) {
   return (
     <As className={clsx("relative rounded-[12px] bg-panel shadow-[var(--shadow-plate)]", className)} {...rest}>
       {rivets && ["left-2 top-2", "right-2 top-2", "left-2 bottom-2", "right-2 bottom-2"].map((p) => (
@@ -117,6 +117,48 @@ export function StatTile({ label, value, note, tone }: { label: string; value: n
         tone === "alarm" && value > 0 && "text-alarm", tone === "check" && value > 0 && "text-amber")} />
       {note && <p className="mt-2 text-[13px] text-dim">{note}</p>}
     </Plate>
+  );
+}
+
+/** The console's secondary button: an outlined plate. */
+export const BUTTON = "inline-flex h-9 items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-40";
+/** A form field on a plate. */
+export const FIELD = "h-9 rounded-[8px] border border-line bg-base px-2.5 text-[14px] text-ink";
+
+/** A screen's title, its state badges, one paragraph of plain explanation and its actions. */
+export function PageHeader({ title, badges, children, actions }: { title: string; badges?: ReactNode; children?: ReactNode; actions?: ReactNode }) {
+  return (
+    <header className="flex flex-wrap items-start gap-x-4 gap-y-3">
+      <div className="grid min-w-0 flex-1 gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-[26px] font-semibold">{title}</h1>
+          {badges}
+        </div>
+        {children && <div className="max-w-[72ch] text-[15px] text-dim">{children}</div>}
+      </div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </header>
+  );
+}
+
+/** A small choice of views or filters; the dark plate slides to the chosen one. */
+export function Segmented<T extends string>({ label, options, value, onChange }:
+  { label: string; options: readonly { value: T; label: ReactNode }[]; value: T; onChange: (v: T) => void }) {
+  const reduce = useReducedMotion();
+  const id = useId();
+  return (
+    <div role="group" aria-label={label} className="inline-flex gap-1 rounded-[10px] border border-line bg-panel p-0.5">
+      {options.map((o) => (
+        <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}
+          className={clsx("relative h-8 rounded-[8px] px-3 text-[14px]", value === o.value ? "text-panel" : "text-dim hover:text-ink")}>
+          {value === o.value && (
+            <motion.span layoutId={id} aria-hidden className="absolute inset-0 rounded-[8px] bg-ink"
+              transition={reduce ? { duration: 0 } : { duration: DURATION.base, ease: EASE_BOARD }} />
+          )}
+          <span className="relative">{o.label}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

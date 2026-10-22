@@ -209,7 +209,7 @@ function Settings() {
         <select value={reserve} onChange={(e) => setReserve(e.target.value)}
           className="h-9 w-full min-w-0 rounded-[8px] border border-on-board/30 bg-board-deep px-2 text-[14px] text-on-board">
           {allReserves && <option value="">All reserves</option>}
-          {(reserves.data ?? []).map((r) => <option key={r.code} value={r.code}>{r.name} ({r.code})</option>)}
+          {(reserves.data ?? []).map((r) => <option key={r.code} value={r.code} title={`${r.name} (${r.code})`}>{r.name}</option>)}
         </select>
       </label>
       <ThemeSwitch />
