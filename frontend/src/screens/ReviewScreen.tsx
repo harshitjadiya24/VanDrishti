@@ -202,8 +202,8 @@ export function ReviewScreen() {
                   <button key={a.action} type="button" onClick={() => act(a.action)} disabled={!reviewer || submit.isPending}
                     className={clsx(
                       "flex h-11 items-center justify-between rounded-[10px] px-4 text-[15px] transition-transform duration-[var(--duration-quick)] active:translate-y-px disabled:opacity-40",
-                      a.tone === "primary" && "bg-ok font-semibold text-on-ok shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
-                      a.tone === "danger" && "bg-alarm font-semibold text-on-alarm shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
+                      a.tone === "primary" && "bg-ok font-semibold text-on-ok shadow-[var(--shadow-plate)] hover:brightness-110",
+                      a.tone === "danger" && "bg-alarm font-semibold text-on-alarm shadow-[var(--shadow-plate)] hover:brightness-110",
                       a.tone === "plain" && "border border-line bg-base hover:bg-raised",
                     )}>
                     {a.label} <kbd>{a.key === "y" ? "Y / Enter" : a.key.toUpperCase()}</kbd>

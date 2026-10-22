@@ -1,8 +1,8 @@
 import clsx from "clsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plate, Rivets, StageTitle, Synthetic } from "./parts";
 import { prefersReducedMotion, ScrollTrigger, useGSAP } from "./scroll";
-import { stripeField } from "./stripes";
+import { BODY, BOX, BoxLabel, NightFrame } from "./frame";
 
 const STEPS = [
   { title: "Stored once, never changed", recipe: "Ingest · SHA-256 fingerprint",
@@ -74,7 +74,7 @@ export function PipelineSection() {
 
   return (
     <section id="how" ref={root} aria-labelledby="how-title" className="px-4 py-20 md:px-10 md:py-28">
-      <StageTitle id="how-title" milestone="2">One frame down the road</StageTitle>
+      <StageTitle id="how-title" milestone="2" word="Detect">One frame down the road</StageTitle>
       <p className="mt-4 max-w-[60ch] text-[18px] text-on-board-dim">
         Follow a single night photograph from the camera to a decision. Each stop is a separate model or rule, and each
         leaves its mark on the frame with its name and version.
@@ -89,9 +89,10 @@ export function PipelineSection() {
             <li key={s.title} aria-current={i === step ? "step" : undefined}
               className={clsx("transition-transform duration-[var(--duration-board)] ease-[var(--ease-board)]", i === step ? "translate-x-0" : "md:translate-x-3")}>
               <Plate className={clsx("max-w-[46ch] transition-shadow duration-[var(--duration-board)]", i === step ? "ring-4 ring-check" : "")}>
-                <p className="text-[13px] font-semibold text-[#4e5f53]">{s.recipe}</p>
-                <h3 className="mt-1 text-[24px] leading-tight font-semibold">{s.title}</h3>
+                <h3 className="text-[24px] leading-tight font-semibold">{s.title}</h3>
                 <p className="mt-2 text-[16px] leading-relaxed text-[#2f3d33]">{s.body}</p>
+                {/* The recipe rides on the plate's foot: which model or rule, and its version. */}
+                <p className="-mx-5 mt-4 -mb-4 rounded-b-[12px] border-t border-[#d6dccf] bg-[#e8ebe3] px-5 py-2 font-mono text-[12px] text-[#3f4f44]">{s.recipe}</p>
               </Plate>
             </li>
           ))}
@@ -103,7 +104,6 @@ export function PipelineSection() {
 
 /** The pinned frame plate. Layers appear as the frame passes each stage. */
 function StageFrame({ step }: { step: number }) {
-  const stripes = useMemo(() => stripeField(23, 340, 170), []);
   const hash = useSha256("CAM S-07 · 22:41 IST · synthetic frame");
   // Reduced motion shows the finished frame: every layer, no build-up.
   const [reduce] = useState(prefersReducedMotion);
@@ -113,32 +113,22 @@ function StageFrame({ step }: { step: number }) {
       <Rivets className="bg-[#9aa79c]" />
       <div className="relative overflow-hidden rounded-[6px] bg-[#2f3431]">
         <svg viewBox="0 0 420 190" className="block w-full" role="img" aria-label="Synthetic camera frame">
-          <defs>
-            <linearGradient id="flank2" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#d08a24" /><stop offset="0.72" stopColor="#c47a1c" /><stop offset="1" stopColor="#ead9b6" />
-            </linearGradient>
-            <clipPath id="crop2"><rect x="78" y="22" width="290" height="150" rx="10" /></clipPath>
-          </defs>
-          <rect width="420" height="190" fill="#2f3431" />
-          <g clipPath="url(#crop2)" className={clsx("transition-[filter] duration-700", shown(1) ? "" : "grayscale")}>
-            <rect x="78" y="22" width="290" height="150" fill="url(#flank2)" />
-            <g transform="translate(60 8)">{stripes.map((s, i) => <path key={i} d={s.d} fill="#151515" />)}</g>
-          </g>
-          {/* 5.5 the outline */}
-          <rect x="80" y="24" width="286" height="146" rx="10" fill="none" stroke="#f5f6f1" strokeWidth="2.5" strokeDasharray="864"
-            strokeDashoffset={shown(5) ? 0 : 864}
-            className="transition-[stroke-dashoffset] duration-[1200ms] ease-[var(--ease-board)]" />
-          {/* 5.2 the detector's box, drawn on */}
-          <rect x="70" y="16" width="306" height="162" fill="none" stroke="#f2c230" strokeWidth="3" strokeDasharray="936"
-            strokeDashoffset={shown(2) ? 0 : 936}
-            className="transition-[stroke-dashoffset] duration-[900ms] ease-[var(--ease-board)]" />
+          <NightFrame id="pipe" subjectClassName={clsx("transition-[filter] duration-700", shown(1) ? "" : "grayscale")}>
+            {/* 5.5 SAM's outline: exactly the body */}
+            <rect {...BODY} fill="none" stroke="#f5f6f1" strokeWidth="2.5" pathLength={1} strokeDasharray="1"
+              strokeDashoffset={shown(5) ? 0 : 1}
+              className="transition-[stroke-dashoffset] duration-[1200ms] ease-[var(--ease-board)]" />
+            {/* 5.2 the detector's box, drawn on */}
+            <rect {...BOX} fill="none" stroke="#f2c230" strokeWidth="3" pathLength={1} strokeDasharray="1"
+              strokeDashoffset={shown(2) ? 0 : 1}
+              className="transition-[stroke-dashoffset] duration-[900ms] ease-[var(--ease-board)]" />
+            <BoxLabel text="animal 0.94" className={clsx("transition-opacity duration-500", shown(2) ? "opacity-100" : "opacity-0")} />
+            <g className={clsx("transition-opacity duration-500", shown(1) ? "opacity-100" : "opacity-0")}>
+              <rect x={300} y={8} width={112} height={18} rx={2} fill="rgb(0 0 0 / 0.75)" />
+              <text x={306} y={21} fontSize={12} fill="#d7ddd8" fontFamily="Mukta, sans-serif">usable · night IR</text>
+            </g>
+          </NightFrame>
         </svg>
-        <span className={clsx("absolute top-0 left-[16.6%] rounded-b-sm bg-check px-1.5 text-[12px] font-semibold text-on-check transition-opacity duration-500", shown(2) ? "opacity-100" : "opacity-0")}>
-          animal 0.94
-        </span>
-        <span className={clsx("absolute top-2 right-2 rounded-sm bg-black/75 px-1.5 text-[12px] text-[#d7ddd8] transition-opacity duration-500", shown(1) ? "opacity-100" : "opacity-0")}>
-          usable · night IR
-        </span>
         <figcaption className="flex justify-between gap-3 bg-black/80 px-3 py-1 font-[ui-monospace,monospace] text-[11px] tracking-wide text-[#d7ddd8]">
           <span>CAM S-07 · 22:41 IST</span>
           <span className="truncate" title={hash}>sha256 {hash.slice(0, 16)}…</span>

@@ -87,7 +87,7 @@ export function DecideSection() {
 
   return (
     <section id="stage-4" ref={root} aria-labelledby="decide-title" className="px-4 py-20 md:px-10 md:py-28">
-      <StageTitle id="decide-title" milestone="4">People decide</StageTitle>
+      <StageTitle id="decide-title" milestone="4" word="Review">People decide</StageTitle>
       <p className="mt-4 max-w-[60ch] text-[18px] text-on-board-dim">
         The model was not sure about this frame, so it waits for a person. Decide it yourself. Every decision is
         added to a record that cannot be rewritten, and even an undo is a new entry.
@@ -175,7 +175,7 @@ export function PrivacySection() {
   return (
     <section ref={root} aria-labelledby="privacy-title" className="px-4 py-20 md:px-10 md:py-28">
       <Board>
-        <h2 id="privacy-title" className="board-title text-[clamp(2.2rem,5.5vw,3.8rem)] uppercase">Privacy is built in</h2>
+        <StageTitle id="privacy-title" milestone="4·1">Privacy is built in</StageTitle>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <Plate>
             <p className="text-[18px] font-semibold">Whole bodies are blurred</p>
@@ -238,8 +238,8 @@ export function RiskSection() {
   const total = REASONS.slice(0, shown).reduce((s, r) => s + r.points, 0);
   const level = total >= 8 ? "HIGH" : total >= 4 ? "MEDIUM" : "LOW";
   return (
-    <section ref={root} aria-labelledby="risk-title" className="px-4 py-20 md:px-10 md:py-28">
-      <h2 id="risk-title" className="board-title text-[clamp(2.2rem,5.5vw,3.8rem)] uppercase">Poaching risk, with reasons</h2>
+    <section id="stage-5" ref={root} aria-labelledby="risk-title" className="px-4 py-20 md:px-10 md:py-28">
+      <StageTitle id="risk-title" milestone="5" word="Act">Poaching risk, with reasons</StageTitle>
       <p className="mt-4 max-w-[60ch] text-[18px] text-on-board-dim">
         When people or vehicles appear, each reason adds points. The level is a triage order for rangers, not a
         prediction, and a person's “false alarm” dismisses it.
@@ -257,8 +257,7 @@ export function RiskSection() {
           ))}
         </ol>
         <Plate tone={level === "HIGH" ? "alarm" : level === "MEDIUM" ? "check" : "enamel"} className="self-start">
-          <p className="text-[14px] font-semibold">Synthetic example</p>
-          <p className="board-title mt-1 text-[clamp(3rem,7vw,4.5rem)]">{level}</p>
+          <p className="board-title text-[clamp(3rem,7vw,4.5rem)]">{level}</p>
           <p className="tabular text-[18px] font-semibold">{total} points</p>
           <div className="mt-4 grid grid-cols-3 text-[12px] font-semibold">
             {(["LOW", "MEDIUM", "HIGH"] as const).map((z, i) => (
@@ -268,6 +267,7 @@ export function RiskSection() {
               </span>
             ))}
           </div>
+          <p className="mt-3 text-[13px] font-semibold">Synthetic example</p>
         </Plate>
       </div>
     </section>
@@ -278,7 +278,7 @@ export function RiskSection() {
 export function IdentitySection() {
   return (
     <section aria-labelledby="id-title" className="px-4 py-20 md:px-10 md:py-28">
-      <h2 id="id-title" className="board-title text-[clamp(2.2rem,5.5vw,3.8rem)] uppercase">Which tiger is this?</h2>
+      <StageTitle id="id-title" milestone="4·2">Which tiger is this?</StageTitle>
       <p className="mt-4 max-w-[62ch] text-[18px] text-on-board-dim">
         Every tiger's stripes are its own. VanDrishti compares a new sighting with tigers people have already named and
         suggests the closest. The model never names a tiger: a person confirms the match or creates a new tiger.
@@ -325,8 +325,8 @@ export function OutcomesSection() {
     });
   }, { scope: root });
   return (
-    <section id="stage-5" ref={root} aria-labelledby="act-title" className="px-4 py-20 md:px-10 md:py-28">
-      <StageTitle id="act-title" milestone="5">On the notice board</StageTitle>
+    <section ref={root} aria-labelledby="act-title" className="px-4 py-20 md:px-10 md:py-28">
+      <StageTitle id="act-title" milestone="5·1">On the notice board</StageTitle>
       <p className="mt-4 max-w-[60ch] text-[18px] text-on-board-dim">
         Decisions become alerts for rangers, reports for officials, and data other systems can use.
       </p>
@@ -418,7 +418,7 @@ export function CloseSection() {
     <section aria-labelledby="close-title" className="px-4 pt-10 pb-24 text-center md:px-10">
       <p id="close-title" className="board-title text-[clamp(2.6rem,7vw,5rem)] uppercase">AI proposes. People decide.</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <a href="/app" className="rounded-[10px] bg-on-board px-5 py-2.5 text-[17px] font-semibold text-board shadow-[0_3px_0_rgb(0_0_0/0.35)] hover:bg-white">Sign in to the console</a>
+        <a href="/app" className="rounded-[10px] bg-on-board px-5 py-2.5 text-[17px] font-semibold text-board shadow-[0_10px_20px_-10px_rgb(0_0_0/0.55)] hover:bg-white">Sign in to the console</a>
         <a href="#hero-title" className="rounded-[10px] border-2 border-on-board/70 px-5 py-2.5 text-[17px] font-semibold hover:bg-on-board/10">Back to the top</a>
       </div>
       <p className="mt-10 text-[13px] text-on-board-dim">

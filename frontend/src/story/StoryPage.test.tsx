@@ -50,7 +50,7 @@ describe("story page", () => {
     render(<StoryPage />);
     const frame = screen.getByRole("figure", { name: "The example frame and what each stage added" });
     for (const label of ["animal 0.94", "usable · night IR"]) {
-      expect(within(frame).getByText(label)).toHaveClass("opacity-100");
+      expect(within(frame).getByText(label).closest("g")).toHaveClass("opacity-100");
     }
   });
 

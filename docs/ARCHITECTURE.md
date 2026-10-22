@@ -33,6 +33,7 @@ records how each part is built; it grows phase by phase.
 | 6 | Dashboard, re-identification | built |
 | 7 | Alerts, reports (PDF/Excel), integration API | built |
 | 8 | Hardening and production | built |
+| F0–F6 | Frontend: story site and console redesign | built |
 
 ## 3. Foundations (Phase 0)
 
@@ -310,4 +311,52 @@ camera stations ──► POST /cameras/{id}/images (ingest token) ── same p
     manifest;
   - `verify` restores into a throwaway database and checks the schema, the audit chain and
     every original's SHA-256. A real restore is manual (docs/RUNBOOK.md).
+
+## 12. Frontend: story site and console (F0–F6, ADR 0010)
+- **Two surfaces, one world ("The Forest Board").**
+  - `/` is the public story: lazy, no API calls, no third-party requests.
+  - `/app/*` is the console: one lazy chunk, `src/console.ts`. Old paths redirect.
+  - The design system is described in `DESIGN.md`; the direction contract is in
+    `.impeccable/surfaces/`.
+- **Story** (`frontend/src/story/`), told as one synthetic frame's road:
+  - hero board;
+  - pipeline: a pinned frame plate whose layers follow the step being read;
+  - the check-post fork in three.js (`story/fork/`), with a static SVG without WebGL;
+  - people decide: a real SHA-256 audit chain;
+  - privacy;
+  - risk;
+  - identity;
+  - notice board;
+  - engineering.
+
+  Every number comes from `story/results.ts`, and a test checks it against
+  `docs/EVALUATION.md`.
+- **Console:**
+  - `Shell.tsx`: a green-board sidebar grouped by stage (Insight, Decide, Review, Act,
+    Records), a phone menu sheet, the reserve picker and the theme switch.
+  - `components/kit.tsx`: Plate, PageHeader, Segmented, StatTile, CountNumber, CountBadge,
+    StageBadge, ConfidenceDial, Skeleton, EmptyState, toasts with Undo, BUTTON and FIELD.
+  - Screens:
+    - the live pipeline (`/app/pipeline`, exact counts from `/dashboard/pipeline`);
+    - review (docked actions, keyboard);
+    - identities (side-by-side and sweep comparison);
+    - dashboard (survey-grid map, hour chart);
+    - alerts (grouped by severity);
+    - risk (point stack against the thresholds);
+    - audit (hash-chain view, verified on the server);
+    - login.
+- **Motion:**
+  - GSAP, ScrollTrigger and Lenis only on the story;
+  - Motion in the console;
+  - tokens in `app.css` and `motion/tokens.ts`;
+  - reduced motion shows final states everywhere.
+- **Measured** (local production build, no throttling):
+  - story JS 170 KB gzipped, console 188 KB, three.js scene 136 KB (lazy);
+  - story LCP 432–496 ms, no layout shift.
+- **Accessibility:**
+  - AA contrast in both themes, checked in the page;
+  - focus rings at least 3:1;
+  - 44 px phone targets;
+  - a skip link;
+  - no overflow at 390 px or at 200% zoom.
 

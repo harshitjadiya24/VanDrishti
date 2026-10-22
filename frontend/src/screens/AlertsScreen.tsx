@@ -16,9 +16,9 @@ const KIND_LABEL: Record<AlertItem["kind"], string> = {
   camera_failure: "Camera problem",
 };
 const SEVERITY = {
-  critical: { word: "Critical", heading: "Critical: act first", badge: "bg-alarm text-on-alarm", stripe: "bg-alarm" },
-  warning: { word: "Warning", heading: "Warnings", badge: "bg-check text-on-check", stripe: "bg-check" },
-  info: { word: "Information", heading: "For information", badge: "bg-raised text-ink", stripe: "bg-line" },
+  critical: { word: "Critical", heading: "Critical: act first", badge: "bg-alarm text-on-alarm" },
+  warning: { word: "Warning", heading: "Warnings", badge: "bg-check text-on-check" },
+  info: { word: "Information", heading: "For information", badge: "bg-raised text-ink" },
 } as const;
 const ORDER = ["critical", "warning", "info"] as const;
 
@@ -122,8 +122,8 @@ function AlertRow({ a, busy, onAct }: { a: AlertItem; busy: boolean; onAct: (act
     <motion.li layout={!reduce} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, x: 40, transition: { duration: DURATION.base } }}
       transition={{ duration: DURATION.base, ease: EASE_BOARD }}>
-      <Plate className="grid gap-4 overflow-hidden py-4 pr-4 pl-6 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <span aria-hidden className={clsx("absolute inset-y-0 left-0 w-1.5", sev.stripe)} />
+      {/* Severity is the chip's word; a critical alert also gets a red keyline round the whole plate. */}
+      <Plate className={clsx("grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto]", a.severity === "critical" && "ring-2 ring-alarm")}>
         <div className="grid content-start gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className={clsx("rounded-[6px] px-2 py-0.5 text-[13px] font-semibold", sev.badge)}>{sev.word}</span>

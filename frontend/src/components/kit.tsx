@@ -196,11 +196,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <span className="flex-1">{t.message}</span>
               {t.action && (
                 <button type="button" onClick={() => { t.action?.run(); dismiss(t.id); }}
-                  className="rounded-[8px] bg-on-board px-3 py-1 text-[14px] font-semibold text-board hover:bg-white">
+                  className="min-h-11 rounded-[8px] bg-on-board px-4 py-1 text-[14px] font-semibold text-board hover:bg-white md:min-h-8">
                   {t.action.label}
                 </button>
               )}
-              <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="text-[18px] leading-none opacity-70 hover:opacity-100">×</button>
+              <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)} className="-mr-2 grid size-11 shrink-0 place-items-center rounded-[8px] text-[20px] leading-none hover:bg-white/10 md:size-8">×</button>
             </motion.div>
           ))}
         </AnimatePresence>

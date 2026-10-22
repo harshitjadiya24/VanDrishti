@@ -20,11 +20,12 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
   return (
     <section aria-label="Model decision" className="grid gap-4">
       <div>
-        <div className="flex flex-wrap items-center gap-2 text-[12px] text-dim">
-          <span>Model says</span>
-          {item.spot_check && <span className="rounded-full border border-sky px-2 text-sky">spot check</span>}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <h2 className="text-[26px] font-semibold leading-tight">{item.label ?? routeTitle(item.route)}</h2>
+          {/* The answer is the model's proposal; a spot check means a person checks an auto-accepted one. */}
+          <span className="rounded-[6px] bg-raised px-2 py-0.5 text-[12px] text-dim">model's proposal</span>
+          {item.spot_check && <span className="rounded-[6px] bg-check px-2 py-0.5 text-[12px] font-semibold text-on-check">Spot check</span>}
         </div>
-        <div className="mt-0.5 text-[26px] font-semibold leading-tight">{item.label ?? routeTitle(item.route)}</div>
         {item.confidence !== null && (
           <div className="mt-2 flex items-end gap-3">
             <ConfidenceDial key={item.image_id} value={item.confidence} size={104} />

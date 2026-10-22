@@ -211,6 +211,10 @@ export class ForkScene {
     const offset = new THREE.Vector3(-6 + 4 * e, 30 - 18 * e, 50 - 6 * e).multiplyScalar(fit);
     this.camera.position.copy(target).add(offset);
     this.camera.lookAt(target);
+    // The fog moves back with the camera, or a pulled-back camera sees only fog.
+    const fog = this.scene.fog as THREE.Fog;
+    fog.near = 40 * fit;
+    fog.far = 140 * fit;
     if (!this.running) this.render();
   }
 

@@ -8,13 +8,27 @@ auto-accept, human review or "uncertain", scores poaching risk, and turns the re
 dashboards, alerts and reports for forest departments. People are blurred, originals are
 locked by role, and exact locations are protected.
 
-> **Rebuild in progress (from 2026-10-20).** The brief is [`MASTER_PROMPT.md`](MASTER_PROMPT.md);
-> design in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Built so far: foundations, image
-> sections 1–4 (cameras, ingestion, raw storage, preprocessing) and 5.1–5.2 (quality gate,
-> MegaDetector V6, whole-body blur of people and vehicles) and 5.3–5.7 (SpeciesNet, OpenCLIP,
-> SAM 2, explainable decision engine) and 7–8 (confidence routing, the review console, feedback,
-> hash-chained audit trail) and 6 (people/vehicle events, activity patterns, explained poaching-risk
-> levels). Measurements: [`docs/EVALUATION.md`](docs/EVALUATION.md).
+> The brief is [`MASTER_PROMPT.md`](MASTER_PROMPT.md); the design is in
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); measurements, with their caveats, are in
+> [`docs/EVALUATION.md`](docs/EVALUATION.md). All 11 sections of the architecture image are
+> built, plus sign-in with roles, deployment, backups, a public story site and the console.
+
+## What it looks like
+
+A public story site at `/` follows one synthetic frame from the camera to a person's
+decision. The signed-in console at `/app` is where the work happens. Both are styled as
+forest-department signboards ("The Forest Board", [`DESIGN.md`](DESIGN.md)).
+
+| Story: the hero | Story: the check-post (three.js) |
+|---|---|
+| ![Story hero: the VanDrishti board with a synthetic night frame and the detector's box](docs/screenshots/story-hero.webp) | ![The check-post fork: five lanes, with a boom on the lanes that need a person](docs/screenshots/story-check-post.webp) |
+| **Story: one frame down the road** | **Console: the road, live** |
+| ![The pipeline plate: species top five, the decision dial and the reason](docs/screenshots/story-pipeline.webp) | ![Live pipeline view with exact counts per stage](docs/screenshots/console-road-live.webp) |
+
+More views, and where each image comes from, are listed in
+[`docs/screenshots/PROVENANCE.md`](docs/screenshots/PROVENANCE.md). Illustrations are
+synthetic; console counts come from the local test sample described in
+[`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 ## Run the foundations
 
@@ -143,7 +157,7 @@ backend/src/vandrishti/
 deploy/      production compose, Caddyfile, env template
 docker/      database image (Postgres 16 + PostGIS on arm64 and amd64)
 tools/       speciesnet/: isolated SpeciesNet environment and bridge script
-frontend/    review console (React, TypeScript, Vite, Tailwind)
+frontend/    story site (/) and console (/app): React, TypeScript, Vite, Tailwind, Motion, GSAP, three.js
 docs/        architecture, models and licences, decisions
 data/        weights and datasets (git-ignored)
 ```

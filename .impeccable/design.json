@@ -1,0 +1,904 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T09:34:32+00:00",
+  "title": "Design System: VanDrishti",
+  "extensions": {
+    "colorMeta": {
+      "board": {
+        "role": "primary",
+        "displayName": "Forest Board Green",
+        "canonical": "#14532d",
+        "tonalRamp": [
+          "#000f04",
+          "#022e14",
+          "#0f4f29",
+          "#347048",
+          "#569268",
+          "#79b68a",
+          "#9cdbad",
+          "#c6ffd5"
+        ],
+        "cssVar": "--color-board",
+        "theme": "both"
+      },
+      "board-deep": {
+        "role": "primary",
+        "displayName": "Deep Board",
+        "canonical": "#0e3d21",
+        "tonalRamp": [
+          "#001004",
+          "#012e14",
+          "#204d30",
+          "#406d4e",
+          "#618f6e",
+          "#83b290",
+          "#a6d7b4",
+          "#cbfdd9"
+        ],
+        "cssVar": "--color-board-deep",
+        "theme": "both"
+      },
+      "board-line": {
+        "role": "primary",
+        "displayName": "Board Keyline Green",
+        "canonical": "#2c6b45",
+        "tonalRamp": [
+          "#001005",
+          "#002e16",
+          "#094f2b",
+          "#31704a",
+          "#54926a",
+          "#77b68c",
+          "#9adbaf",
+          "#c7fed8"
+        ],
+        "cssVar": "--color-board-line",
+        "theme": "both"
+      },
+      "on-board": {
+        "role": "primary",
+        "displayName": "Enamel White",
+        "canonical": "#f5f6f1",
+        "tonalRamp": [
+          "#0b0c08",
+          "#252522",
+          "#42423e",
+          "#61625d",
+          "#82837e",
+          "#a5a6a1",
+          "#c9cac5",
+          "#eeefea"
+        ],
+        "cssVar": "--color-on-board",
+        "theme": "both"
+      },
+      "on-board-dim": {
+        "role": "primary",
+        "displayName": "Weathered Enamel",
+        "canonical": "#b9cdbd",
+        "tonalRamp": [
+          "#020f05",
+          "#1a291d",
+          "#36473a",
+          "#556758",
+          "#758879",
+          "#98ab9b",
+          "#bbcfbf",
+          "#e0f5e4"
+        ],
+        "cssVar": "--color-on-board-dim",
+        "theme": "both"
+      },
+      "check": {
+        "role": "secondary",
+        "displayName": "Check-Post Yellow",
+        "canonical": "#f2c230",
+        "tonalRamp": [
+          "#100a00",
+          "#302300",
+          "#533f00",
+          "#785d02",
+          "#a07d06",
+          "#c99f16",
+          "#f3c331",
+          "#ffedc1"
+        ],
+        "cssVar": "--color-check",
+        "theme": "both"
+      },
+      "on-check": {
+        "role": "secondary",
+        "displayName": "Check-Post Black",
+        "canonical": "#15170f",
+        "tonalRamp": [
+          "#0a0c05",
+          "#24261e",
+          "#41433a",
+          "#606359",
+          "#818479",
+          "#a4a79c",
+          "#c8cbc0",
+          "#edf0e5"
+        ],
+        "cssVar": "--color-on-check",
+        "theme": "both"
+      },
+      "signboard-red": {
+        "role": "tertiary",
+        "displayName": "Signboard Red",
+        "canonical": "#c8372d",
+        "tonalRamp": [
+          "#1e0000",
+          "#4c0302",
+          "#7f0807",
+          "#b21e18",
+          "#da493d",
+          "#fc7767",
+          "#feb3a8",
+          "#ffe9e5"
+        ],
+        "cssVar": null,
+        "theme": "both",
+        "note": "Fixed board red used as literal #c8372d in story parts and CountBadge; not yet a CSS token."
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Enamel Ground",
+        "canonical": "#f3f4ee",
+        "tonalRamp": [
+          "#0b0c08",
+          "#252621",
+          "#42423e",
+          "#61625d",
+          "#82837e",
+          "#a5a6a0",
+          "#c9cac4",
+          "#eeefe9"
+        ],
+        "cssVar": "--ground",
+        "theme": "daylight"
+      },
+      "plate": {
+        "role": "neutral",
+        "displayName": "Plate",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "cssVar": "--plate",
+        "theme": "daylight"
+      },
+      "plate-raised": {
+        "role": "neutral",
+        "displayName": "Raised Plate",
+        "canonical": "#e8ebe3",
+        "tonalRamp": [
+          "#0a0c07",
+          "#242620",
+          "#41433d",
+          "#60625b",
+          "#81837c",
+          "#a3a69f",
+          "#c7cac3",
+          "#edf0e8"
+        ],
+        "cssVar": "--plate-raised",
+        "theme": "daylight"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#142019",
+        "tonalRamp": [
+          "#040e08",
+          "#1c2821",
+          "#39463e",
+          "#57655d",
+          "#78877d",
+          "#9aa9a0",
+          "#becec4",
+          "#e3f3e9"
+        ],
+        "cssVar": "--ink",
+        "theme": "daylight"
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim",
+        "canonical": "#4e5f53",
+        "tonalRamp": [
+          "#030f06",
+          "#1a291f",
+          "#36473b",
+          "#55665a",
+          "#76887b",
+          "#98ab9d",
+          "#bccfc1",
+          "#e1f4e6"
+        ],
+        "cssVar": "--dim",
+        "theme": "daylight"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "#cfd6cb",
+        "tonalRamp": [
+          "#080d06",
+          "#22271f",
+          "#3e443b",
+          "#5d635a",
+          "#7e857b",
+          "#a1a79d",
+          "#c5ccc1",
+          "#eaf1e6"
+        ],
+        "cssVar": "--line",
+        "theme": "daylight"
+      },
+      "check-text": {
+        "role": "secondary",
+        "displayName": "Check Text",
+        "canonical": "#7a5800",
+        "tonalRamp": [
+          "#110a00",
+          "#322200",
+          "#563d02",
+          "#7d5b05",
+          "#a07c34",
+          "#c49f58",
+          "#e9c37c",
+          "#ffecca"
+        ],
+        "cssVar": "--check-text",
+        "theme": "daylight"
+      },
+      "alarm": {
+        "role": "tertiary",
+        "displayName": "Alarm",
+        "canonical": "#b3271c",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0101",
+          "#800402",
+          "#b02319",
+          "#d84c3d",
+          "#fd7664",
+          "#fdb4a8",
+          "#fee9e5"
+        ],
+        "cssVar": "--alarm",
+        "theme": "daylight"
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Settled Green",
+        "canonical": "#1e6b3c",
+        "tonalRamp": [
+          "#000f04",
+          "#022e14",
+          "#055027",
+          "#277243",
+          "#4b9463",
+          "#6fb885",
+          "#93dda8",
+          "#c8fed6"
+        ],
+        "cssVar": "--ok",
+        "theme": "daylight"
+      },
+      "on-alarm": {
+        "role": "tertiary",
+        "displayName": "On Alarm",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "cssVar": "--on-alarm",
+        "theme": "daylight"
+      },
+      "on-ok": {
+        "role": "tertiary",
+        "displayName": "On Settled",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "cssVar": "--on-ok",
+        "theme": "daylight"
+      },
+      "focus-ring": {
+        "role": "neutral",
+        "displayName": "Focus Ring",
+        "canonical": "#14532d",
+        "tonalRamp": [
+          "#000f04",
+          "#022e14",
+          "#0f4f29",
+          "#347048",
+          "#569268",
+          "#79b68a",
+          "#9cdbad",
+          "#c6ffd5"
+        ],
+        "cssVar": "--focus-ring",
+        "theme": "daylight"
+      },
+      "neutral-mark": {
+        "role": "neutral",
+        "displayName": "Neutral Mark",
+        "canonical": "#3f6f8f",
+        "tonalRamp": [
+          "#000d18",
+          "#01283f",
+          "#144764",
+          "#376786",
+          "#5889aa",
+          "#7aacce",
+          "#9ed0f4",
+          "#dff1ff"
+        ],
+        "cssVar": "--neutral-mark",
+        "theme": "daylight"
+      },
+      "ground-night": {
+        "role": "neutral",
+        "displayName": "Enamel Ground (night patrol)",
+        "canonical": "#0b130e",
+        "tonalRamp": [
+          "#060d08",
+          "#1f2722",
+          "#3b453f",
+          "#5a645e",
+          "#7b857e",
+          "#9da8a1",
+          "#c1ccc5",
+          "#e6f2ea"
+        ],
+        "cssVar": "--ground",
+        "theme": "night"
+      },
+      "plate-night": {
+        "role": "neutral",
+        "displayName": "Plate (night patrol)",
+        "canonical": "#121d16",
+        "tonalRamp": [
+          "#050e08",
+          "#1d2821",
+          "#39453d",
+          "#58655c",
+          "#79867d",
+          "#9ba9a0",
+          "#bfcdc4",
+          "#e4f3e9"
+        ],
+        "cssVar": "--plate",
+        "theme": "night"
+      },
+      "plate-raised-night": {
+        "role": "neutral",
+        "displayName": "Raised Plate (night patrol)",
+        "canonical": "#1a281f",
+        "tonalRamp": [
+          "#030e07",
+          "#1b2920",
+          "#37463c",
+          "#56665b",
+          "#77877c",
+          "#99aa9e",
+          "#bdcec2",
+          "#e2f4e7"
+        ],
+        "cssVar": "--plate-raised",
+        "theme": "night"
+      },
+      "ink-night": {
+        "role": "neutral",
+        "displayName": "Ink (night patrol)",
+        "canonical": "#e7efe9",
+        "tonalRamp": [
+          "#080d09",
+          "#212722",
+          "#3d443f",
+          "#5c635e",
+          "#7d847f",
+          "#a0a7a2",
+          "#c4cbc6",
+          "#e9f1eb"
+        ],
+        "cssVar": "--ink",
+        "theme": "night"
+      },
+      "dim-night": {
+        "role": "neutral",
+        "displayName": "Dim (night patrol)",
+        "canonical": "#9db1a3",
+        "tonalRamp": [
+          "#020f06",
+          "#19291f",
+          "#36473b",
+          "#54675a",
+          "#75887b",
+          "#97ab9d",
+          "#bbcfc1",
+          "#e0f5e6"
+        ],
+        "cssVar": "--dim",
+        "theme": "night"
+      },
+      "line-night": {
+        "role": "neutral",
+        "displayName": "Line (night patrol)",
+        "canonical": "#2a3a30",
+        "tonalRamp": [
+          "#020f07",
+          "#1a2920",
+          "#36473c",
+          "#55665b",
+          "#75887c",
+          "#98ab9e",
+          "#bbcfc2",
+          "#e0f4e7"
+        ],
+        "cssVar": "--line",
+        "theme": "night"
+      },
+      "check-text-night": {
+        "role": "secondary",
+        "displayName": "Check Text (night patrol)",
+        "canonical": "#f2c230",
+        "tonalRamp": [
+          "#100a00",
+          "#302300",
+          "#533f00",
+          "#785d02",
+          "#a07d06",
+          "#c99f16",
+          "#f3c331",
+          "#ffedc1"
+        ],
+        "cssVar": "--check-text",
+        "theme": "night"
+      },
+      "alarm-night": {
+        "role": "tertiary",
+        "displayName": "Alarm (night patrol)",
+        "canonical": "#f0705f",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0100",
+          "#800301",
+          "#aa2f23",
+          "#d15445",
+          "#fa7967",
+          "#fdb4a8",
+          "#fee9e5"
+        ],
+        "cssVar": "--alarm",
+        "theme": "night"
+      },
+      "ok-night": {
+        "role": "tertiary",
+        "displayName": "Settled Green (night patrol)",
+        "canonical": "#5fbf85",
+        "tonalRamp": [
+          "#000f05",
+          "#012e17",
+          "#02502b",
+          "#087442",
+          "#359860",
+          "#5cbc82",
+          "#81e1a5",
+          "#c5ffd8"
+        ],
+        "cssVar": "--ok",
+        "theme": "night"
+      },
+      "on-alarm-night": {
+        "role": "tertiary",
+        "displayName": "On Alarm (night patrol)",
+        "canonical": "#0b130e",
+        "tonalRamp": [
+          "#060d08",
+          "#1f2722",
+          "#3b453f",
+          "#5a645e",
+          "#7b857e",
+          "#9da8a1",
+          "#c1ccc5",
+          "#e6f2ea"
+        ],
+        "cssVar": "--on-alarm",
+        "theme": "night"
+      },
+      "on-ok-night": {
+        "role": "tertiary",
+        "displayName": "On Settled (night patrol)",
+        "canonical": "#0b130e",
+        "tonalRamp": [
+          "#060d08",
+          "#1f2722",
+          "#3b453f",
+          "#5a645e",
+          "#7b857e",
+          "#9da8a1",
+          "#c1ccc5",
+          "#e6f2ea"
+        ],
+        "cssVar": "--on-ok",
+        "theme": "night"
+      },
+      "focus-ring-night": {
+        "role": "neutral",
+        "displayName": "Focus Ring (night patrol)",
+        "canonical": "#f2c230",
+        "tonalRamp": [
+          "#100a00",
+          "#302300",
+          "#533f00",
+          "#785d02",
+          "#a07d06",
+          "#c99f16",
+          "#f3c331",
+          "#ffedc1"
+        ],
+        "cssVar": "--focus-ring",
+        "theme": "night"
+      },
+      "neutral-mark-night": {
+        "role": "neutral",
+        "displayName": "Neutral Mark (night patrol)",
+        "canonical": "#7fa8c4",
+        "tonalRamp": [
+          "#000d17",
+          "#01283e",
+          "#1f465e",
+          "#3f6680",
+          "#6088a3",
+          "#82abc7",
+          "#a5cfed",
+          "#dff2ff"
+        ],
+        "cssVar": "--neutral-mark",
+        "theme": "night"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The hero's stencilled wordmark only; uppercase, balanced wrap.",
+        "cssClass": "board-title"
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Story section titles beside their milestone or hectometre stone; uppercase.",
+        "cssClass": "board-title"
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Console page titles and the decision panel's label."
+      },
+      "stat": {
+        "displayName": "Stat",
+        "purpose": "Stat-tile numbers, rolling to new values like a repainted milestone."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base text on both surfaces."
+      },
+      "body-console": {
+        "displayName": "Console body",
+        "purpose": "Explanations under page headers and in empty states, in dim, capped at 72ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, nav group titles, field labels."
+      },
+      "devanagari": {
+        "displayName": "Devanagari wordmark",
+        "purpose": "वनदृष्टि beneath the wordmark.",
+        "cssClass": "deva"
+      },
+      "recipe": {
+        "displayName": "Recipe",
+        "purpose": "Model/version/config foot strips, hashes, frame captions."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-plate",
+        "value": "0 1px 2px rgb(20 32 25 / 0.08), 0 6px 16px -6px rgb(20 32 25 / 0.18)",
+        "purpose": "Every console plate, toast, active nav plate and the skip link (daylight)."
+      },
+      {
+        "name": "shadow-plate-night",
+        "value": "0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px -8px rgb(0 0 0 / 0.6)",
+        "purpose": "The same token in night patrol."
+      },
+      {
+        "name": "story-board",
+        "value": "0 24px 50px -24px rgb(0 0 0 / 0.7)",
+        "purpose": "Green boards on the story's deep ground."
+      },
+      {
+        "name": "story-plate",
+        "value": "0 14px 30px -14px rgb(0 0 0 / 0.6)",
+        "purpose": "Enamel plates on story boards."
+      },
+      {
+        "name": "stone",
+        "value": "0 10px 20px -10px rgb(0 0 0 / 0.55)",
+        "purpose": "Milestone stones and the story's Sign in plate."
+      }
+    ],
+    "focus": [
+      {
+        "name": "focus-ring",
+        "value": "2px solid var(--focus-ring); outline-offset 2px; radius 4px",
+        "purpose": "Board green by day, check yellow at night; check yellow on green boards; board green on enamel plates that sit on boards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-board",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Boards settle: a fast start and a long, calm stop. Default for plates, nav plate, page transitions, counts. GSAP: expo.out."
+      },
+      {
+        "name": "ease-boom",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "The check-post boom: a firm lift that settles without bouncing. GSAP: power3.out."
+      },
+      {
+        "name": "ease-stamp",
+        "value": "cubic-bezier(0.2, 0.9, 0.1, 1)",
+        "purpose": "A stamp pressing down: count badge pops, decision stamps. GSAP: power4.out."
+      },
+      {
+        "name": "duration-quick",
+        "value": "140ms",
+        "purpose": "Exits (toasts)."
+      },
+      {
+        "name": "duration-base",
+        "value": "240ms",
+        "purpose": "Toasts, segmented control, count badge pop, stone hover."
+      },
+      {
+        "name": "duration-board",
+        "value": "520ms",
+        "purpose": "Nav plate slide; page transitions run at 0.6×, counts at 1.4×, the confidence dial at 1.8×."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "final states",
+        "purpose": "Under prefers-reduced-motion every animation shows its final state; skeleton sheen, pulse rings and dropped digits are removed."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "note": "Main switch: sidebar column, 36px controls, 14px fields."
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action that matters on a screen: painted board green.",
+      "html": "<button class=\"ds-btn-primary\">Save decision</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border:0;border-radius:8px;background:var(--color-board);color:var(--color-on-board);font:600 14px/1 var(--font-sans);cursor:pointer}.ds-btn-primary:hover{background:var(--color-board-deep)}.ds-btn-primary:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}.ds-btn-primary:disabled{opacity:.4}@media(min-width:768px){.ds-btn-primary{height:36px}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action: an outlined enamel button.",
+      "html": "<button class=\"ds-btn\">Export CSV</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font:400 14px/1 var(--font-sans);cursor:pointer}.ds-btn:hover{background:var(--plate-raised)}.ds-btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}.ds-btn:disabled{opacity:.4}@media(min-width:768px){.ds-btn{height:36px}}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "A form field on a plate; 16px text on phones so the page never zooms.",
+      "html": "<label class=\"ds-label\">Camera<input class=\"ds-field\" placeholder=\"S-07\"></label>",
+      "css": ".ds-label{display:grid;gap:4px;font:400 13px/1.4 var(--font-sans);color:var(--dim)}.ds-field{height:44px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--ground);color:var(--ink);font:400 16px var(--font-sans)}.ds-field:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}@media(min-width:768px){.ds-field{height:36px;font-size:14px}}"
+    },
+    {
+      "name": "Stage Badges",
+      "kind": "chip",
+      "refersTo": "stage-badge-review",
+      "description": "Where an item is on the road; a word always comes with the colour.",
+      "html": "<span class=\"ds-badge ds-auto\">Auto-accepted</span> <span class=\"ds-badge ds-check\">Needs a person</span> <span class=\"ds-badge ds-alarm\">People or vehicles</span> <span class=\"ds-badge ds-quiet\">Likely blank</span> <span class=\"ds-badge ds-done\">Decided by a person</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;border-radius:6px;padding:2px 8px;font:600 13px/1.4 var(--font-sans)}.ds-auto{background:var(--ok);color:var(--on-ok)}.ds-check{background:var(--color-check);color:var(--color-on-check)}.ds-alarm{background:var(--alarm);color:var(--on-alarm)}.ds-quiet{background:var(--plate-raised);color:var(--ink)}.ds-done{border:2px solid var(--ok);color:var(--ok)}"
+    },
+    {
+      "name": "Enamel Plate",
+      "kind": "card",
+      "refersTo": "plate",
+      "description": "The console's card: one soft elevation, rivets when it holds a record or decision, verdict → label → reason.",
+      "html": "<article class=\"ds-plate\"><i class=\"ds-rv\" style=\"left:8px;top:8px\"></i><i class=\"ds-rv\" style=\"right:8px;top:8px\"></i><i class=\"ds-rv\" style=\"left:8px;bottom:8px\"></i><i class=\"ds-rv\" style=\"right:8px;bottom:8px\"></i><span class=\"ds-pb\">Uncertain</span><p class=\"ds-pl\">Leopard <span>0.55</span></p><p class=\"ds-pr\">Synthetic example. The species model and the check disagree.</p></article>",
+      "css": ".ds-plate{position:relative;max-width:360px;padding:16px 20px;border-radius:12px;background:var(--plate);color:var(--ink);box-shadow:var(--shadow-plate);font-family:var(--font-sans)}.ds-rv{position:absolute;width:6px;height:6px;border-radius:9999px;background:var(--line)}.ds-pb{display:inline-block;border-radius:6px;padding:2px 8px;background:var(--color-check);color:var(--color-on-check);font:600 13px/1.4 var(--font-sans)}.ds-pl{margin:8px 0 0;font:600 22px/1.2 var(--font-sans)}.ds-pl span{color:var(--dim);font-variant-numeric:tabular-nums}.ds-pr{margin:4px 0 0;font-size:15px;color:var(--dim)}"
+    },
+    {
+      "name": "Recipe Foot Strip",
+      "kind": "card",
+      "refersTo": "enamel-plate-on-board",
+      "description": "A story step plate whose base carries the model or rule and its version in monospace.",
+      "html": "<div class=\"ds-step\"><h3>Detect</h3><p>The detector draws a box around anything that looks like an animal, a person or a vehicle.</p><p class=\"ds-recipe\">MegaDetector V6 · config hash</p></div>",
+      "css": ".ds-step{position:relative;max-width:46ch;padding:16px 20px 0;border-radius:12px;background:var(--color-on-board);color:#142019;box-shadow:0 14px 30px -14px rgb(0 0 0/.6);font-family:var(--font-sans);overflow:hidden}.ds-step h3{margin:0;font:600 24px/1.2 var(--font-sans)}.ds-step p{margin:8px 0 0;font-size:16px;line-height:1.6;color:#2f3d33}.ds-recipe{margin:16px -20px 0!important;padding:8px 20px;border-top:1px solid #d6dccf;background:#e8ebe3;font:400 12px ui-monospace,monospace!important;color:#3f4f44!important}"
+    },
+    {
+      "name": "Side Board Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "The console sidebar: a green board, road-stage groups with tiny stones, the active item an enamel plate.",
+      "html": "<nav class=\"ds-side\"><p class=\"ds-grp\"><span class=\"ds-mini\">4</span>Review</p><a class=\"ds-nav ds-on\" href=\"#\">To review<span class=\"ds-count ds-n\">12</span></a><a class=\"ds-nav\" href=\"#\">People &amp; vehicles<span class=\"ds-count ds-r\">3</span></a><a class=\"ds-nav\" href=\"#\">Uncertain<span class=\"ds-count ds-c\">5</span></a></nav>",
+      "css": ".ds-side{display:grid;gap:2px;width:272px;padding:16px 12px;background:var(--color-board);color:var(--color-on-board);font-family:var(--font-sans)}.ds-grp{display:flex;align-items:center;gap:8px;margin:0 0 4px;padding:0 8px;font:600 13px var(--font-sans);color:var(--color-on-board-dim)}.ds-mini{display:grid;place-items:center;width:16px;height:20px;border-radius:8px 8px 2px 2px;background:var(--color-on-board);color:var(--color-board);font-size:10px;font-weight:700}.ds-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:8px;color:rgb(245 246 241/.9);text-decoration:none;font-size:15px}.ds-nav:hover{background:rgb(255 255 255/.1)}.ds-nav:focus-visible{outline:2px solid var(--color-check);outline-offset:2px}.ds-on{background:var(--color-on-board);color:var(--color-board);font-weight:600;box-shadow:var(--shadow-plate)}.ds-count{display:inline-grid;place-items:center;min-width:24px;padding:0 6px;border-radius:9999px;font:600 12px/20px var(--font-sans);font-variant-numeric:tabular-nums}.ds-n{background:rgb(245 246 241/.15);color:var(--color-on-board)}.ds-on .ds-n{color:var(--color-board)}.ds-r{background:#c8372d;color:#fff}.ds-c{background:var(--color-check);color:var(--color-on-check)}"
+    },
+    {
+      "name": "Milestone Stone",
+      "kind": "custom",
+      "refersTo": "milestone",
+      "description": "Navigation and progress on the story road: stage number on a green band over the stage word.",
+      "html": "<div class=\"ds-road\"><a class=\"ds-stone\" href=\"#\"><b>1</b><span>See how it works ↓</span></a><a class=\"ds-stone\" href=\"#\"><b>2</b><span>Detect</span></a><a class=\"ds-stone ds-minor\" href=\"#\"><b>4·1</b><span>Privacy</span></a></div>",
+      "css": ".ds-road{display:flex;align-items:flex-end;gap:16px;padding:16px;background:var(--color-board-deep)}.ds-stone{display:block;width:132px;overflow:hidden;border-radius:56px 56px 6px 6px;background:var(--color-on-board);color:var(--color-board);text-align:center;text-decoration:none;box-shadow:0 10px 20px -10px rgb(0 0 0/.55);font-family:var(--font-sans);transition:transform var(--duration-base) var(--ease-board)}.ds-stone:hover{transform:translateY(-4px)}.ds-stone:focus-visible{outline:2px solid var(--color-check);outline-offset:2px}.ds-stone b{display:block;padding:12px 0 4px;background:var(--color-board-line);color:var(--color-on-board);font-size:13px}.ds-stone span{display:block;padding:8px;font:600 15px/1.2 var(--font-sans)}.ds-minor{width:40px;border-radius:20px 20px 4px 4px}.ds-minor b{padding-top:6px}.ds-minor span{padding:4px 2px;font-size:8px;text-transform:uppercase}"
+    },
+    {
+      "name": "Story Board",
+      "kind": "card",
+      "refersTo": "board",
+      "description": "The story's section container: a green board with a white keyline, rivets and a stencilled title.",
+      "html": "<div class=\"ds-board\"><i class=\"ds-rv2\" style=\"left:8px;top:8px\"></i><i class=\"ds-rv2\" style=\"right:8px;top:8px\"></i><i class=\"ds-rv2\" style=\"left:8px;bottom:8px\"></i><i class=\"ds-rv2\" style=\"right:8px;bottom:8px\"></i><div class=\"ds-key\"><h2>VanDrishti</h2><p lang=\"hi\">वनदृष्टि</p><p class=\"ds-tag\">AI proposes. People decide.</p></div></div>",
+      "css": ".ds-board{position:relative;padding:16px;border-radius:14px;background:var(--color-board);color:var(--color-on-board);box-shadow:0 24px 50px -24px rgb(0 0 0/.7)}.ds-rv2{position:absolute;width:6px;height:6px;border-radius:9999px;background:rgb(245 246 241/.7)}.ds-key{padding:24px 40px;border:3px solid rgb(245 246 241/.9);border-radius:8px}.ds-key h2{margin:0;font:800 clamp(2.4rem,6vw,4.25rem)/.92 var(--font-display);letter-spacing:-.01em;text-transform:uppercase}.ds-key p{margin:4px 0 0;font:600 24px var(--font-deva);color:var(--color-on-board-dim)}.ds-key .ds-tag{font:600 22px/1.2 var(--font-sans);color:var(--color-on-board)}"
+    },
+    {
+      "name": "Undo Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "A confirmation on a board-green plate; with Undo it never times out.",
+      "html": "<div class=\"ds-toast\"><span>Marked as leopard.</span><button class=\"ds-undo\">Undo</button><button class=\"ds-x\" aria-label=\"Dismiss\">×</button></div>",
+      "css": ".ds-toast{display:flex;align-items:center;gap:12px;max-width:28rem;padding:12px 16px;border-radius:12px;background:var(--color-board);color:var(--color-on-board);box-shadow:var(--shadow-plate);font:400 15px var(--font-sans)}.ds-toast span{flex:1}.ds-undo{padding:4px 12px;border:0;border-radius:8px;background:var(--color-on-board);color:var(--color-board);font:600 14px var(--font-sans);cursor:pointer}.ds-undo:hover{background:#fff}.ds-undo:focus-visible,.ds-x:focus-visible{outline:2px solid var(--color-check);outline-offset:2px}.ds-x{border:0;background:none;color:inherit;font-size:18px;opacity:.7;cursor:pointer}.ds-x:hover{opacity:1}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Forest Board",
+    "overview": "The workflow is a forest road. Every stage is a painted Forest Department board, and every place a human decides is a check-post whose boom only a person lifts. The system borrows the material of Indian forest-department signage: deep green painted boards with a white keyline, white enamel plates screwed on with rivets, rounded-top milestones, black-and-yellow check-post striping, and red reserved for danger. These are the working parts of the interface (navigation, cards, badges, gates), never decoration laid over a template.\n\nTwo surfaces share the world. The public story (`/`) stands on board green: one synthetic night frame walks down the road from camera to a person's decision, with milestones as navigation and progress. The signed-in console (`/app/*`) keeps the green board as its sidebar and puts the work on enamel: white plates on a pale ground by daylight, dark plates on a near-black forest ground for night patrol. Density is a desk tool's: 13 to 15 px text, tight plates, keyboard review, every state spelled out in a word.\n\nThe world rejects the category default: a dark AI dashboard with a neon accent, or a hero photo above feature cards.",
+    "keyCharacteristics": [
+      "Board green owns the ground of the story and the console's sidebar; white enamel is the only relief.",
+      "Check yellow means \"a person decides here\"; red means people, vehicles and failures, nothing else.",
+      "Every state carries a word; colour never stands alone.",
+      "Stencilled board lettering for titles, a sturdy Devanagari-capable sans (Mukta) for everything read.",
+      "Enamel plates with rivets as cards; one soft elevation; no hard offset shadows.",
+      "Milestone stones mark the road's five stages; hectometre stones mark stops between them.",
+      "Every frame carries its recipe (model, version, config) on a monospace foot strip.",
+      "Motion verbs from the world: boards swing in, stencils paint on, the boom lifts, stamps press, counts roll. Reduced motion shows final states."
+    ],
+    "rules": [
+      {
+        "name": "The Check-Post Rule",
+        "body": "Yellow means a person decides here, and nothing else. A spot-check chip is check yellow; so is a review queue count.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Is for Danger Rule",
+        "body": "Red marks people, vehicles, high risk and failures only. It is never decoration, never a brand accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Word With Every Colour Rule",
+        "body": "Every stage, risk level and route shows its word (\"Needs a person\", \"High risk\", \"Auto-accepted\"); colour is reinforcement.",
+        "section": "colors"
+      },
+      {
+        "name": "The Palette Is Closed Rule",
+        "body": "No hue enters outside these tokens; blue lives only in `neutral-mark` data marks.",
+        "section": "colors"
+      },
+      {
+        "name": "The On-Fill Rule",
+        "body": "Text on alarm or ok fills uses `on-alarm` / `on-ok` (white by day, dark ink at night, because the night fills are light). Never hard-code white on a theme-driven fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stencil Is for Boards Rule",
+        "body": "The stencil face sets board titles and the wordmark only; anything read closely is in Mukta.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Eyebrow Rule",
+        "body": "No small label sits above a heading. A heading stands alone; provenance rides the plate's monospace foot strip.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tracking Floor Rule",
+        "body": "Display sizes cap at 6rem and tracking never goes below -0.02em.",
+        "section": "typography"
+      },
+      {
+        "name": "The 44px Rule",
+        "body": "Every phone tap target is at least 44px: controls use `h-11 md:h-9` (44px on phones, 36px at the desk); icon buttons in the phone header are 44px squares.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Soft Elevation Rule",
+        "body": "A plate has one soft, blurred elevation. No zero-blur offset shadows, no stacked \"neo\" shadows, no glow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Side Stripe Rule",
+        "body": "No coloured stripe down the side of a card. State goes in a badge with its word.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Visible Find Rule",
+        "body": "The detector box must visibly find a subject inside the frame: the striped body is always inside the box, never empty grass.",
+        "section": "components"
+      },
+      {
+        "name": "The Stone Carries Its Stage Rule",
+        "body": "A milestone carries its stage number and word; a stop between stages uses a hectometre stone (\"4·1\"). Never an invented distance.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do put board green under the story and the console's navigation, and work on enamel plates.",
+      "Do use check yellow only where a person decides, with `on-check` text.",
+      "Do spell every state as a word inside its badge.",
+      "Do use `on-alarm` / `on-ok` for text on alarm and ok fills so both themes pass AA.",
+      "Do keep the focus ring at 3:1 or better: board green by day, check yellow at night and on boards.",
+      "Do give phone targets 44px with `h-11 md:h-9`.",
+      "Do carry provenance on a monospace foot strip at the plate's base.",
+      "Do label every illustrative frame \"Synthetic\" and build it from stripe geometry.",
+      "Do time motion with the board, boom and stamp easings and the quick (140ms), base (240ms) and board (520ms) durations, and show final states under reduced motion."
+    ],
+    "donts": [
+      "Don't put a coloured stripe down the side of a card.",
+      "Don't put an eyebrow label above a heading.",
+      "Don't use a zero-blur offset shadow; plates take one soft elevation.",
+      "Don't bring blue (or any hue) in from outside the palette; the spot-check chip is check yellow.",
+      "Don't put an invented distance on a milestone; stops between stages use hectometre stones such as \"4·1\".",
+      "Don't draw a detector box around empty grass; it must visibly find the subject.",
+      "Don't use red for anything but people, vehicles, high risk and failures.",
+      "Don't let a privacy blur or any meaning depend on an animation finishing.",
+      "Don't make a dark AI dashboard with a neon accent, or a hero photo above feature cards."
+    ]
+  }
+}

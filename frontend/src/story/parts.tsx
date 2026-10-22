@@ -36,14 +36,19 @@ export function Plate({ children, className = "", tone = "enamel" }: { children:
   );
 }
 
-/** A section's board title in stencil lettering, with the milestone it belongs to. */
-export function StageTitle({ id, milestone, children }: { id: string; milestone?: string; children: ReactNode }) {
+/**
+ * A section's board title in stencil lettering, with the stone it stands at. Stages 1-5 are the
+ * road's milestones (the hero's road); stops between them get the small hectometre stones a
+ * forest road has between kilometre stones, numbered like "4·1".
+ */
+export function StageTitle({ id, milestone, word, children }: { id: string; milestone?: string; word?: string; children: ReactNode }) {
+  const minor = milestone?.includes("·");
   return (
     <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
       {milestone && (
-        <span aria-hidden className="mb-1.5 block w-12 overflow-hidden rounded-t-[24px] rounded-b-[4px] bg-on-board text-center shadow-[0_3px_0_rgb(0_0_0/0.35)]">
-          <span className="block bg-board-line pt-2 pb-0.5 text-[15px] font-bold text-on-board">{milestone}</span>
-          <span className="block h-4" />
+        <span aria-hidden className={`mb-1.5 block shrink-0 overflow-hidden rounded-b-[4px] bg-on-board text-center shadow-[0_10px_20px_-10px_rgb(0_0_0/0.55)] ${minor ? "w-10 rounded-t-[20px]" : "w-14 rounded-t-[28px]"}`}>
+          <span className={`block bg-board-line pb-0.5 font-bold text-on-board ${minor ? "pt-1.5 text-[13px]" : "pt-2 text-[16px]"}`}>{milestone}</span>
+          <span className={`block px-0.5 py-1 font-semibold uppercase text-board ${minor ? "text-[8px]" : "text-[10px]"}`}>{word ?? "\u00a0"}</span>
         </span>
       )}
       <h2 id={id} className="board-title text-[clamp(2.4rem,6vw,4.25rem)] uppercase">{children}</h2>

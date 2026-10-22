@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
-import { createBrowserRouter, Navigate, useLocation } from "react-router";
+import { createBrowserRouter, Navigate, useLocation, type RouteObject } from "react-router";
 
 // The story site is public and makes no API calls; its chunk (with GSAP and Lenis) loads
 // only when someone opens "/". The console is its own chunk too (src/console.ts), so a
@@ -17,7 +17,7 @@ function LegacyRedirect() {
   return <Navigate to={`/app${pathname}${search}`} replace />;
 }
 
-export const router = createBrowserRouter([
+export const routes: RouteObject[] = [
   {
     path: "/",
     element: (
@@ -47,4 +47,6 @@ export const router = createBrowserRouter([
   },
   ...CONSOLE.map((p) => ({ path: `/${p}/*`, element: <LegacyRedirect /> })),
   { path: "*", element: <Navigate to="/" replace /> },
-]);
+];
+
+export const router = createBrowserRouter(routes);

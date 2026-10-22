@@ -3,9 +3,8 @@ import { useState, type FormEvent } from "react";
 import { api, ApiError, setCsrf, type Me } from "../api";
 import { Plate } from "../components/kit";
 import { DURATION, EASE_BOARD } from "../motion/tokens";
-import { stripeField } from "../story/stripes";
+import { BOX, NightFrame } from "../story/frame";
 
-const STRIPES = stripeField(23, 340, 170);
 const FIELD = "h-11 rounded-[8px] border border-line bg-base px-3 text-[16px] text-ink";
 
 /** Sign in. The session is an HttpOnly cookie; the page never sees it. */
@@ -42,29 +41,14 @@ export function LoginScreen({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
           <p className="board-title text-[clamp(48px,9vw,96px)] uppercase">VanDrishti</p>
           <p lang="hi" className="deva text-[22px] text-on-board-dim">वनदृष्टि</p>
         </motion.div>
-        {/* One synthetic frame, as on the story page: a stripe field inside the detector's box. */}
+        {/* The same synthetic night frame as the story page. */}
         <figure className="w-full max-w-[520px] overflow-hidden rounded-[10px] bg-[#2f3431] shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
-          <svg viewBox="0 0 420 190" className="block w-full" role="img" aria-label="Synthetic camera frame: a stripe pattern inside the detector's box">
-            <defs>
-              <linearGradient id="login-flank" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#d08a24" />
-                <stop offset="0.72" stopColor="#c47a1c" />
-                <stop offset="1" stopColor="#ead9b6" />
-              </linearGradient>
-              <clipPath id="login-crop"><rect x="78" y="22" width="290" height="150" rx="10" /></clipPath>
-            </defs>
-            <g clipPath="url(#login-crop)">
-              <rect x="78" y="22" width="290" height="150" fill="url(#login-flank)" />
-              <g transform="translate(60 8)">
-                {STRIPES.map((s, i) => (
-                  <motion.path key={i} d={s.d} fill="#151515" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }}
-                    transition={{ duration: DURATION.board, ease: EASE_BOARD, delay: reduce ? 0 : 0.15 + i * 0.03 }} />
-                ))}
-              </g>
-            </g>
-            <motion.rect x="70" y="16" width="306" height="162" fill="none" stroke="#f2c230" strokeWidth="3" pathLength={1}
-              strokeDasharray="1" initial={reduce ? false : { strokeDashoffset: 1 }} animate={{ strokeDashoffset: 0 }}
-              transition={{ duration: DURATION.board * 1.6, ease: EASE_BOARD, delay: reduce ? 0 : 0.5 }} />
+          <svg viewBox="0 0 420 190" className="block w-full" role="img" aria-label="Synthetic night frame: the detector's box around a striped body in the grass">
+            <NightFrame id="login">
+              <motion.rect {...BOX} fill="none" stroke="#f2c230" strokeWidth="3" pathLength={1}
+                strokeDasharray="1" initial={reduce ? false : { strokeDashoffset: 1 }} animate={{ strokeDashoffset: 0 }}
+                transition={{ duration: DURATION.board * 1.6, ease: EASE_BOARD, delay: reduce ? 0 : 0.5 }} />
+            </NightFrame>
           </svg>
           <figcaption className="flex justify-between bg-black/80 px-3 py-1 font-mono text-[11px] tracking-wide text-[#d7ddd8]">
             <span>CAM S-07</span><span>SYNTHETIC FRAME</span>

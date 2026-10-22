@@ -151,4 +151,13 @@ history, old Docker volumes). Do not look for it; build from the image.
   44 px (`h-11 md:h-9` in `BUTTON`/`FIELD`); never fade text with opacity below AA.
 - The console is its own chunk (`src/console.ts`, route `lazy` in router.tsx): the story page must not
   import from `Shell` or `screens/`. Shared code they both need lives outside both (e.g. `story/stripes`).
+- Design system: `DESIGN.md` + `.impeccable/design.json` (The Forest Board). Floor rules from the finish
+  review: no side stripes on cards, no eyebrow labels above headings, no zero-blur offset shadows, no
+  blue outside the palette, milestone stones carry number + stage word ("4·1" hectometre stones between
+  stages, never invented distances). The synthetic frame is `story/frame.tsx` (NightFrame, BODY, BOX):
+  SVG rects need `width`/`height` keys (spreading `w`/`h` renders nothing).
+- `docs/screenshots/` holds only photo-free captures (WebP) with `PROVENANCE.md`; anything showing
+  camera-trap frames stays in the git-ignored `.impeccable/review/`. Impeccable's finish reviewer and
+  documenter are not registered agent types here: run them as fresh general-purpose agents that load
+  `~/.claude/skills/impeccable/agents/*.toml` themselves.
 

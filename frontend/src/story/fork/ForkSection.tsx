@@ -114,7 +114,7 @@ export function ForkSection() {
 
   return (
     <section id="stage-3" ref={section} aria-labelledby="fork-title" className="px-4 py-20 md:px-10 md:py-28">
-      <StageTitle id="fork-title" milestone="3">The check-post</StageTitle>
+      <StageTitle id="fork-title" milestone="3" word="Decide">The check-post</StageTitle>
       <p className="mt-4 max-w-[62ch] text-[18px] text-on-board-dim">
         Every frame takes one of five roads. Confident answers go straight on, and likely-blank frames are set aside.
         Frames in the review band, uncertain frames, and any frame with people or vehicles stop at the check-post,
@@ -122,11 +122,11 @@ export function ForkSection() {
       </p>
 
       <div className="mt-10 overflow-hidden rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)]">
-        <div ref={wrap} className="relative h-[min(68vh,620px)] min-h-[340px] overflow-hidden rounded-[8px] bg-[#0b2716]">
+        <div ref={wrap} className="relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#0b2716] md:aspect-auto md:h-[min(68vh,620px)] md:min-h-[340px]">
           {mode === "static" && <StaticFork />}
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-3">
             <button type="button" onClick={review} disabled={mode !== "3d" || lifted}
-              className="rounded-[10px] bg-check px-4 py-2 text-[16px] font-semibold text-on-check shadow-[0_3px_0_rgb(0_0_0/0.35)] transition-transform duration-[var(--duration-quick)] active:translate-y-0.5 disabled:opacity-60">
+              className="rounded-[10px] bg-check px-4 py-2 text-[16px] font-semibold text-on-check shadow-[0_10px_20px_-10px_rgb(0_0_0/0.55)] transition-transform duration-[var(--duration-quick)] active:translate-y-0.5 disabled:opacity-60">
               {lifted ? "Boom up: frames passing" : "Review (R): lift the boom"}
             </button>
             {passed > 0 && (

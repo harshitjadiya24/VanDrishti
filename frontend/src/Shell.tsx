@@ -171,13 +171,13 @@ function SideBoard({ groups, layoutKey = "side" }: { groups: NavGroup[]; layoutK
               {g.items.map((it) => (
                 <li key={it.to}>
                   <NavLink to={it.to}
-                    className={({ isActive }) => clsx("relative flex items-center gap-2.5 rounded-[8px] px-2.5 py-1.5 text-[15px]",
+                    className={({ isActive }) => clsx("relative flex min-h-11 items-center gap-2.5 rounded-[8px] px-2.5 py-1.5 text-[15px] md:min-h-0",
                       isActive ? "font-semibold text-board" : "text-on-board/90 hover:bg-white/10")}>
                     {({ isActive }) => (
                       <>
                         {isActive && (
                           <motion.span layoutId={`nav-plate-${layoutKey}`} aria-hidden
-                            className="absolute inset-0 rounded-[8px] bg-on-board shadow-[0_2px_0_rgb(0_0_0/0.25)]"
+                            className="absolute inset-0 rounded-[8px] bg-on-board shadow-[var(--shadow-plate)]"
                             transition={reduce ? { duration: 0 } : { duration: DURATION.board, ease: EASE_BOARD }} />
                         )}
                         <span className="relative"><it.icon size={17} aria-hidden /></span>
@@ -211,7 +211,7 @@ function Settings() {
       <label className="grid gap-1 text-[13px] text-on-board-dim">
         Reserve
         <select value={reserve} onChange={(e) => setReserve(e.target.value)}
-          className="h-9 w-full min-w-0 rounded-[8px] border border-on-board/30 bg-board-deep px-2 text-[14px] text-on-board">
+          className="h-11 w-full min-w-0 rounded-[8px] border border-on-board/30 bg-board-deep px-2 text-[16px] text-on-board md:h-9 md:text-[14px]">
           {allReserves && <option value="">All reserves</option>}
           {(reserves.data ?? []).map((r) => <option key={r.code} value={r.code} title={`${r.name} (${r.code})`}>{r.name}</option>)}
         </select>
@@ -222,7 +222,7 @@ function Settings() {
           {me?.display_name} <span className="text-on-board-dim">· {me?.role}</span>
         </span>
         <button type="button" onClick={signOut}
-          className="rounded-[8px] border border-on-board/30 px-2.5 py-1 text-[13px] hover:bg-white/10">
+          className="min-h-11 rounded-[8px] border border-on-board/30 px-3 py-1 text-[13px] hover:bg-white/10 md:min-h-0">
           Sign out
         </button>
       </div>
@@ -279,7 +279,7 @@ function ThemeSwitch() {
       {THEMES.map((t) => (
         <button key={t.value} type="button" role="radio" aria-checked={choice === t.value}
           onClick={() => setTheme(t.value)}
-          className={clsx("rounded-[6px] px-2 py-1", choice === t.value ? "bg-on-board font-semibold text-board" : "text-on-board-dim hover:text-on-board")}>
+          className={clsx("min-h-10 rounded-[6px] px-2 py-1 md:min-h-0", choice === t.value ? "bg-on-board font-semibold text-board" : "text-on-board-dim hover:text-on-board")}>
           {t.label}
         </button>
       ))}

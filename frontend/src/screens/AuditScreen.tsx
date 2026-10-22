@@ -21,7 +21,7 @@ export function AuditScreen() {
       <PageHeader title="Audit trail"
         actions={
           <button type="button" onClick={() => verify.mutate()} disabled={verify.isPending}
-            className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-board px-3 text-[14px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-60">
+            className="inline-flex h-11 items-center gap-1.5 rounded-[8px] bg-board md:h-9 px-3 text-[14px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-60">
             <Lock size={15} aria-hidden />{verify.isPending ? "Recomputing every hash…" : "Verify the chain"}
           </button>
         }>
