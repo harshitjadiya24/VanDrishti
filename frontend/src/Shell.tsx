@@ -103,17 +103,21 @@ function Layout() {
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
+      {/* Keyboard users skip the navigation on every screen. */}
+      <a href="#content" className="sr-only z-50 rounded-[8px] bg-check font-semibold text-on-check shadow-[var(--shadow-plate)] focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:px-4 focus:py-2.5">
+        Skip to content
+      </a>
       {/* Phones: a slim board with the alerts count and the menu. */}
       <header className="sticky top-0 z-30 flex items-center gap-2 bg-board px-4 py-2.5 text-on-board md:hidden">
         <Wordmark compact />
         <span className="flex-1" />
         <NavLink to="/app/alerts" aria-label={`Alerts${urgent ? `, ${urgent} open` : ""}`}
-          className="relative grid size-10 place-items-center rounded-[8px] hover:bg-white/10">
+          className="relative grid size-11 place-items-center rounded-[8px] hover:bg-white/10">
           <Bell size={20} aria-hidden />
           {urgent > 0 && <span className="absolute -top-0.5 -right-0.5"><CountBadge n={urgent} tone="alarm" /></span>}
         </NavLink>
         <button ref={menuButton} type="button" onClick={() => setMenuOpen(true)} aria-expanded={menuOpen} aria-controls="console-menu"
-          className="grid size-10 place-items-center rounded-[8px] hover:bg-white/10" aria-label="Open menu">
+          className="grid size-11 place-items-center rounded-[8px] hover:bg-white/10" aria-label="Open menu">
           <Menu size={22} aria-hidden />
         </button>
       </header>
@@ -128,7 +132,7 @@ function Layout() {
         <SideBoard groups={groups} layoutKey="sheet" />
       </MenuSheet>
 
-      <main className="min-w-0 flex-1 px-4 py-5 md:px-8 md:py-8">
+      <main id="content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-5 outline-none md:px-8 md:py-8">
         <div className="mx-auto max-w-[1360px]">
           <PageTransition />
         </div>
@@ -248,7 +252,7 @@ function MenuSheet({ open, onClose, children }: { open: boolean; onClose: () => 
             initial={reduce ? false : { x: "-100%" }} animate={{ x: 0 }} exit={reduce ? { opacity: 0 } : { x: "-100%" }}
             transition={{ duration: reduce ? 0 : DURATION.board * 0.8, ease: EASE_BOARD }}>
             <button type="button" onClick={onClose} aria-label="Close menu"
-              className="absolute top-4 right-3 grid size-10 place-items-center rounded-[8px] hover:bg-white/10">
+              className="absolute top-4 right-3 grid size-11 place-items-center rounded-[8px] hover:bg-white/10">
               <X size={22} aria-hidden />
             </button>
             {children}

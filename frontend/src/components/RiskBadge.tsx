@@ -2,7 +2,7 @@ import clsx from "clsx";
 import type { RiskFactor } from "../api";
 
 const TONE = {
-  high: "bg-alarm text-white",
+  high: "bg-alarm text-on-alarm",
   medium: "bg-check text-on-check",
   low: "bg-raised text-ink",
 } as const;

@@ -257,13 +257,13 @@ export function RiskSection() {
           ))}
         </ol>
         <Plate tone={level === "HIGH" ? "alarm" : level === "MEDIUM" ? "check" : "enamel"} className="self-start">
-          <p className="text-[14px] font-semibold opacity-80">Synthetic example</p>
+          <p className="text-[14px] font-semibold">Synthetic example</p>
           <p className="board-title mt-1 text-[clamp(3rem,7vw,4.5rem)]">{level}</p>
           <p className="tabular text-[18px] font-semibold">{total} points</p>
           <div className="mt-4 grid grid-cols-3 text-[12px] font-semibold">
             {(["LOW", "MEDIUM", "HIGH"] as const).map((z, i) => (
               <span key={z} aria-current={z === level ? "true" : undefined}
-                className={clsx("border-t-4 pt-1", z === level ? "border-current" : "border-current/30 opacity-70")}>
+                className={clsx("border-t-4 pt-1", z === level ? "border-current" : "border-current/30 font-normal")}>
                 {z} {["0–3", "4–7", "8+"][i]}
               </span>
             ))}
@@ -336,7 +336,7 @@ export function OutcomesSection() {
             <span aria-hidden className="absolute top-0 left-1/2 z-10 size-3 -translate-x-1/2 rounded-full bg-[#15170f] ring-2 ring-on-board/60" />
             <Plate tone={n.tone} className="h-full">
               <p className="text-[18px] leading-tight font-semibold">{n.title}</p>
-              <p className="mt-2 text-[14px] opacity-85">{n.body}</p>
+              <p className="mt-2 text-[14px]">{n.body}</p>
             </Plate>
           </div>
         ))}

@@ -32,6 +32,8 @@
   --color-amber: var(--check-text);
   --color-alarm: var(--alarm);
   --color-ok: var(--ok);
+  --color-on-alarm: var(--on-alarm);
+  --color-on-ok: var(--on-ok);
   --color-sky: var(--neutral-mark);
 
   --font-sans: "Mukta", "Noto Sans Devanagari", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -59,6 +61,10 @@
   --check-text: #7a5800;
   --alarm: #b3271c;
   --ok: #1e6b3c;
+  /* Text on alarm/ok fills: white by day, dark ink at night (the night fills are light). */
+  --on-alarm: #ffffff;
+  --on-ok: #ffffff;
+  --focus-ring: #14532d;
   --neutral-mark: #3f6f8f;
   --shadow-plate: 0 1px 2px rgb(20 32 25 / 0.08), 0 6px 16px -6px rgb(20 32 25 / 0.18);
 }
@@ -76,6 +82,9 @@
     --check-text: #f2c230;
     --alarm: #f0705f;
     --ok: #5fbf85;
+    --on-alarm: #0b130e;
+    --on-ok: #0b130e;
+    --focus-ring: #f2c230;
     --neutral-mark: #7fa8c4;
     --shadow-plate: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px -8px rgb(0 0 0 / 0.6);
   }
@@ -91,6 +100,9 @@
   --check-text: #f2c230;
   --alarm: #f0705f;
   --ok: #5fbf85;
+  --on-alarm: #0b130e;
+  --on-ok: #0b130e;
+  --focus-ring: #f2c230;
   --neutral-mark: #7fa8c4;
   --shadow-plate: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 20px -8px rgb(0 0 0 / 0.6);
 }
@@ -109,7 +121,12 @@ body {
 ::selection { background: var(--color-check); color: var(--color-on-check); }
 :root { caret-color: var(--ok); accent-color: var(--color-board); }
 * { scrollbar-color: var(--line) transparent; }
-:focus-visible { outline: 2px solid var(--color-check); outline-offset: 2px; border-radius: 4px; }
+/* Focus rings need 3:1 against what they sit on: board green on daylight ground and plates,
+   check yellow on night ground and on the green boards. */
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
+.bg-board :focus-visible { outline-color: var(--color-check); }
+/* Light enamel plates on the story's boards go back to green. */
+.bg-on-board :focus-visible { outline-color: var(--color-board); }
 a { text-underline-offset: 0.2em; }
 .tabular { font-variant-numeric: tabular-nums; }
 

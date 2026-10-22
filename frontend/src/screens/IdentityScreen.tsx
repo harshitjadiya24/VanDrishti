@@ -71,7 +71,7 @@ export function IdentityScreen() {
       </header>
       {!can("decide_identity") && <p className="text-dim">Your role can see identity checks but not decide them.</p>}
       {proposals.error && <p role="alert" className="text-alarm">{String(proposals.error)}</p>}
-      {decide.error && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-white">{String(decide.error)}</p>}
+      {decide.error && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-on-alarm">{String(decide.error)}</p>}
       {last && (
         <Plate role="status" className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-[15px]">
           <StageBadge stage="done">Saved</StageBadge>
@@ -162,7 +162,7 @@ function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDec
                     </div>
                     <button type="button" disabled={busy} onClick={() => onDecide({ action: "same", individual_id: c.individual_id })}
                       className={clsx("mt-2 rounded-[8px] px-3 py-1 text-[14px] font-semibold disabled:opacity-40",
-                        i === 0 && likely ? "bg-ok text-white hover:brightness-110" : "border border-line hover:bg-raised")}>
+                        i === 0 && likely ? "bg-ok text-on-ok hover:brightness-110" : "border border-line hover:bg-raised")}>
                       Same tiger as {c.code}
                     </button>
                   </div>

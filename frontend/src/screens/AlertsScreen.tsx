@@ -16,7 +16,7 @@ const KIND_LABEL: Record<AlertItem["kind"], string> = {
   camera_failure: "Camera problem",
 };
 const SEVERITY = {
-  critical: { word: "Critical", heading: "Critical: act first", badge: "bg-alarm text-white", stripe: "bg-alarm" },
+  critical: { word: "Critical", heading: "Critical: act first", badge: "bg-alarm text-on-alarm", stripe: "bg-alarm" },
   warning: { word: "Warning", heading: "Warnings", badge: "bg-check text-on-check", stripe: "bg-check" },
   info: { word: "Information", heading: "For information", badge: "bg-raised text-ink", stripe: "bg-line" },
 } as const;
@@ -69,7 +69,7 @@ export function AlertsScreen() {
           {" "}Webhook: {webhook && "skipped_no_webhook" in webhook ? "not configured" : JSON.stringify(webhook)}.
         </p>
       )}
-      {(run.error || act.error) && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-white">{String(run.error ?? act.error)}</p>}
+      {(run.error || act.error) && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-on-alarm">{String(run.error ?? act.error)}</p>}
 
       <div className="flex flex-wrap items-center gap-3">
         <Segmented label="State" value={state} onChange={setState}
@@ -160,7 +160,7 @@ function AlertRow({ a, busy, onAct }: { a: AlertItem; busy: boolean; onAct: (act
           <div className="flex gap-2">
             {a.state === "open" && (
               <button type="button" disabled={busy} onClick={() => onAct("acknowledge", note)}
-                className="h-9 flex-1 rounded-[8px] bg-board px-3 text-[14px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-40">
+                className="h-11 flex-1 rounded-[8px] bg-board md:h-9 px-3 text-[14px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-40">
                 Acknowledge
               </button>
             )}

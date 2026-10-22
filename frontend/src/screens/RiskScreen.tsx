@@ -62,8 +62,8 @@ export function RiskScreen() {
           {s.dismissed > 0 && ` ${s.dismissed} dismissed as false alarms.`}
         </p>
       )}
-      <label className="flex items-center gap-2 text-[14px] text-dim">
-        <input type="checkbox" checked={showDismissed} onChange={(e) => setShowDismissed(e.target.checked)} className="size-4" />
+      <label className="flex min-h-11 w-fit items-center gap-2.5 text-[14px] text-dim md:min-h-8">
+        <input type="checkbox" checked={showDismissed} onChange={(e) => setShowDismissed(e.target.checked)} className="size-5" />
         Show events dismissed as false alarms
       </label>
 
@@ -90,7 +90,7 @@ export function RiskScreen() {
               </div>
               {s?.thresholds && <PointStack e={e} thresholds={s.thresholds} />}
               <RiskReasons factors={e.factors} />
-              <Link to="/app/review/people_vehicles" className="text-[14px] font-medium underline underline-offset-4">
+              <Link to="/app/review/people_vehicles" className="inline-flex min-h-11 w-fit items-center text-[14px] font-medium underline underline-offset-4 md:min-h-7">
                 Review in the people &amp; vehicles queue
               </Link>
             </div>

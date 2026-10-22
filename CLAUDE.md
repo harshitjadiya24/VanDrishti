@@ -145,4 +145,10 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Tests: `MotionGlobalConfig.skipAnimations` is on in `src/test/setup.ts` (jsdom cannot finish
   Motion exits). Reviewers with several reserves must pass `reserve=` to list endpoints.
 - Browser checks against dev data: undo any action you take (reopen alerts, undo reviews).
+- Accessibility floor (F5): text on `bg-alarm`/`bg-ok` uses `text-on-alarm`/`text-on-ok` (white by day,
+  dark ink at night; white failed 4.5:1 on the night fills). Focus rings use `--focus-ring` (green by
+  day, yellow at night and on `.bg-board`); check yellow alone is 1.6:1 on daylight. Phone targets are
+  44 px (`h-11 md:h-9` in `BUTTON`/`FIELD`); never fade text with opacity below AA.
+- The console is its own chunk (`src/console.ts`, route `lazy` in router.tsx): the story page must not
+  import from `Shell` or `screens/`. Shared code they both need lives outside both (e.g. `story/stripes`).
 

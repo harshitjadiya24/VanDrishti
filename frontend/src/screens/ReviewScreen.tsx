@@ -125,7 +125,7 @@ export function ReviewScreen() {
         )}
       </header>
 
-      {error && <p role="alert" className="mb-4 rounded-[10px] bg-alarm px-4 py-2.5 text-[15px] text-white">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-[10px] bg-alarm px-4 py-2.5 text-[15px] text-on-alarm">{error}</p>}
       {last && (
         <Plate role="status" className="mb-4 flex flex-wrap items-center gap-3 px-4 py-2.5 text-[15px]">
           <StageBadge stage="done">Saved</StageBadge>
@@ -172,16 +172,16 @@ export function ReviewScreen() {
             <DecisionPanel item={item} />
 
             <div className="grid gap-3 border-t border-line pt-4">
-              <label className="flex items-center gap-2 text-[15px]">
-                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="size-4 accent-[var(--alarm)]" />
+              <label className="flex min-h-11 items-center gap-2.5 text-[15px] md:min-h-8">
+                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="size-5 accent-[var(--alarm)]" />
                 Mark poaching activity <kbd>P</kbd>
               </label>
               <div role="group" aria-label="Severity" className="flex flex-wrap items-center gap-1.5 text-[14px]">
                 <span className="text-dim">Severity</span>
                 {SEVERITY.map((s, i) => (
                   <button key={s} type="button" aria-pressed={severity === s} onClick={() => setSeverity(severity === s ? null : s)}
-                    className={clsx("rounded-[8px] border px-2.5 py-0.5 capitalize",
-                      severity === s ? "border-ink bg-ink text-base" : "border-line text-dim hover:text-ink")}>
+                    className={clsx("h-11 rounded-[8px] border px-3 capitalize md:h-8",
+                      severity === s ? "border-ink bg-ink text-panel" : "border-line text-dim hover:text-ink")}>
                     {s} <kbd>{i + 1}</kbd>
                   </button>
                 ))}
@@ -202,8 +202,8 @@ export function ReviewScreen() {
                   <button key={a.action} type="button" onClick={() => act(a.action)} disabled={!reviewer || submit.isPending}
                     className={clsx(
                       "flex h-11 items-center justify-between rounded-[10px] px-4 text-[15px] transition-transform duration-[var(--duration-quick)] active:translate-y-px disabled:opacity-40",
-                      a.tone === "primary" && "bg-ok font-semibold text-white shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
-                      a.tone === "danger" && "bg-alarm font-semibold text-white shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
+                      a.tone === "primary" && "bg-ok font-semibold text-on-ok shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
+                      a.tone === "danger" && "bg-alarm font-semibold text-on-alarm shadow-[0_2px_0_rgb(0_0_0/0.25)] hover:brightness-110",
                       a.tone === "plain" && "border border-line bg-base hover:bg-raised",
                     )}>
                     {a.label} <kbd>{a.key === "y" ? "Y / Enter" : a.key.toUpperCase()}</kbd>

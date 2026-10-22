@@ -35,7 +35,7 @@ export function AuditScreen() {
             initial={reduce ? false : { opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: DURATION.base, ease: EASE_STAMP }}
             className={clsx("flex items-center gap-3 rounded-[12px] border-2 px-4 py-3 text-[16px] font-semibold",
-              v.ok ? "border-ok text-ok" : "border-alarm bg-alarm text-white")}>
+              v.ok ? "border-ok text-ok" : "border-alarm bg-alarm text-on-alarm")}>
             {v.ok ? <Lock size={20} aria-hidden /> : <ShieldAlert size={20} aria-hidden />}
             {v.ok
               ? `Intact: all ${v.events_checked} entries recomputed and every link matches.`

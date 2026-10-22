@@ -39,7 +39,7 @@ export function FrameView({ item, showMask }: { item: QueueItem; showMask: boole
             key={i}
             aria-hidden
             className={clsx("pointer-events-none absolute px-1 text-[11px] font-semibold leading-4",
-              b.category === "animal" ? "bg-check text-on-check" : "bg-[#e2553c] text-white")}
+              b.category === "animal" ? "bg-check text-on-check" : "bg-[#c8372d] text-white")}
             style={{ left: `${b.box[0] * 100}%`, top: `${b.box[1] * 100}%`, transform: b.box[1] > 0.05 ? "translateY(-100%)" : undefined }}
           >
             {i + 1} {b.category} {b.confidence.toFixed(2)}

@@ -51,7 +51,7 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
 
       {ex?.factors && ex.factors.length > 0 && (
         <div>
-          <h3 className="mb-1.5 text-[12px] font-normal text-dim">How the confidence was built</h3>
+          <h2 className="mb-1.5 text-[12px] font-normal text-dim">How the confidence was built</h2>
           <ul className="grid gap-1.5">
             {ex.factors.map((f, i) => (
               <motion.li key={`${item.image_id}-${f.name}`} className="flex items-start gap-2 text-[13px]"
@@ -84,7 +84,7 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
 function Table({ title, rows }: { title: string; rows: [string, number][] }) {
   return (
     <div>
-      <h3 className="mb-1 text-[12px] font-normal text-dim">{title}</h3>
+      <h2 className="mb-1 text-[12px] font-normal text-dim">{title}</h2>
       <ul className="grid gap-0.5 text-[13px]">
         {rows.slice(0, 5).map(([label, v]) => (
           <li key={label} className="flex justify-between gap-3 border-b border-line/60 py-0.5">

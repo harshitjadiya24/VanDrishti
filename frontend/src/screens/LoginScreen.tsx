@@ -98,7 +98,7 @@ export function LoginScreen({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
                 Password
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required className={FIELD} />
               </label>
-              {error && <p role="alert" className="rounded-[8px] bg-alarm px-3 py-2 text-[14px] text-white">{error}</p>}
+              {error && <p role="alert" className="rounded-[8px] bg-alarm px-3 py-2 text-[14px] text-on-alarm">{error}</p>}
               <button type="submit" disabled={busy}
                 className="h-11 rounded-[8px] bg-board text-[16px] font-semibold text-on-board hover:bg-board-deep disabled:opacity-60">
                 {busy ? "Signing in…" : "Sign in"}

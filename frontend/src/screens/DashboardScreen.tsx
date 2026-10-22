@@ -89,7 +89,7 @@ export function DashboardScreen() {
                 <tr key={c.id} className={clsx("border-t border-line", cameraId === c.id && "bg-raised")}>
                   <td className="px-4 py-2">
                     <button type="button" aria-pressed={cameraId === c.id} onClick={() => setCameraId(c.id)}
-                      className="text-left font-medium underline-offset-4 hover:underline">
+                      className="min-h-8 text-left font-medium underline-offset-4 hover:underline">
                       {c.code} <span className="text-[13px] font-normal text-dim">{c.reserve}{c.status !== "active" ? `, ${c.status}` : ""}</span>
                     </button>
                   </td>

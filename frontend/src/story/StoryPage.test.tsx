@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MEASURED, NEEDS_A_PERSON, ROUTING, SAMPLE } from "./results";
@@ -44,6 +44,14 @@ describe("story page", () => {
     expect(screen.getByRole("img", { name: /one road splits into five lanes/i })).toBeInTheDocument(); // no WebGL
     expect(screen.getByText(/117 of 252 needed a person/)).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("shows the finished example frame under reduced motion, with no layer left hidden", () => {
+    render(<StoryPage />);
+    const frame = screen.getByRole("figure", { name: "The example frame and what each stage added" });
+    for (const label of ["animal 0.94", "usable · night IR"]) {
+      expect(within(frame).getByText(label)).toHaveClass("opacity-100");
+    }
   });
 
   it("chains a visitor's decision to the audit trail, and undo adds an entry", async () => {

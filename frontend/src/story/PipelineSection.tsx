@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plate, Rivets, StageTitle, Synthetic } from "./parts";
-import { ScrollTrigger, useGSAP } from "./scroll";
+import { prefersReducedMotion, ScrollTrigger, useGSAP } from "./scroll";
 import { stripeField } from "./stripes";
 
 const STEPS = [
@@ -105,7 +105,9 @@ export function PipelineSection() {
 function StageFrame({ step }: { step: number }) {
   const stripes = useMemo(() => stripeField(23, 340, 170), []);
   const hash = useSha256("CAM S-07 · 22:41 IST · synthetic frame");
-  const shown = (from: number) => step >= from;
+  // Reduced motion shows the finished frame: every layer, no build-up.
+  const [reduce] = useState(prefersReducedMotion);
+  const shown = (from: number) => reduce || step >= from;
   return (
     <figure aria-label="The example frame and what each stage added" className="relative rounded-[12px] bg-on-board p-3 text-[#142019] shadow-[0_18px_40px_-18px_rgb(0_0_0/0.65)]">
       <Rivets className="bg-[#9aa79c]" />

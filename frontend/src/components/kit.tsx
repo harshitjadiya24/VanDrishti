@@ -57,10 +57,10 @@ export function CountBadge({ n, tone = "neutral", label }: { n: number; tone?: "
 /** Where an item is on the road. A word always comes with the colour. */
 export type Stage = "auto" | "review" | "uncertain" | "people" | "blank" | "quality" | "done";
 const STAGE: Record<Stage, { word: string; cls: string }> = {
-  auto: { word: "Auto-accepted", cls: "bg-ok text-white" },
+  auto: { word: "Auto-accepted", cls: "bg-ok text-on-ok" },
   review: { word: "Needs a person", cls: "bg-check text-on-check" },
   uncertain: { word: "Uncertain", cls: "bg-check text-on-check" },
-  people: { word: "People or vehicles", cls: "bg-alarm text-white" },
+  people: { word: "People or vehicles", cls: "bg-alarm text-on-alarm" },
   blank: { word: "Likely blank", cls: "bg-raised text-ink" },
   quality: { word: "Quality problem", cls: "bg-raised text-ink" },
   done: { word: "Decided by a person", cls: "border-2 border-ok text-ok" },
@@ -121,9 +121,9 @@ export function StatTile({ label, value, note, tone }: { label: string; value: n
 }
 
 /** The console's secondary button: an outlined plate. */
-export const BUTTON = "inline-flex h-9 items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-40";
+export const BUTTON = "inline-flex h-11 items-center justify-center gap-1.5 rounded-[8px] border border-line px-3 text-[14px] hover:bg-raised disabled:opacity-40 md:h-9";
 /** A form field on a plate. */
-export const FIELD = "h-9 rounded-[8px] border border-line bg-base px-2.5 text-[14px] text-ink";
+export const FIELD = "h-11 rounded-[8px] border border-line bg-base px-2.5 text-[16px] text-ink md:h-9 md:text-[14px]";
 
 /** A screen's title, its state badges, one paragraph of plain explanation and its actions. */
 export function PageHeader({ title, badges, children, actions }: { title: string; badges?: ReactNode; children?: ReactNode; actions?: ReactNode }) {
@@ -150,7 +150,7 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
     <div role="group" aria-label={label} className="inline-flex gap-1 rounded-[10px] border border-line bg-panel p-0.5">
       {options.map((o) => (
         <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}
-          className={clsx("relative h-8 rounded-[8px] px-3 text-[14px]", value === o.value ? "text-panel" : "text-dim hover:text-ink")}>
+          className={clsx("relative h-10 rounded-[8px] px-3 text-[14px] md:h-8", value === o.value ? "text-panel" : "text-dim hover:text-ink")}>
           {value === o.value && (
             <motion.span layoutId={id} aria-hidden className="absolute inset-0 rounded-[8px] bg-ink"
               transition={reduce ? { duration: 0 } : { duration: DURATION.base, ease: EASE_BOARD }} />
@@ -192,7 +192,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, transition: { duration: DURATION.quick } }}
               transition={{ duration: DURATION.base, ease: EASE_BOARD }}
               className={clsx("pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-[12px] px-4 py-3 text-[15px] shadow-[var(--shadow-plate)]",
-                t.tone === "alarm" ? "bg-alarm text-white" : "bg-board text-on-board")}>
+                t.tone === "alarm" ? "bg-alarm text-on-alarm" : "bg-board text-on-board")}>
               <span className="flex-1">{t.message}</span>
               {t.action && (
                 <button type="button" onClick={() => { t.action?.run(); dismiss(t.id); }}
