@@ -4,7 +4,7 @@
 /* Bridge (R1 → R3): the console's existing screens still use the Forest Board's class names
    (text-dim, bg-raised, border-line, bg-board, bg-check …). They are mapped onto the new
    roles here, so every screen already wears the new system; R3 rebuilds the screens and this
-   block is deleted. The story keeps its own colours (story/legacy.css) until R2. */
+   block is deleted. The story (always night) uses the new tokens only, inside `.night-scope`. */
 @theme {
   --color-base: var(--canvas);
   --color-panel: var(--surface);

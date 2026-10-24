@@ -1,0 +1,5 @@
+/* Story-only helpers. */
+
+/* Digits a non-admin never sees: animated away on the story page, simply absent under reduced motion. */
+.drop-digit { display: inline-block; overflow: hidden; vertical-align: bottom; max-width: 1ch; }
+@media (prefers-reduced-motion: reduce) { .drop-digit { display: none; } }

@@ -132,6 +132,32 @@
   }
 }
 
+/* Always night, whatever theme the visitor chose: the story happens at 22:41. */
+.night-scope {
+  color-scheme: dark;
+  --canvas: #0a0b0d;
+  --surface: #121418;
+  --surface-2: #1a1d22;
+  --surface-3: #23272e;
+  --edge: #2c3038;
+  --edge-strong: #3d424c;
+  --fg: #edeef0;
+  --fg-2: #a9aeb8;
+  --fg-3: #8f95a1;
+  --decide: #ff8a3d;
+  --on-decide: #160a02;
+  --decide-fg: #ffa45f;
+  --danger: #ff5a68;
+  --on-danger: #160406;
+  --settled: #7cc7e8;
+  --on-settled: #04141b;
+  --mark: #9aa3b5;
+  --focus: #ffb23d;
+  --lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px -12px rgb(0 0 0 / 0.7);
+  background: var(--canvas);
+  color: var(--fg);
+}
+
 /* Expanded display lettering: the wordmark, screen titles, big counts. */
 .wide {
   font-family: var(--font-wide);

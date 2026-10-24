@@ -75,7 +75,8 @@ export function DetectorBox({ label, colour = "var(--color-heat-5)" }: { label?:
       {label && (
         <g>
           <rect x={BOX.x - 1.25} y={BOX.y - 16} width={w} height={16} fill={colour} />
-          <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={11} fontWeight={600} fill="#160a02" fontFamily="Martian Mono Variable, monospace">{label}</text>
+          <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={10.5} fontWeight={600} fill="#160a02" fontFamily="Martian Mono Variable, monospace"
+            textLength={w - 10} lengthAdjust="spacingAndGlyphs">{label}</text>
         </g>
       )}
     </g>

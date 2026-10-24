@@ -162,9 +162,12 @@ history, old Docker volumes). Do not look for it; build from the image.
   documenter rewrites them. Floor rules from the finish
   review: no side stripes on cards, no eyebrow labels above headings, no zero-blur offset shadows, no
   blue outside the palette, milestone stones carry number + stage word ("4·1" hectometre stones between
-  stages, never invented distances). Synthetic frames: `design/IRFrame.tsx` (new, IR greyscale) and the
-  old `story/frame.tsx` (NightFrame, BODY, BOX) until R2:
-  SVG rects need `width`/`height` keys (spreading `w`/`h` renders nothing).
+  stages, never invented distances). Synthetic frames: `design/IRFrame.tsx` (IRScene, BODY, BOX,
+  DetectorBox; IR greyscale, stripe geometry). SVG rects need `width`/`height` keys (spreading
+  `w`/`h` renders nothing); mono labels in SVG use `textLength` so Martian Mono fits its plate.
+- Story (R2): always night (`.night-scope`), chapters in `story/chapters/`, each `Chapter` carries
+  `data-chapter`/`data-chapter-name` for the fixed `StoryStrip`. The hero flash fires at most once
+  per 2 s and never under reduced motion; a still R3F scene must `invalidate()` after moving the camera.
 - `docs/screenshots/` holds only photo-free captures (WebP) with `PROVENANCE.md`; anything showing
   camera-trap frames stays in the git-ignored `.impeccable/review/`.
 - Project subagents live in `.claude/agents/` (backend-checker, frontend-checker, privacy-auditor,

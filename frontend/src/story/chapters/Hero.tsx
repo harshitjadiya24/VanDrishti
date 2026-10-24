@@ -83,7 +83,7 @@ export function Hero({ onSeeHow }: { onSeeHow?: () => void }) {
       <div className="absolute inset-x-0 bottom-0">
         <div className="px-5 pb-6 md:px-10 md:pb-10">
           <h1 id="hero-title" className="wide max-w-[14ch] text-[clamp(2.75rem,8.4vw,6rem)]">
-            AI proposes. <span className="text-heat-5">People decide.</span>
+            <span className="sr-only">VanDrishti: </span>AI proposes. <span className="text-heat-5">People decide.</span>
           </h1>
           <p className="mt-4 max-w-[52ch] text-[clamp(1rem,1.5vw,1.2rem)] leading-relaxed text-[#c3c7cf]">
             Camera traps in a tiger reserve take more photographs than anyone can look at. VanDrishti sorts them,

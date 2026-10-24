@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { NEEDS_A_PERSON, ROUTING, SAMPLE } from "../results";
-import { Plate, StageTitle } from "../parts";
+import { isPlainKey } from "../../lib/keys";
+import { Button, Kbd } from "../../design/primitives";
+import { Chapter } from "../ui";
 import { ScrollTrigger, prefersReducedMotion } from "../scroll";
 import type { ForkScene, LaneSpec } from "./ForkScene";
 import { hasWebGL } from "./webgl";
 
+// On the thermal scale: settled lanes run cold, lanes that need a person run hot.
 const COLOR: Record<string, string> = {
-  auto: "#4cc38a",
-  blank: "#8b90a8",
-  review: "#f28c28",
-  uncertain: "#ffb45e",
-  people: "#ff6b6e",
+  auto: "#7cc7e8",
+  blank: "#9aa3b5",
+  review: "#f7931e",
+  uncertain: "#ffc94a",
+  people: "#ff5a68",
 };
 // Left-to-right lane order in the scene: free-flowing lanes first, then the check-post lanes.
 const ORDER = ["auto", "blank", "review", "uncertain", "people"] as const;
@@ -101,9 +104,7 @@ export function ForkSection() {
   // The R key works while this section is on screen and focus is not in a text field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "r" || e.metaKey || e.ctrlKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      if (e.key.toLowerCase() !== "r" || !isPlainKey(e)) return;
       const r = section.current?.getBoundingClientRect();
       if (!r || r.bottom < 0 || r.top > window.innerHeight) return;
       review();
@@ -113,47 +114,40 @@ export function ForkSection() {
   }, []);
 
   return (
-    <section id="stage-3" ref={section} aria-labelledby="fork-title" className="px-4 py-20 md:px-10 md:py-28">
-      <StageTitle id="fork-title" milestone="3" word="Decide">The check-post</StageTitle>
-      <p className="mt-4 max-w-[62ch] text-[18px] text-on-board-dim">
-        Every frame takes one of five roads. Confident answers go straight on, and likely-blank frames are set aside.
-        Frames in the review band, uncertain frames, and any frame with people or vehicles stop at the check-post,
-        and only a person lifts the boom.
-      </p>
-
-      <div className="mt-10 overflow-hidden rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)]">
-        <div ref={wrap} className="relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#080c1a] md:aspect-auto md:h-[min(68vh,620px)] md:min-h-[340px]">
-          {mode === "static" && <StaticFork />}
-          <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={review} disabled={mode !== "3d" || lifted}
-              className="rounded-[10px] glow-check bg-check px-4 py-2 text-[16px] font-semibold text-on-check transition-transform duration-[var(--duration-quick)] active:translate-y-0.5 disabled:opacity-60">
-              {lifted ? "Boom up: frames passing" : "Review (R): lift the boom"}
-            </button>
-            {passed > 0 && (
-              <span role="status" className="rounded-md bg-black/60 px-2 py-1 text-[14px] text-on-board">
-                {passed} frame{passed === 1 ? "" : "s"} passed by a person's decision
-              </span>
-            )}
-          </div>
+    <Chapter id="stage-3" stage="3" strip="the check-post" sectionRef={section} title="The check-post"
+      lede="Every frame takes one of five roads. Confident answers go straight on, and likely-blank frames are set aside. Frames in the review band, uncertain frames, and any frame with people or vehicles stop at the check-post, and only a person lifts the boom.">
+      <div ref={wrap} className="relative aspect-[4/5] overflow-hidden rounded-[var(--radius-card)] border border-edge bg-[#0a0b0d] md:aspect-auto md:h-[min(70vh,640px)] md:min-h-[360px]">
+        {mode === "static" && <StaticFork />}
+        <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-3 md:inset-x-5 md:bottom-5">
+          <Button tone="decide" size="lg" onClick={review} disabled={mode !== "3d" || lifted}>
+            {lifted ? "Boom up: frames passing" : <>Review: lift the boom <Kbd className="border-black/25 bg-black/10 text-[#160a02]">R</Kbd></>}
+          </Button>
+          {passed > 0 && (
+            <span role="status" className="data rounded-[6px] bg-black/70 px-2.5 py-1.5 text-[11px] text-ir uppercase">
+              {passed} frame{passed === 1 ? "" : "s"} passed by a person's decision
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <ul className="mt-6 grid gap-px overflow-hidden rounded-[var(--radius-card)] border border-edge bg-edge sm:grid-cols-2 lg:grid-cols-5">
         {LANES.map((l) => (
-          <Plate key={l.id} className="!px-4 !py-3">
-            <span aria-hidden className="mb-2 block h-1.5 w-10 rounded-full" style={{ background: COLOR[l.id] }} />
-            <p className="text-[15px] font-semibold leading-tight">{l.label}</p>
-            <p className="tabular mt-1 text-[26px] leading-none font-semibold">{l.frames}</p>
-            <p className="mt-1 text-[13px] text-[#585e78]">{l.note}</p>
-          </Plate>
+          <li key={l.id} className="bg-surface px-5 py-4">
+            <p className="flex items-center gap-2 text-[14px] font-medium">
+              <span aria-hidden className="size-2 rounded-full" style={{ background: COLOR[l.id], boxShadow: l.person === l.frames ? `0 0 8px ${COLOR[l.id]}` : undefined }} />
+              {l.label}
+            </p>
+            <p className="wide mt-2 text-[40px]">{l.frames}</p>
+            <p className="mt-1 text-[13px] text-fg-3">{l.note}</p>
+          </li>
         ))}
-      </div>
-      <p className="mt-4 max-w-[80ch] text-[14px] text-on-board-dim">
+      </ul>
+      <p className="mt-4 max-w-[80ch] text-[14px] text-fg-3">
         Counts measured on {SAMPLE.frames} test frames: {NEEDS_A_PERSON} of {SAMPLE.frames} needed a person. The sample
         was drawn to include vehicles and empty frames, so these shares are not a reserve's real stream. The moving frames
         above are an illustration in those proportions.
       </p>
-    </section>
+    </Chapter>
   );
 }
 
@@ -161,19 +155,19 @@ export function ForkSection() {
 function StaticFork() {
   return (
     <svg viewBox="0 0 600 340" className="h-full w-full" role="img" aria-label="One road splits into five lanes; three stop at a check-post">
-      <rect width="600" height="340" fill="#080c1a" />
-      <path d="M300 20 L300 120" stroke="#1d2340" strokeWidth="26" />
+      <rect width="600" height="340" fill="#0a0b0d" />
+      <path d="M300 20 L300 120" stroke="#1a1d22" strokeWidth="26" />
       {ORDER.map((id, i) => {
         const x = 70 + i * 115;
         return (
           <g key={id}>
-            <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke="#1d2340" strokeWidth="22" fill="none" />
+            <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke="#1a1d22" strokeWidth="22" fill="none" />
             <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke={COLOR[id]} strokeWidth="2" fill="none" />
           </g>
         );
       })}
-      <line x1="275" y1="251" x2="595" y2="251" stroke="#cc3640" strokeWidth="10" />
-      <line x1="275" y1="251" x2="595" y2="251" stroke="#f6f3ee" strokeWidth="10" strokeDasharray="20 20" />
+      <line x1="275" y1="251" x2="595" y2="251" stroke="#ff5a68" strokeWidth="10" />
+      <line x1="275" y1="251" x2="595" y2="251" stroke="#edeef0" strokeWidth="10" strokeDasharray="20 20" />
     </svg>
   );
 }

@@ -170,7 +170,7 @@ function Scene({ shotAt, boxRef, still }: NightForestProps) {
   const eyes = useRef<THREE.Group>(null);
   const hue = useRef<HueSaturationEffect>(null);
   const tigerMat = useRef<THREE.MeshStandardMaterial>(null);
-  const { camera, size } = useThree();
+  const { camera, size, invalidate } = useThree();
   const corners = useMemo(() => {
     // The detector's box: the body plus the margin a real detection has (as in IRFrame).
     const w = TIGER.w * 1.2;
@@ -188,7 +188,11 @@ function Scene({ shotAt, boxRef, still }: NightForestProps) {
     else camera.position.set(...CAMERA);
     if (portrait) camera.lookAt(2.2, 0.15, -6);
     else camera.lookAt(0.6, 1.1, -6);
-  }, [camera, size.width, size.height]);
+    camera.updateMatrixWorld();
+    // A still (reduced-motion) scene renders on demand: draw again with the camera in place, so
+    // the detector box is measured from the final view.
+    invalidate();
+  }, [camera, size.width, size.height, invalidate]);
 
   useFrame(() => {
     const t = shotAt === null ? -1 : still ? 10 : (performance.now() - shotAt) / 1000;
