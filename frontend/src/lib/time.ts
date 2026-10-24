@@ -11,6 +11,11 @@ export function localTime(iso: string | null, timeZone: string): string {
   return `${when} (${timeZone})`;
 }
 
+/** Today's date (YYYY-MM-DD) on the reserve's calendar, not the viewer's or UTC's. */
+export function dayIn(timeZone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
 /** The camera trap's own stamp for a data strip: "24.10.2026 22:41:07", in the reserve's zone. */
 export function stripTime(iso: string | null, timeZone: string): string {
   if (!iso) return "time unknown";

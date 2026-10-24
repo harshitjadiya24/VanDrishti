@@ -1,3 +1,4 @@
+import { Button, Kbd } from "../../design/primitives";
 import { isPlainKey } from "../../lib/keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -5,10 +6,10 @@ import { ChevronDown, Fingerprint, PawPrint, Undo2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { api, type IdentityDecision, type Proposal } from "../../lib/api";
-import { localTime } from "../../lib/time";
-import { CountNumber, EmptyState, Plate, Skeleton, StageBadge } from "../../design/kit";
+import { dayIn, localTime } from "../../lib/time";
+import { CountNumber, EmptyState, FIELD, Plate, Segmented, Skeleton, StageBadge } from "../../design/kit";
 import { useSession } from "../../lib/session";
-import { DURATION, EASE_BOARD } from "../../motion/tokens";
+import { DURATION, EASE_OUT } from "../../motion/tokens";
 
 /** Section 10.5: the model proposes which tiger this is; a person decides. */
 export function IdentityScreen() {
@@ -56,7 +57,7 @@ export function IdentityScreen() {
     <div className="grid gap-5">
       <header className="grid gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-[26px] font-semibold">Tiger identities</h1>
+          <h1 className="wide text-[clamp(1.6rem,2.6vw,2.1rem)]">Tiger identities</h1>
           {items.length > 0 && (
             <>
               <StageBadge stage="review">{matches} possible match{matches === 1 ? "" : "es"}</StageBadge>
@@ -64,45 +65,42 @@ export function IdentityScreen() {
             </>
           )}
         </div>
-        <p className="max-w-[72ch] text-[15px] text-dim">
+        <p className="max-w-[72ch] text-[15px] text-fg-2">
           Stripe patterns are compared with tigers people have already named. The model only suggests: a sighting joins a
           tiger, or a new tiger is created, only when you decide. Every decision is recorded and can be undone.
         </p>
       </header>
-      {!can("decide_identity") && <p className="text-dim">Your role can see identity checks but not decide them.</p>}
-      {proposals.error && <p role="alert" className="text-alarm">{String(proposals.error)}</p>}
-      {decide.error && <p role="alert" className="rounded-[10px] bg-alarm px-4 py-2.5 text-on-alarm">{String(decide.error)}</p>}
+      {!can("decide_identity") && <p className="text-fg-2">Your role can see identity checks but not decide them.</p>}
+      {proposals.error && <p role="alert" className="text-danger">{String(proposals.error)}</p>}
+      {decide.error && <p role="alert" className="rounded-[10px] bg-danger px-4 py-2.5 text-on-danger">{String(decide.error)}</p>}
       {last && (
         <Plate role="status" className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-[15px]">
           <StageBadge stage="done">Saved</StageBadge>
           <span>{last.text}</span>
-          <button type="button" onClick={() => undo.mutate(last.id)} disabled={undo.isPending}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-[8px] border border-line px-3 py-1 text-[14px] hover:bg-raised">
-            <Undo2 size={15} aria-hidden /> Undo <kbd>U</kbd>
-          </button>
+          <Button tone="quiet" size="sm" onClick={() => undo.mutate(last.id)} disabled={undo.isPending} className="ml-auto">
+            <Undo2 size={15} aria-hidden /> Undo <Kbd>U</Kbd>
+          </Button>
         </Plate>
       )}
       {proposals.isLoading && <Skeleton className="h-[460px]" />}
       {proposals.data && items.length === 0 && (
         <EmptyState icon={<Fingerprint size={20} />} title="No identity checks waiting">
-          New checks appear after tiger frames are settled and compared: <code className="kbd">vandrishti reid embed</code>, then{" "}
-          <code className="kbd">reid match</code>.
+          New checks appear after tiger frames are settled and compared: <code className="data rounded-[4px] bg-surface-2 px-1 text-[11px]">vandrishti reid embed</code>, then{" "}
+          <code className="data rounded-[4px] bg-surface-2 px-1 text-[11px]">reid match</code>.
         </EmptyState>
       )}
       {current && (
         <>
-          <div className="flex flex-wrap items-center gap-2 text-[14px] text-dim">
+          <div className="flex flex-wrap items-center gap-2 text-[14px] text-fg-2">
             <span className="tabular">{Math.min(index, items.length - 1) + 1} of {items.length}</span>
-            <button type="button" onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}
-              className="rounded-[8px] border border-line px-3 py-1 hover:bg-raised disabled:opacity-40">Previous <kbd>K</kbd></button>
-            <button type="button" onClick={() => setIndex(Math.min(items.length - 1, index + 1))} disabled={index >= items.length - 1}
-              className="rounded-[8px] border border-line px-3 py-1 hover:bg-raised disabled:opacity-40">Next <kbd>J</kbd></button>
+            <Button tone="quiet" size="sm" onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}>Previous <Kbd>K</Kbd></Button>
+            <Button tone="quiet" size="sm" onClick={() => setIndex(Math.min(items.length - 1, index + 1))} disabled={index >= items.length - 1}>Next <Kbd>J</Kbd></Button>
           </div>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div key={current.id}
               initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
-              transition={{ duration: DURATION.board * 0.7, ease: EASE_BOARD }}>
+              transition={{ duration: DURATION.slow * 0.7, ease: EASE_OUT }}>
               <ProposalCard p={current} busy={decide.isPending || !can("decide_identity")}
                 onDecide={(body) => decide.mutate({ p: current, body })} />
             </motion.div>
@@ -124,8 +122,8 @@ function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDec
       <div className="flex flex-wrap items-center gap-2 text-[15px]">
         <StageBadge stage={likely ? "review" : "blank"}>{likely ? "Possible match" : "Possibly a new tiger"}</StageBadge>
         <span className="font-semibold">Camera {p.camera}</span>
-        <span className="text-dim">{localTime(p.captured_at, p.timezone)}</span>
-        <span className="text-dim">
+        <span className="text-fg-2">{localTime(p.captured_at, p.timezone)}</span>
+        <span className="text-fg-2">
           {p.best_similarity === null ? "No named tigers to compare with yet"
             : `Best similarity ${p.best_similarity.toFixed(2)}, suggestion line ${p.threshold.toFixed(2)}`}
         </span>
@@ -136,7 +134,7 @@ function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDec
       ) : (
         <figure className="grid gap-1">
           <img src={api.cropUrl(p.embedding_id)} alt="This sighting" className="max-h-96 w-full rounded-[8px] bg-black object-contain" />
-          <figcaption className="text-[13px] text-dim">This sighting. Nobody has named a tiger in this reserve yet.</figcaption>
+          <figcaption className="text-[13px] text-fg-2">This sighting. Nobody has named a tiger in this reserve yet.</figcaption>
         </figure>
       )}
 
@@ -146,25 +144,24 @@ function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDec
           <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {p.candidates.map((c, i) => (
               <li key={c.individual_id}>
-                <div className={clsx("flex h-full items-center gap-3 rounded-[10px] border-2 bg-base p-2",
-                  i === picked ? "border-ink" : "border-transparent")}>
+                <div className={clsx("flex h-full items-center gap-3 rounded-[10px] border-2 bg-canvas p-2",
+                  i === picked ? "border-fg" : "border-transparent")}>
                   <button type="button" onClick={() => setPicked(i)} aria-pressed={i === picked}
-                    className="shrink-0 rounded-[6px]" aria-label={`Compare with ${c.code}`}>
+                    className="min-h-11 shrink-0 rounded-[6px]" aria-label={`Compare with ${c.code}`}>
                     <img src={api.cropUrl(c.example_embedding_id)} alt="" loading="lazy" className="h-16 w-24 rounded-[6px] bg-black object-contain" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className="board-title text-[22px] text-ink">{c.code}</p>
+                    <p className="wide text-[22px] text-fg">{c.code}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <span aria-hidden className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised">
-                        <span className="block h-full rounded-full bg-board" style={{ width: `${Math.max(0, c.similarity) * 100}%` }} />
+                      <span aria-hidden className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                        <span className="block h-full rounded-full bg-fg" style={{ width: `${Math.max(0, c.similarity) * 100}%` }} />
                       </span>
-                      <span className="tabular text-[13px] text-dim">{c.similarity.toFixed(2)}</span>
+                      <span className="tabular text-[13px] text-fg-2">{c.similarity.toFixed(2)}</span>
                     </div>
-                    <button type="button" disabled={busy} onClick={() => onDecide({ action: "same", individual_id: c.individual_id })}
-                      className={clsx("mt-2 rounded-[8px] px-3 py-1 text-[14px] font-semibold disabled:opacity-40",
-                        i === 0 && likely ? "bg-ok text-on-ok hover:brightness-110" : "border border-line hover:bg-raised")}>
+                    <Button size="sm" tone={i === 0 && likely ? "decide" : "quiet"} disabled={busy} className="mt-2"
+                      onClick={() => onDecide({ action: "same", individual_id: c.individual_id })}>
                       Same tiger as {c.code}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </li>
@@ -173,26 +170,22 @@ function ProposalCard({ p, busy, onDecide }: { p: Proposal; busy: boolean; onDec
         </div>
       )}
 
-      <form className="flex flex-wrap items-end gap-3 border-t border-line pt-4"
+      <form className="flex flex-wrap items-end gap-3 border-t border-edge pt-4"
         onSubmit={(e) => { e.preventDefault(); if (code.trim()) onDecide({ action: "new", code: code.trim(), name: name.trim() || undefined }); }}>
-        <label className="grid gap-1 text-[13px] text-dim">
+        <label className="grid gap-1 text-[13px] text-fg-2">
           New tiger code
           <input value={code} onChange={(e) => setCode(e.target.value.slice(0, 32))} placeholder="e.g. T-12"
-            className="h-10 w-32 rounded-[8px] border border-line bg-base px-2.5 text-[15px] text-ink" />
+            className={clsx(FIELD, "w-32")} />
         </label>
-        <label className="grid gap-1 text-[13px] text-dim">
+        <label className="grid gap-1 text-[13px] text-fg-2">
           Name (optional)
           <input value={name} onChange={(e) => setName(e.target.value.slice(0, 100))}
-            className="h-10 w-44 rounded-[8px] border border-line bg-base px-2.5 text-[15px] text-ink" />
+            className={clsx(FIELD, "w-44")} />
         </label>
-        <button type="submit" disabled={busy || !code.trim()}
-          className="h-10 rounded-[10px] border border-line bg-base px-4 text-[15px] font-semibold hover:bg-raised disabled:opacity-40">
-          Create new tiger
-        </button>
-        <button type="button" disabled={busy} onClick={() => onDecide({ action: "not_tiger" })}
-          className="ml-auto h-10 rounded-[10px] px-4 text-[15px] text-dim underline hover:text-ink disabled:opacity-40">
+        <Button type="submit" tone="solid" disabled={busy || !code.trim()}>Create new tiger</Button>
+        <Button tone="ghost" disabled={busy} onClick={() => onDecide({ action: "not_tiger" })} className="ml-auto underline">
           Not a tiger, or cannot tell
-        </button>
+        </Button>
       </form>
     </Plate>
   );
@@ -204,20 +197,14 @@ function Compare({ sighting, candidate, code }: { sighting: string; candidate: s
   const [mode, setMode] = useState<"side" | "sweep">("side");
   return (
     <div className="grid gap-2">
-      <div role="group" aria-label="Comparison view" className="flex gap-1 text-[14px]">
-        {(["side", "sweep"] as const).map((m) => (
-          <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}
-            className={clsx("rounded-[8px] px-3 py-1", mode === m ? "bg-ink font-semibold text-base" : "border border-line hover:bg-raised")}>
-            {m === "side" ? "Side by side" : "Sweep"}
-          </button>
-        ))}
-      </div>
+      <Segmented label="Comparison view" value={mode} onChange={setMode}
+        options={[{ value: "side", label: "Side by side" }, { value: "sweep", label: "Sweep" }]} />
       {mode === "side" ? (
         <div className="grid gap-3 md:grid-cols-2">
           {[[sighting, "This sighting"], [candidate, `${code}: closest named sighting`]].map(([id, label]) => (
             <figure key={id} className="grid gap-1">
               <img src={api.cropUrl(id)} alt={label} className="aspect-[4/3] w-full rounded-[8px] bg-black object-contain" />
-              <figcaption className="text-[13px] text-dim">{label}</figcaption>
+              <figcaption className="text-[13px] text-fg-2">{label}</figcaption>
             </figure>
           ))}
         </div>
@@ -227,12 +214,12 @@ function Compare({ sighting, candidate, code }: { sighting: string; candidate: s
             <img src={api.cropUrl(candidate)} alt={`${code}: closest named sighting`} className="absolute inset-0 h-full w-full object-contain" />
             <img src={api.cropUrl(sighting)} alt="This sighting" className="absolute inset-0 h-full w-full object-contain"
               style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }} />
-            <span aria-hidden className="absolute inset-y-0 w-0.5 bg-check" style={{ left: `${pos}%` }} />
+            <span aria-hidden className="absolute inset-y-0 w-0.5 bg-decide" style={{ left: `${pos}%` }} />
           </div>
-          <label className="flex items-center gap-3 text-[13px] text-dim">
+          <label className="flex items-center gap-3 text-[13px] text-fg-2">
             This sighting
             <input type="range" min={0} max={100} value={pos} onChange={(e) => setPos(Number(e.target.value))}
-              aria-label={`Sweep between this sighting and ${code}`} className="flex-1 accent-[var(--color-board)]" />
+              aria-label={`Sweep between this sighting and ${code}`} className="h-11 flex-1 accent-[var(--decide)]" />
             {code}
           </label>
         </figure>
@@ -248,17 +235,18 @@ export function TigersScreen() {
   const similar = useQuery({ queryKey: ["similar", reserve], queryFn: () => api.similarTigers(reserve || undefined) });
   const [open, setOpen] = useState<string | null>(null);
   const reduce = useReducedMotion();
+  const day = useReserveDay();
   return (
     <div className="grid gap-5">
       <header className="grid gap-2">
-        <h1 className="text-[26px] font-semibold">Named tigers</h1>
-        <p className="max-w-[72ch] text-[15px] text-dim">
+        <h1 className="wide text-[clamp(1.6rem,2.6vw,2.1rem)]">Named tigers</h1>
+        <p className="max-w-[72ch] text-[15px] text-fg-2">
           The register of tigers people have named, with only the sightings a person confirmed. First and last seen use
           camera or manifest times, never a file's date.
         </p>
       </header>
       {similar.data && similar.data.length > 0 && (
-        <Plate role="status" className="border-2 border-check px-4 py-3 text-[15px]">
+        <Plate role="status" className="border-2 border-decide px-4 py-3 text-[15px]">
           <b>Check these pairs:</b> they look very alike, so one tiger may have been named twice:{" "}
           {similar.data.map((s) => `${s.a} and ${s.b} (${s.similarity.toFixed(2)})`).join("; ")}.
         </Plate>
@@ -274,22 +262,22 @@ export function TigersScreen() {
           <li key={t.id}>
             <Plate rivets className="overflow-hidden">
               <button type="button" aria-expanded={open === t.id} onClick={() => setOpen(open === t.id ? null : t.id)}
-                className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-4 text-left hover:bg-raised/60">
-                <span className="board-title text-[34px] text-ink">{t.code}</span>
+                className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-4 text-left hover:bg-surface-2/60">
+                <span className="wide text-[34px] text-fg">{t.code}</span>
                 <span className="grid gap-0.5">
                   {t.name && <span className="text-[16px] font-semibold">{t.name}</span>}
-                  <span className="text-[14px] text-dim">
+                  <span className="text-[14px] text-fg-2">
                     <CountNumber value={t.sightings} /> sighting{t.sightings === 1 ? "" : "s"} at {t.cameras} camera{t.cameras === 1 ? "" : "s"}
-                    {" · "}{t.first_seen ? `first ${t.first_seen.slice(0, 10)}, last ${t.last_seen?.slice(0, 10)}` : "no reliable dates"}
+                    {" · "}{t.first_seen ? `first ${day(t.first_seen)}, last ${t.last_seen ? day(t.last_seen) : "?"}` : "no reliable dates"}
                   </span>
-                  <span className="text-[13px] text-dim">named by {t.created_by}</span>
+                  <span className="text-[13px] text-fg-2">named by {t.created_by}</span>
                 </span>
-                <ChevronDown size={20} aria-hidden className={clsx("text-dim transition-transform duration-[var(--duration-base)]", open === t.id && "rotate-180")} />
+                <ChevronDown size={20} aria-hidden className={clsx("text-fg-2 transition-transform duration-[var(--duration-base)]", open === t.id && "rotate-180")} />
               </button>
               <AnimatePresence initial={false}>
                 {open === t.id && (
                   <motion.div initial={reduce ? false : { height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                    exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }} transition={{ duration: DURATION.board * 0.7, ease: EASE_BOARD }}>
+                    exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }} transition={{ duration: DURATION.slow * 0.7, ease: EASE_OUT }}>
                     <Sightings id={t.id} />
                   </motion.div>
                 )}
@@ -305,17 +293,27 @@ export function TigersScreen() {
 /** A tiger's sightings as a timeline of crops, newest first. */
 function Sightings({ id }: { id: string }) {
   const q = useQuery({ queryKey: ["sightings", id], queryFn: () => api.sightings(id) });
+  const day = useReserveDay();
   return (
-    <ol className="flex gap-3 overflow-x-auto border-t border-line px-5 py-4">
+    <ol className="flex gap-3 overflow-x-auto border-t border-edge px-5 py-4">
       {(q.data ?? []).map((s) => (
         <li key={s.embedding_id} className="w-40 shrink-0">
           <img src={api.cropUrl(s.embedding_id)} alt={`Sighting at camera ${s.camera}`} loading="lazy"
             className="aspect-[4/3] w-full rounded-[8px] bg-black object-contain" />
           <p className="mt-1 text-[13px]"><b className="font-semibold">{s.camera}</b></p>
-          <p className="text-[12px] text-dim">{s.captured_at ? s.captured_at.slice(0, 10) : "date not reliable"}{s.assigned_by ? ` · by ${s.assigned_by}` : ""}</p>
+          <p className="text-[12px] text-fg-2">{s.captured_at ? day(s.captured_at) : "date not reliable"}{s.assigned_by ? ` · by ${s.assigned_by}` : ""}</p>
         </li>
       ))}
       {q.isLoading && <Skeleton className="h-28 w-40" />}
     </ol>
   );
+}
+
+/** Dates on the selected reserve's calendar; with all reserves selected there is no single
+ * calendar, so the UTC day is shown and labelled as such. */
+function useReserveDay(): (iso: string) => string {
+  const { reserve } = useSession();
+  const reserves = useQuery({ queryKey: ["reserves"], queryFn: api.reserves });
+  const tz = reserves.data?.find((r) => r.code === reserve)?.timezone;
+  return (iso) => (tz ? dayIn(tz, new Date(iso)) : `${iso.slice(0, 10)} UTC`);
 }

@@ -141,8 +141,14 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Frontend layout: `app/` (main, router, global.css), `lib/` (api, session, time: localTime/stripTime,
   keys: isTypingTarget/useHotkeys), `design/` (tokens.css, primitives, kit, IRFrame, TrapStrip),
   `console/` (Shell, CommandPalette, nav), `features/<domain>/` (screens + tests), `story/`, `vendor/`.
-  Night is the default theme (`data-theme` dark|light|system). Until R3, `app/global.css` bridges
-  the old class names (text-dim, bg-raised, bg-board, bg-check …) onto the new tokens.
+  Night is the default theme (`data-theme` dark|light|system). Colour classes come only from
+  `design/tokens.css` (canvas, surface/-2/-3, edge, fg/-2/-3, decide, danger, settled, mark, heat-0..6);
+  the Forest Board names (text-dim, bg-board, bg-check …) no longer exist and render as nothing.
+  Crimson (`danger`) is only for people, vehicles, high risk and failures; a person's correction is heat orange.
+  Console visual checks without Docker: `.impeccable/review/mockapi.js` (synthetic API, Playwright route).
+- Page-wide review keys skip `isControlActivation` (Enter/Space on a focused button or link belongs to
+  that control): Enter on a thumbnail or Undo must never confirm the frame on screen. People/vehicle
+  frames are never loaded as thumbnails (each display request is an audited view).
 - Console kit (`frontend/src/design/kit.tsx`, primitives in `design/primitives.tsx`): Plate, StatTile/CountNumber, CountBadge,
   StageBadge (always a word), ConfidenceDial, Skeleton, EmptyState, ToastProvider/useToast. Undo
   toasts never time out (WCAG timing); undo is a new audited action, never an erase.

@@ -1,68 +1,69 @@
 import { CircleAlert, CircleCheck, Info } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import type { QueueItem } from "../../lib/api";
-import { DURATION, EASE_BOARD } from "../../motion/tokens";
 import { ConfidenceDial } from "../../design/kit";
+import { heatFor } from "../../design/primitives";
+import type { QueueItem } from "../../lib/api";
+import { DURATION, EASE_OUT } from "../../motion/tokens";
 import { RiskBadge, RiskReasons } from "../risk/RiskBadge";
 
 export function band(c: number | null): { word: string; tone: string } {
-  if (c === null) return { word: "no score", tone: "text-dim" };
-  if (c >= 0.9) return { word: "high", tone: "text-ok" };
-  if (c >= 0.6) return { word: "medium", tone: "text-amber" };
-  return { word: "low", tone: "text-alarm" };
+  if (c === null) return { word: "no score", tone: "text-fg-2" };
+  if (c >= 0.9) return { word: "high", tone: "text-settled" };
+  if (c >= 0.6) return { word: "medium", tone: "text-decide-fg" };
+  return { word: "low", tone: "text-decide-fg" };
 }
 
-/** 5.6 answer and 5.7 explanation: what the models said and why it needs a person. */
+/** The answer and its explanation: what the models proposed and why it needs a person. */
 export function DecisionPanel({ item }: { item: QueueItem }) {
   const ex = item.explanation;
   const b = band(item.confidence);
   const reduce = useReducedMotion();
   return (
-    <section aria-label="Model decision" className="grid gap-4">
+    <section aria-label="Model decision" className="grid gap-5">
       <div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <h2 className="text-[26px] font-semibold leading-tight">{item.label ?? routeTitle(item.route)}</h2>
+        <div className="flex flex-wrap items-center gap-2">
           {/* The answer is the model's proposal; a spot check means a person checks an auto-accepted one. */}
-          <span className="rounded-[6px] bg-raised px-2 py-0.5 text-[12px] text-dim">model's proposal</span>
-          {item.spot_check && <span className="rounded-[6px] bg-check px-2 py-0.5 text-[12px] font-semibold text-on-check">Spot check</span>}
+          <span className="data rounded-full border border-edge px-2 py-0.5 text-[10px] tracking-[0.06em] text-fg-3 uppercase">model's proposal</span>
+          {item.spot_check && <span className="rounded-full bg-decide px-2 py-0.5 text-[11.5px] font-semibold text-on-decide">Spot check</span>}
         </div>
+        <h2 className="wide mt-3 text-[clamp(1.7rem,2.4vw,2.2rem)]">{item.label ?? routeTitle(item.route)}</h2>
         {item.confidence !== null && (
-          <div className="mt-2 flex items-end gap-3">
-            <ConfidenceDial key={item.image_id} value={item.confidence} size={104} />
-            <div className="pb-1">
-              <span className="tabular block text-[28px] leading-none font-semibold">{item.confidence.toFixed(2)}</span>
-              <span className="text-[13px] text-dim">Confidence: <span className={b.tone}>{b.word}</span></span>
+          <div className="mt-3 flex items-end gap-4">
+            <ConfidenceDial key={item.image_id} value={item.confidence} size={96} />
+            <div className="pb-0.5">
+              <span className="wide block text-[30px]" style={{ color: heatFor(item.confidence) }}>{item.confidence.toFixed(2)}</span>
+              <span className="text-[12.5px] text-fg-2">Confidence: <span className={b.tone}>{b.word}</span></span>
             </div>
           </div>
         )}
-        <p className="mt-2 text-[13px] text-dim">Why it is here: <span className="text-ink">{item.reason}</span></p>
+        <p className="mt-3 text-[13px] text-fg-2">Why it is here: <span className="text-fg">{item.reason}</span></p>
       </div>
 
       {item.risk && (
-        <div className="grid gap-2 rounded-md border border-line p-3">
+        <div className="grid gap-2 rounded-[10px] border border-edge bg-surface-2 p-3">
           <div className="flex items-center gap-2 text-[13px]">
             <RiskBadge level={item.risk.level} dismissed={item.risk.dismissed} />
-            <span className="text-dim">score {item.risk.score}</span>
+            <span className="data text-[11px] text-fg-3">score {item.risk.score}</span>
           </div>
           <RiskReasons factors={item.risk.factors} />
         </div>
       )}
 
-      {ex?.summary && <p className="rounded-md bg-base px-3 py-2 text-[13px] leading-relaxed">{ex.summary}</p>}
+      {ex?.summary && <p className="rounded-[10px] border border-edge bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed text-fg-2">{ex.summary}</p>}
 
       {ex?.factors && ex.factors.length > 0 && (
         <div>
-          <h2 className="mb-1.5 text-[12px] font-normal text-dim">How the confidence was built</h2>
-          <ul className="grid gap-1.5">
+          <h3 className="mb-2 text-[12px] font-medium text-fg-3">How the confidence was built</h3>
+          <ul className="grid gap-2">
             {ex.factors.map((f, i) => (
               <motion.li key={`${item.image_id}-${f.name}`} className="flex items-start gap-2 text-[13px]"
-                initial={reduce ? false : { opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: DURATION.base, ease: EASE_BOARD, delay: 0.05 * i }}>
-                {f.factor === null ? <Info size={15} className="mt-0.5 shrink-0 text-dim" aria-hidden />
-                  : f.factor < 1 ? <CircleAlert size={15} className="mt-0.5 shrink-0 text-amber" aria-hidden />
-                    : <CircleCheck size={15} className="mt-0.5 shrink-0 text-ok" aria-hidden />}
+                initial={reduce ? false : { opacity: 0.001, x: -6 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: DURATION.base, ease: EASE_OUT, delay: 0.05 * i }}>
+                {f.factor === null ? <Info size={15} className="mt-0.5 shrink-0 text-fg-3" aria-hidden />
+                  : f.factor < 1 ? <CircleAlert size={15} className="mt-0.5 shrink-0 text-decide-fg" aria-hidden />
+                    : <CircleCheck size={15} className="mt-0.5 shrink-0 text-settled" aria-hidden />}
                 <span>
-                  <span className="text-dim">{f.name}{f.factor !== null && f.factor < 1 ? ` (×${f.factor})` : ""}: </span>
+                  <span className="text-fg-2">{f.name}{f.factor !== null && f.factor < 1 ? ` (×${f.factor})` : ""}: </span>
                   {f.reason}
                 </span>
               </motion.li>
@@ -83,14 +84,18 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
 }
 
 function Table({ title, rows }: { title: string; rows: [string, number][] }) {
+  const top = Math.max(...rows.slice(0, 5).map(([, v]) => v), 0.0001);
   return (
     <div>
-      <h2 className="mb-1 text-[12px] font-normal text-dim">{title}</h2>
-      <ul className="grid gap-0.5 text-[13px]">
+      <h3 className="mb-2 text-[12px] font-medium text-fg-3">{title}</h3>
+      <ul className="grid gap-1.5 text-[12.5px]">
         {rows.slice(0, 5).map(([label, v]) => (
-          <li key={label} className="flex justify-between gap-3 border-b border-line/60 py-0.5">
+          <li key={label} className="grid grid-cols-[minmax(0,1fr)_72px_40px] items-center gap-2">
             <span className="truncate">{label}</span>
-            <span className="tabular-nums text-dim">{v.toFixed(2)}</span>
+            <span aria-hidden className="h-1 overflow-hidden rounded-full bg-surface-3">
+              <span className="block h-full rounded-full bg-fg-2" style={{ width: `${Math.max(2, (v / top) * 100)}%` }} />
+            </span>
+            <span className="data text-right text-[10.5px] text-fg-2">{v.toFixed(2)}</span>
           </li>
         ))}
       </ul>

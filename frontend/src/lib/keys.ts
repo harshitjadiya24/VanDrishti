@@ -10,6 +10,14 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return target.closest("[cmdk-root], [role='combobox'], [role='listbox']") !== null;
 }
 
+/** Enter or Space on a focused control belongs to that control (a thumbnail, Undo, Cancel),
+ * never to a page-wide shortcut: otherwise a person would decide a different item than the one
+ * they were pointing at. */
+export function isControlActivation(e: KeyboardEvent): boolean {
+  if (e.key !== "Enter" && e.key !== " ") return false;
+  return e.target instanceof HTMLElement && e.target.closest("button, a[href], [role='button'], summary, input, select, textarea") !== null;
+}
+
 /** True for a plain key press (no Cmd, Ctrl or Alt) outside a text field. */
 export function isPlainKey(e: KeyboardEvent): boolean {
   return !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target);

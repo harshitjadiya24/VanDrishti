@@ -1,57 +1,6 @@
 @import "tailwindcss";
 @import "../design/tokens.css";
 
-/* Bridge (R1 → R3): the console's existing screens still use the Forest Board's class names
-   (text-dim, bg-raised, border-line, bg-board, bg-check …). They are mapped onto the new
-   roles here, so every screen already wears the new system; R3 rebuilds the screens and this
-   block is deleted. The story (always night) uses the new tokens only, inside `.night-scope`. */
-@theme {
-  --color-base: var(--canvas);
-  --color-panel: var(--surface);
-  --color-raised: var(--surface-2);
-  --color-ink: var(--fg);
-  --color-dim: var(--fg-2);
-  --color-line: var(--edge);
-  --color-amber: var(--decide-fg);
-  --color-alarm: var(--danger);
-  --color-ok: var(--settled);
-  --color-on-alarm: var(--on-danger);
-  --color-on-ok: var(--on-settled);
-  --color-sky: var(--mark);
-  /* Fixed story colours, overridden for the console below. */
-  --color-board: #0e1428;
-  --color-board-deep: #080c1a;
-  --color-board-line: #2a3566;
-  --color-on-board: #f6f3ee;
-  --color-on-board-dim: #aab0cc;
-  --color-check: #f28c28;
-  --color-on-check: #121629;
-
-  --ease-board: var(--ease-out);
-  --ease-boom: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-stamp: cubic-bezier(0.2, 0.9, 0.1, 1);
-  --duration-quick: var(--duration-fast);
-  --duration-board: var(--duration-slow);
-}
-:root {
-  --line: var(--edge);
-  --ink: var(--fg);
-  --dim: var(--fg-2);
-  --alarm: var(--danger);
-  --ok: var(--settled);
-  --shadow-plate: var(--lift);
-}
-/* Inside the console, "board" means the solid primary surface and "check" means decide. */
-.console {
-  --color-board: var(--fg);
-  --color-board-deep: var(--fg-2);
-  --color-board-line: var(--edge);
-  --color-on-board: var(--canvas);
-  --color-on-board-dim: var(--surface-3);
-  --color-check: var(--decide);
-  --color-on-check: var(--on-decide);
-}
-
 html, body { background: var(--canvas); color: var(--fg); }
 body {
   margin: 0;

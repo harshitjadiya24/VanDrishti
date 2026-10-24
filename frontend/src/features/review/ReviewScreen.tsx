@@ -1,33 +1,34 @@
-import { isPlainKey } from "../../lib/keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Inbox, Undo2 } from "lucide-react";
+import { Check, Flag, Inbox, PenLine, ShieldAlert, SkipForward, ThumbsDown, ThumbsUp, Undo2, X, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { api, ApiError, type Action, type QueueKind, type ReviewOut, type Severity, type Taxon } from "../../lib/api";
+import { QUEUES } from "../../console/nav";
+import { EmptyState, Skeleton, StageBadge, type Stage } from "../../design/kit";
+import { Button, heatFor, Kbd } from "../../design/primitives";
+import { api, ApiError, type Action, type QueueItem, type QueueKind, type ReviewOut, type Severity, type Taxon } from "../../lib/api";
+import { isControlActivation, isPlainKey } from "../../lib/keys";
+import { useSession } from "../../lib/session";
+import { DURATION, EASE_OUT } from "../../motion/tokens";
 import { DecisionPanel } from "./DecisionPanel";
 import { FrameView } from "./FrameView";
-import { EmptyState, Plate, Skeleton, StageBadge, type Stage } from "../../design/kit";
 import { TaxonPicker } from "./TaxonPicker";
-import { useSession } from "../../lib/session";
-import { DURATION, EASE_BOARD } from "../../motion/tokens";
-import { QUEUES } from "../../console/nav";
 
 const QUEUE_STAGE: Record<QueueKind, Stage> = {
   people_vehicles: "people", review: "review", uncertain: "uncertain", blank: "blank", quality: "quality",
 };
 
 // Keys: the first matching allowed action wins. Shown on every button.
-const ACTIONS: { action: Action; label: string; key: string; tone: "primary" | "plain" | "danger" }[] = [
-  { action: "confirm", label: "Confirm", key: "y", tone: "primary" },
-  { action: "confirm_people", label: "Confirm people/vehicle", key: "y", tone: "danger" },
-  { action: "quality_ok", label: "Usable after all", key: "y", tone: "primary" },
-  { action: "correct", label: "Correct species…", key: "c", tone: "plain" },
-  { action: "not_animal", label: "Not an animal", key: "n", tone: "plain" },
-  { action: "false_alarm", label: "False alarm", key: "f", tone: "plain" },
-  { action: "quality_bad", label: "Unusable", key: "n", tone: "plain" },
-  { action: "skip", label: "Skip", key: "s", tone: "plain" },
+const ACTIONS: { action: Action; label: string; key: string; tone: "primary" | "plain" | "danger"; icon: LucideIcon }[] = [
+  { action: "confirm", label: "Confirm", key: "y", tone: "primary", icon: Check },
+  { action: "confirm_people", label: "Confirm people/vehicle", key: "y", tone: "danger", icon: ShieldAlert },
+  { action: "quality_ok", label: "Usable after all", key: "y", tone: "primary", icon: ThumbsUp },
+  { action: "correct", label: "Correct species…", key: "c", tone: "plain", icon: PenLine },
+  { action: "not_animal", label: "Not an animal", key: "n", tone: "plain", icon: X },
+  { action: "false_alarm", label: "False alarm", key: "f", tone: "plain", icon: Flag },
+  { action: "quality_bad", label: "Unusable", key: "n", tone: "plain", icon: ThumbsDown },
+  { action: "skip", label: "Skip", key: "s", tone: "plain", icon: SkipForward },
 ];
 const SEVERITY: Severity[] = ["low", "medium", "high"];
 
@@ -47,7 +48,8 @@ export function ReviewScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const items = queue.data ?? [];
-  const item = items[Math.min(index, Math.max(items.length - 1, 0))];
+  const current = Math.min(index, Math.max(items.length - 1, 0));
+  const item = items[current];
   const title = QUEUES.find((q) => q.kind === kind)?.label ?? kind;
 
   const resetForm = () => { setCorrecting(false); setPoaching(false); setSeverity(null); setNotes(""); };
@@ -91,7 +93,7 @@ export function ReviewScreen() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!isPlainKey(e)) return;
+      if (!isPlainKey(e) || isControlActivation(e)) return;
       if (!item) return;
       const k = e.key.toLowerCase();
       if (k === "u" && last) { undo.mutate(); return; }
@@ -107,89 +109,87 @@ export function ReviewScreen() {
     return () => window.removeEventListener("keydown", onKey);
   }, [item, items.length, last, act, undo]);
 
-  const position = items.length ? Math.min(index, items.length - 1) + 1 : 0;
+  const position = items.length ? current + 1 : 0;
   return (
-    <div>
-      <header className="mb-5 grid gap-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="text-[26px] font-semibold">{title}</h1>
-          <StageBadge stage={QUEUE_STAGE[kind]} />
-          {items.length > 0 && <span className="tabular text-[15px] text-dim">{position} of {items.length} waiting</span>}
-        </div>
-        {items.length > 1 && (
-          <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-raised">
-            <motion.div className="h-full rounded-full bg-board" initial={false}
-              animate={{ width: `${(position / items.length) * 100}%` }}
-              transition={{ duration: reduce ? 0 : DURATION.board, ease: EASE_BOARD }} />
-          </div>
-        )}
+    <div className="grid min-w-0 gap-5">
+      <header className="flex flex-wrap items-end gap-x-4 gap-y-2">
+        <h1 className="wide text-[clamp(1.6rem,2.6vw,2.1rem)]">{title}</h1>
+        <StageBadge stage={QUEUE_STAGE[kind]} />
+        {items.length > 0 && <span className="data pb-1 text-[12px] text-fg-2">{position} of {items.length} waiting</span>}
+        <span className="ml-auto hidden flex-wrap gap-x-4 gap-y-1 pb-1 text-[12px] text-fg-3 lg:flex pointer-coarse:hidden">
+          <span><Kbd>J</Kbd> <Kbd>K</Kbd> move</span>
+          <span><Kbd>M</Kbd> outline</span>
+          <span><Kbd>P</Kbd> poaching</span>
+          <span><Kbd>1</Kbd>–<Kbd>3</Kbd> severity</span>
+        </span>
       </header>
 
-      {error && <p role="alert" className="mb-4 rounded-[10px] bg-alarm px-4 py-2.5 text-[15px] text-on-alarm">{error}</p>}
-      {last && (
-        <Plate role="status" className="mb-4 flex flex-wrap items-center gap-3 px-4 py-2.5 text-[15px]">
-          <StageBadge stage="done">Saved</StageBadge>
-          <span><b className="font-semibold">{last.action.replace(/_/g, " ")}</b>{last.human_label ? ` (${last.human_label})` : ""}</span>
-          <button type="button" onClick={() => undo.mutate()} disabled={undo.isPending}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-[8px] border border-line px-3 py-1 text-[14px] hover:bg-raised">
-            <Undo2 size={15} aria-hidden /> Undo <kbd>U</kbd>
-          </button>
-        </Plate>
-      )}
+      {items.length > 1 && <Filmstrip items={items} current={current} onPick={setIndex} showImages={kind !== "people_vehicles"} />}
+
+      {error && <p role="alert" className="rounded-[10px] border border-danger/50 bg-danger/10 px-4 py-2.5 text-[14px] text-danger">{error}</p>}
+      <AnimatePresence initial={false}>
+        {last && (
+          <motion.div role="status" key={last.id}
+            initial={reduce ? false : { opacity: 0.001, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE_OUT }}
+            className="flex flex-wrap items-center gap-3 rounded-[12px] border border-settled/40 bg-surface px-4 py-2.5 text-[14px]">
+            <StageBadge stage="done">Saved</StageBadge>
+            <span><b className="font-semibold">{last.action.replace(/_/g, " ")}</b>{last.human_label ? ` (${last.human_label})` : ""}</span>
+            <Button tone="quiet" size="sm" onClick={() => undo.mutate()} disabled={undo.isPending} className="ml-auto">
+              <Undo2 size={15} aria-hidden /> Undo <Kbd>U</Kbd>
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {queue.isLoading ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]" aria-busy="true">
           <Skeleton className="aspect-[4/3]" /><Skeleton className="h-[480px]" />
         </div>
       ) : queue.error ? (
-        <p role="alert" className="text-alarm">{String(queue.error)}</p>
+        <p role="alert" className="text-danger">{String(queue.error)}</p>
       ) : !item ? (
         <EmptyState icon={<Inbox size={20} />} title="Nothing waiting here"
-          action={<Link to="/app/pipeline" className="text-[15px] font-semibold text-ok underline">See the road, live</Link>}>
+          action={<Link to="/app/pipeline" className="text-[14px] font-medium text-settled underline underline-offset-4">See the road, live</Link>}>
           New frames arrive here after they are ingested, screened and routed.
         </EmptyState>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="min-w-0">
-            {/* A new frame slides in like a board being hung; its boxes then draw themselves on. */}
+            {/* The next frame slides in; its boxes then draw themselves on. */}
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.div key={item.image_id}
-                initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }}
-                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
-                transition={{ duration: DURATION.board * 0.7, ease: EASE_BOARD }}>
+                initial={reduce ? false : { opacity: 0.001, x: 20, filter: "blur(4px)" }} animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -20 }}
+                transition={{ duration: DURATION.slow * 0.8, ease: EASE_OUT }}>
                 <FrameView item={item} showMask={showMask} />
               </motion.div>
             </AnimatePresence>
-            <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-dim pointer-coarse:hidden">
-              <span><kbd>J</kbd> <kbd>K</kbd> next / previous</span>
-              <span><kbd>M</kbd> {showMask ? "hide" : "show"} outline</span>
-              <span><kbd>P</kbd> poaching activity</span>
-              <span><kbd>1</kbd>–<kbd>3</kbd> severity</span>
-            </p>
           </div>
-          {/* Wide screens: the plate stays in view and scrolls inside; the actions dock at its foot. */}
-          <Plate as="aside" rivets className="grid content-start gap-5 p-5 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-3rem)] xl:overflow-y-auto">
+
+          {/* Wide screens: the panel stays in view and scrolls inside; the actions dock at its foot. */}
+          <aside className="grid content-start gap-5 rounded-[var(--radius-card)] border border-edge bg-surface p-5 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto">
             <DecisionPanel item={item} />
 
-            <div className="grid gap-3 border-t border-line pt-4">
-              <label className="flex min-h-11 items-center gap-2.5 text-[15px] md:min-h-8">
-                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="size-5 accent-[var(--alarm)]" />
-                Mark poaching activity <kbd>P</kbd>
+            <div className="grid gap-3 border-t border-edge pt-4">
+              <label className="flex min-h-11 items-center gap-2.5 text-[14px] md:min-h-8">
+                <input type="checkbox" checked={poaching} onChange={(e) => setPoaching(e.target.checked)} className="size-[18px] accent-[var(--danger)]" />
+                Mark poaching activity <Kbd>P</Kbd>
               </label>
-              <div role="group" aria-label="Severity" className="flex flex-wrap items-center gap-1.5 text-[14px]">
-                <span className="text-dim">Severity</span>
+              <div role="group" aria-label="Severity" className="flex flex-wrap items-center gap-1.5 text-[13px]">
+                <span className="mr-1 text-fg-2">Severity</span>
                 {SEVERITY.map((s, i) => (
                   <button key={s} type="button" aria-pressed={severity === s} onClick={() => setSeverity(severity === s ? null : s)}
-                    className={clsx("h-11 rounded-[8px] border px-3 capitalize md:h-8",
-                      severity === s ? "border-ink bg-ink text-panel" : "border-line text-dim hover:text-ink")}>
-                    {s} <kbd>{i + 1}</kbd>
+                    className={clsx("inline-flex h-11 items-center gap-1.5 rounded-[8px] border px-3 capitalize transition-colors duration-[var(--duration-fast)] md:h-8",
+                      severity === s ? "border-fg bg-fg text-canvas" : "border-edge text-fg-2 hover:text-fg")}>
+                    {s} <Kbd>{i + 1}</Kbd>
                   </button>
                 ))}
               </div>
-              <label className="grid gap-1 text-[13px] text-dim">
+              <label className="grid gap-1.5 text-[12.5px] text-fg-2">
                 Notes for the record (optional)
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-                  className="rounded-[8px] border border-line bg-base px-2.5 py-1.5 text-[15px] text-ink" />
+                  className="rounded-[8px] border border-edge bg-canvas px-2.5 py-2 text-[16px] text-fg md:text-[14px]" />
               </label>
             </div>
 
@@ -197,23 +197,59 @@ export function ReviewScreen() {
               <TaxonPicker reserve={reserve || undefined} onCancel={() => setCorrecting(false)}
                 onPick={(t) => submit.mutate({ action: "correct", taxon: t })} />
             ) : (
-              <div className="sticky -bottom-5 -mx-5 -mb-5 grid gap-2 border-t border-line bg-panel px-5 pt-3 pb-5">
+              <div className="-mx-5 -mb-5 grid gap-2 border-t border-edge bg-surface/95 px-5 pt-3 pb-5 xl:sticky xl:-bottom-5 xl:backdrop-blur">
                 {ACTIONS.filter((a) => item.allowed_actions.includes(a.action)).map((a) => (
-                  <button key={a.action} type="button" onClick={() => act(a.action)} disabled={!reviewer || submit.isPending}
-                    className={clsx(
-                      "flex h-11 items-center justify-between rounded-[10px] px-4 text-[15px] transition-transform duration-[var(--duration-quick)] active:translate-y-px disabled:opacity-40",
-                      a.tone === "primary" && "bg-ok font-semibold text-on-ok shadow-[var(--shadow-plate)] hover:brightness-110",
-                      a.tone === "danger" && "bg-alarm font-semibold text-on-alarm shadow-[var(--shadow-plate)] hover:brightness-110",
-                      a.tone === "plain" && "border border-line bg-base hover:bg-raised",
-                    )}>
-                    {a.label} <kbd>{a.key === "y" ? "Y / Enter" : a.key.toUpperCase()}</kbd>
-                  </button>
+                  <Button key={a.action} onClick={() => act(a.action)} disabled={!reviewer || submit.isPending}
+                    tone={a.tone === "primary" ? "decide" : a.tone === "danger" ? "danger" : "quiet"}
+                    className="justify-between">
+                    <span className="flex items-center gap-2"><a.icon size={16} aria-hidden />{a.label}</span>
+                    <Kbd className={a.tone === "plain" ? undefined : "border-black/25 bg-black/10 text-current"}>{a.key === "y" ? "Y / Enter" : a.key.toUpperCase()}</Kbd>
+                  </Button>
                 ))}
               </div>
             )}
-          </Plate>
+          </aside>
         </div>
       )}
     </div>
+  );
+}
+
+/** The queue as a strip of frames, warm to hot by how unsure the model was. Shows a window
+ * around the current frame so a long queue stays light. */
+function Filmstrip({ items, current, onPick, showImages }: { items: QueueItem[]; current: number; onPick: (i: number) => void; showImages: boolean }) {
+  const list = useRef<HTMLOListElement>(null);
+  const start = Math.max(0, current - 6);
+  const shown = items.slice(start, start + 16);
+  useEffect(() => {
+    list.current?.querySelector<HTMLElement>("[aria-current='true']")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [current]);
+  return (
+    <nav aria-label="Queue" className="min-w-0">
+      <ol ref={list} className="flex gap-2 overflow-x-auto pb-1">
+        {shown.map((f, i) => {
+          const at = start + i;
+          const active = at === current;
+          return (
+            <li key={f.image_id} className="shrink-0">
+              <button type="button" onClick={() => onPick(at)} aria-current={active}
+                aria-label={`Frame ${at + 1}: camera ${f.camera}${f.confidence !== null ? `, confidence ${f.confidence.toFixed(2)}` : ""}`}
+                className={clsx("block w-[116px] overflow-hidden rounded-[8px] border bg-black text-left transition-[border-color,transform] duration-[var(--duration-fast)]",
+                  active ? "-translate-y-0.5 border-decide shadow-[0_8px_20px_-10px_rgb(255_138_61/0.6)]" : "border-edge hover:border-edge-strong")}>
+                {/* Opening a people/vehicle frame is an audited view: the strip never loads those
+                    frames as thumbnails, so the record only holds frames a person opened. */}
+                {showImages
+                  ? <img src={api.displayUrl(f.image_id)} alt="" loading="lazy" className={clsx("block aspect-[4/3] w-full object-cover", !active && "brightness-75")} />
+                  : <span aria-hidden className="grid aspect-[4/3] w-full place-items-center bg-surface-2 text-danger"><ShieldAlert size={22} /></span>}
+                <span className="data flex justify-between bg-black px-1.5 py-1 text-[9.5px] text-ir">
+                  <span className="truncate">{f.camera}</span>
+                  {f.confidence !== null && <span style={{ color: heatFor(f.confidence) }}>{f.confidence.toFixed(2)}</span>}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }

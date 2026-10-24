@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { useReducedMotion } from "motion/react";
 import { useNavigate } from "react-router";
 import { api, type Pipeline } from "../../lib/api";
-import { CountNumber, EmptyState, Plate, Skeleton } from "../../design/kit";
+import { CountNumber, EmptyState, PageHeader, Plate, Skeleton } from "../../design/kit";
 import { useSession } from "../../lib/session";
 
 type Tone = "neutral" | "ok" | "check" | "alarm" | "blank";
@@ -25,11 +25,11 @@ const W = 1200;
 const H = 600;
 const NODE_W = 150;
 const STROKE: Record<Tone, string> = {
-  neutral: "var(--color-board-line)",
-  ok: "var(--ok)",
-  check: "var(--color-check)",
-  alarm: "var(--alarm)",
-  blank: "var(--line)",
+  neutral: "var(--fg-3)",
+  ok: "var(--settled)",
+  check: "var(--color-heat-4)",
+  alarm: "var(--danger)",
+  blank: "var(--mark)",
 };
 
 /** Lay the road out from the counts. Every number is an exact count from the database. */
@@ -82,14 +82,11 @@ export function PipelineScreen() {
   const p = q.data;
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="text-[26px] font-semibold">The road, live</h1>
-        <p className="mt-1 max-w-[70ch] text-[15px] text-dim">
-          Every frame's path from the camera to a person, as exact counts. Road widths follow the counts; the
-          moving dots only show direction. Select a stage to open its queue.
-        </p>
-      </header>
-      {q.error && <p role="alert" className="text-alarm">{String(q.error)}</p>}
+      <PageHeader title="The road, live">
+        Every frame's path from the camera to a person, as exact counts. Road widths follow the counts; the
+        moving dots only show direction. Select a stage to open its queue.
+      </PageHeader>
+      {q.error && <p role="alert" className="text-danger">{String(q.error)}</p>}
       {!p && !q.error && <Skeleton className="h-[420px]" />}
       {p && p.ingest.images === 0 && (
         <EmptyState title="No frames in this reserve yet">Upload or ingest camera-trap images, then run detection and routing.</EmptyState>
@@ -145,14 +142,14 @@ function RoadDiagram({ p }: { p: Pipeline }) {
           const clickable = Boolean(n.to && (!n.perm || can(n.perm)));
           const body = (
             <>
-              <span className="block text-[13px] leading-tight text-dim">{n.label}</span>
+              <span className="block text-[13px] leading-tight text-fg-2">{n.label}</span>
               <CountNumber value={n.value} className="block text-[24px] leading-tight font-semibold" />
-              {n.note && <span className="block truncate text-[12px] text-dim">{n.note}</span>}
+              {n.note && <span className="block truncate text-[12px] text-fg-2">{n.note}</span>}
             </>
           );
-          const cls = clsx("absolute -translate-x-1/2 -translate-y-1/2 rounded-[10px] border-2 bg-panel px-3 py-1.5 text-left shadow-[var(--shadow-plate)]",
-            n.id === "person" ? "border-check" : n.tone === "alarm" ? "border-alarm" : n.tone === "ok" ? "border-ok" : n.tone === "check" ? "border-check" : "border-line",
-            clickable && "transition-transform duration-[var(--duration-base)] ease-[var(--ease-board)] hover:-translate-y-[calc(50%+2px)]");
+          const cls = clsx("absolute -translate-x-1/2 -translate-y-1/2 rounded-[10px] border-2 bg-surface px-3 py-1.5 text-left shadow-[var(--lift)]",
+            n.id === "person" ? "border-decide" : n.tone === "alarm" ? "border-danger" : n.tone === "ok" ? "border-settled" : n.tone === "check" ? "border-decide" : "border-edge",
+            clickable && "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-[calc(50%+2px)]");
           const w = n.id === "person" ? NODE_W + 24 : NODE_W;
           const style = { left: `${(n.x / W) * 100}%`, top: `${(n.y / H) * 100}%`, width: `${(w / W) * 100}%` };
           return clickable ? (
@@ -162,8 +159,8 @@ function RoadDiagram({ p }: { p: Pipeline }) {
           );
         })}
       </div>
-      <p className="mt-2 px-1 text-[13px] text-dim">
-        Green: accepted without a person. Orange: a person decides. Red: people or vehicles, always a person. Grey: set
+      <p className="mt-2 px-1 text-[13px] text-fg-2">
+        Cold blue: accepted without a person. Orange: a person decides. Crimson: people or vehicles, always a person. Grey: set
         aside as likely blank, with a random sample checked.
       </p>
     </Plate>
@@ -177,7 +174,7 @@ function RoadList({ p }: { p: Pipeline }) {
   const { can } = useSession();
   const order = ["ingest", "quality", "animal", "people", "blank", "decided", "auto", "review", "uncertain", "pv", "blankr", "person"];
   const tone: Record<Tone, string> = {
-    neutral: "bg-board-line", ok: "bg-ok", check: "bg-check", alarm: "bg-alarm", blank: "bg-line",
+    neutral: "bg-fg-3", ok: "bg-settled", check: "bg-heat-4", alarm: "bg-danger", blank: "bg-mark",
   };
   return (
     <ol className="grid gap-2 lg:hidden">
@@ -188,14 +185,14 @@ function RoadList({ p }: { p: Pipeline }) {
           <li key={id}>
             <Plate className="flex items-center gap-3 px-3 py-2.5">
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2 text-[14px] text-dim">
+                <span className="flex items-center gap-2 text-[14px] text-fg-2">
                   <span aria-hidden className={clsx("size-2.5 shrink-0 rounded-full", tone[n.tone])} />
                   {n.label}{n.note ? ` · ${n.note}` : ""}
                 </span>
                 <CountNumber value={n.value} className="text-[22px] font-semibold" />
               </span>
               {clickable && (
-                <button type="button" onClick={() => navigate(n.to!)} className="rounded-[8px] border border-line px-3 py-1.5 text-[14px] hover:bg-raised">
+                <button type="button" onClick={() => navigate(n.to!)} className="h-11 rounded-[8px] border border-edge px-4 text-[14px] hover:bg-surface-2">
                   Open
                 </button>
               )}
@@ -215,19 +212,19 @@ function Outcomes({ p }: { p: Pipeline }) {
       <h2 id="outcomes-h" className="text-[18px] font-semibold">What it turns into</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <Plate className="px-4 py-3">
-          <p className="text-[14px] text-dim">Open alerts</p>
+          <p className="text-[14px] text-fg-2">Open alerts</p>
           <CountNumber value={open} className="block text-[28px] font-semibold" />
-          <p className="text-[13px] text-dim">{p.alerts_open.critical} critical, {p.alerts_open.warning} warning</p>
+          <p className="text-[13px] text-fg-2">{p.alerts_open.critical} critical, {p.alerts_open.warning} warning</p>
         </Plate>
         <Plate className="px-4 py-3">
-          <p className="text-[14px] text-dim">People/vehicle events</p>
+          <p className="text-[14px] text-fg-2">People/vehicle events</p>
           <CountNumber value={p.risk.high + p.risk.medium + p.risk.low} className="block text-[28px] font-semibold" />
-          <p className="text-[13px] text-dim">{p.risk.high} high, {p.risk.medium} medium, {p.risk.low} low risk</p>
+          <p className="text-[13px] text-fg-2">{p.risk.high} high, {p.risk.medium} medium, {p.risk.low} low risk</p>
         </Plate>
         <Plate className="px-4 py-3">
-          <p className="text-[14px] text-dim">Tiger identities waiting</p>
+          <p className="text-[14px] text-fg-2">Tiger identities waiting</p>
           <CountNumber value={p.identity.proposals_open} className="block text-[28px] font-semibold" />
-          <p className="text-[13px] text-dim">{p.identity.named_tigers} named tigers, {p.identity.embedded} stripe records</p>
+          <p className="text-[13px] text-fg-2">{p.identity.named_tigers} named tigers, {p.identity.embedded} stripe records</p>
         </Plate>
       </div>
     </section>

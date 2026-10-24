@@ -70,6 +70,16 @@ describe("review screen", () => {
     await waitFor(() => expect(calls.some((c) => c.url === "/api/reviews/rev-1/undo")).toBe(true));
   });
 
+  it("Enter on a queue thumbnail opens that frame and decides nothing", async () => {
+    const user = userEvent.setup();
+    renderAt("review");
+    await screen.findByText("tiger");
+    screen.getByRole("button", { name: /^Frame 2/ }).focus();
+    await user.keyboard("{Enter}");
+    expect(await screen.findByText("2 of 2 waiting")).toBeInTheDocument();
+    expect(calls.some((c) => c.url === "/api/reviews")).toBe(false);
+  });
+
   it("offers only the actions that fit the queue", async () => {
     mockApi([item({ route: "people_vehicles", label: null, confidence: null, explanation: null,
       allowed_actions: ["confirm_people", "false_alarm", "skip"],

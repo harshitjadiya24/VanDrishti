@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { api } from "../../lib/api";
 import { EmptyState, PageHeader, Plate, Skeleton } from "../../design/kit";
 import { useSession } from "../../lib/session";
-import { DURATION, EASE_BOARD } from "../../motion/tokens";
+import { DURATION, EASE_OUT } from "../../motion/tokens";
 
 const BANDS = [
   { band: "high", title: "High confidence", range: "0.9 and above" },
@@ -24,7 +24,7 @@ export function FeedbackScreen() {
         Every review is kept as feedback: what the model said and what a person said. This is how the confidence bands
         are checked in this reserve, and the data future model improvements learn from.
       </PageHeader>
-      {f.error && <p role="alert" className="text-alarm">{String(f.error)}</p>}
+      {f.error && <p role="alert" className="text-danger">{String(f.error)}</p>}
       {!d && !f.error && <Skeleton className="h-56" />}
       {d && (
         <>
@@ -38,26 +38,26 @@ export function FeedbackScreen() {
                   <div key={band} className="grid gap-1.5 sm:grid-cols-[200px_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
                     <div>
                       <p className="text-[15px] font-semibold">{title}</p>
-                      <p className="text-[13px] text-dim">{range}</p>
+                      <p className="text-[13px] text-fg-2">{range}</p>
                     </div>
                     {n ? (
-                      <div className="flex h-6 overflow-hidden rounded-[4px] bg-raised" role="img"
+                      <div className="flex h-6 overflow-hidden rounded-[4px] bg-surface-2" role="img"
                         aria-label={`${title}: people agreed ${agreed} times and changed the answer ${changed} times`}>
-                        <motion.span className="h-full bg-ok" initial={reduce ? false : { width: 0 }} animate={{ width: `${(agreed / n) * 100}%` }}
-                          transition={{ duration: DURATION.board * 1.4, ease: EASE_BOARD, delay: reduce ? 0 : i * 0.1 }} />
-                        <motion.span className="h-full bg-alarm/80" initial={reduce ? false : { width: 0 }} animate={{ width: `${(changed / n) * 100}%` }}
-                          transition={{ duration: DURATION.board * 1.4, ease: EASE_BOARD, delay: reduce ? 0 : i * 0.1 + 0.15 }} />
+                        <motion.span className="h-full bg-settled" initial={reduce ? false : { width: 0 }} animate={{ width: `${(agreed / n) * 100}%` }}
+                          transition={{ duration: DURATION.slow * 1.4, ease: EASE_OUT, delay: reduce ? 0 : i * 0.1 }} />
+                        <motion.span className="h-full bg-heat-4" initial={reduce ? false : { width: 0 }} animate={{ width: `${(changed / n) * 100}%` }}
+                          transition={{ duration: DURATION.slow * 1.4, ease: EASE_OUT, delay: reduce ? 0 : i * 0.1 + 0.15 }} />
                       </div>
-                    ) : <p className="text-[14px] text-dim">No reviews in this band yet.</p>}
+                    ) : <p className="text-[14px] text-fg-2">No reviews in this band yet.</p>}
                     <p className="tabular text-[14px] sm:text-right">
-                      {row ? <><span className="text-[22px] font-semibold">{Math.round(row.agreement * 100)}%</span> <span className="text-dim">agreed · {agreed} kept, {changed} changed</span></> : "—"}
+                      {row ? <><span className="text-[22px] font-semibold">{Math.round(row.agreement * 100)}%</span> <span className="text-fg-2">agreed · {agreed} kept, {changed} changed</span></> : "—"}
                     </p>
                   </div>
                 );
               })}
-              <p className="flex flex-wrap gap-4 text-[13px] text-dim">
-                <span className="flex items-center gap-1.5"><span aria-hidden className="size-3 rounded-[2px] bg-ok" />Person kept the model's answer</span>
-                <span className="flex items-center gap-1.5"><span aria-hidden className="size-3 rounded-[2px] bg-alarm/80" />Person changed it</span>
+              <p className="flex flex-wrap gap-4 text-[13px] text-fg-2">
+                <span className="flex items-center gap-1.5"><span aria-hidden className="size-3 rounded-[2px] bg-settled" />Person kept the model's answer</span>
+                <span className="flex items-center gap-1.5"><span aria-hidden className="size-3 rounded-[2px] bg-heat-4" />Person changed it</span>
                 <span>Small numbers say little: read the counts, not only the percentage.</span>
               </p>
             </Plate>
@@ -72,13 +72,13 @@ export function FeedbackScreen() {
             ) : (
               <Plate className="overflow-x-auto">
                 <table className="w-full min-w-[440px] text-left text-[14px]">
-                  <thead className="text-[13px] text-dim">
+                  <thead className="text-[13px] text-fg-2">
                     <tr><th className="px-4 py-2.5 font-normal">Model said</th><th className="px-4 py-2.5 font-normal">Person said</th><th className="px-4 py-2.5 text-right font-normal">Times</th></tr>
                   </thead>
                   <tbody>
                     {d.top_corrections.map((c) => (
-                      <tr key={c.model + c.human} className="border-t border-line">
-                        <td className="px-4 py-2 text-dim line-through decoration-alarm/60">{c.model}</td>
+                      <tr key={c.model + c.human} className="border-t border-edge">
+                        <td className="px-4 py-2 text-fg-2 line-through decoration-heat-4">{c.model}</td>
                         <td className="px-4 py-2 font-medium">{c.human}</td>
                         <td className="tabular px-4 py-2 text-right">{c.count}</td>
                       </tr>
@@ -88,7 +88,7 @@ export function FeedbackScreen() {
               </Plate>
             )}
           </section>
-          <p className="text-[14px] text-dim">
+          <p className="text-[14px] text-fg-2">
             Actions: {Object.entries(d.actions).map(([k, v]) => `${k.replace(/_/g, " ")} ${v}`).join(", ") || "none yet"}.
             {" "}Poaching activity marked {d.poaching_marked} time{d.poaching_marked === 1 ? "" : "s"}.
           </p>

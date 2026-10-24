@@ -23,7 +23,7 @@ export const routes: RouteObject[] = [
   {
     path: "/",
     element: (
-      <Suspense fallback={<div className="min-h-dvh bg-board" />}>
+      <Suspense fallback={<div className="min-h-dvh bg-night" />}>
         <StoryPage />
       </Suspense>
     ),
@@ -31,7 +31,7 @@ export const routes: RouteObject[] = [
   {
     path: "/app",
     lazy: screen((m) => m.Shell),
-    HydrateFallback: () => <div className="min-h-dvh bg-base" />,
+    HydrateFallback: () => <div className="min-h-dvh bg-canvas" />,
     children: [
       { index: true, element: <Navigate to="/app/dashboard" replace /> },
       { path: "dashboard", lazy: screen((m) => m.DashboardScreen) },
