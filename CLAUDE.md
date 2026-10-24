@@ -157,7 +157,8 @@ history, old Docker volumes). Do not look for it; build from the image.
   stages, never invented distances). The synthetic frame is `story/frame.tsx` (NightFrame, BODY, BOX):
   SVG rects need `width`/`height` keys (spreading `w`/`h` renders nothing).
 - `docs/screenshots/` holds only photo-free captures (WebP) with `PROVENANCE.md`; anything showing
-  camera-trap frames stays in the git-ignored `.impeccable/review/`. Impeccable's finish reviewer and
-  documenter are not registered agent types here: run them as fresh general-purpose agents that load
-  `~/.claude/skills/impeccable/agents/*.toml` themselves.
+  camera-trap frames stays in the git-ignored `.impeccable/review/`.
+- Project subagents live in `.claude/agents/` (backend-checker, frontend-checker, privacy-auditor,
+  metrics-guard, impeccable-finish-reviewer, impeccable-documenter); the impeccable ones load
+  `~/.claude/skills/impeccable/agents/*.toml` as their spec.
 
