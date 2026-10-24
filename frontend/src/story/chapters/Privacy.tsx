@@ -4,7 +4,7 @@
 import { EyeOff, MapPinOff, ScrollText } from "lucide-react";
 import { useRef } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "../scroll";
-import { Card, Chapter } from "../ui";
+import { Card, Chapter, Synthetic } from "../ui";
 
 export function PrivacyChapter() {
   const root = useRef<HTMLElement>(null);
@@ -58,6 +58,10 @@ export function PrivacyChapter() {
             People are blurred from head to toe in every copy anyone sees. No face is ever detected or recognised,
             and originals are never served.
           </p>
+          <p className="mt-2 text-[12.5px] text-fg-3">
+            How many people the detector finds cannot be measured yet: the public test images have people removed.
+          </p>
+          <Synthetic className="mt-3 block" />
         </Card>
         <Card>
           <p className="flex items-center gap-2 text-[17px] font-semibold"><MapPinOff size={18} aria-hidden className="text-fg-3" />Tiger locations stay vague</p>
@@ -71,7 +75,8 @@ export function PrivacyChapter() {
               <dd className="data mt-1 text-[19px] text-settled">{digits("22.34567")}, {digits("80.61234")}</dd>
             </div>
           </dl>
-          <p className="mt-4 text-[14px] text-fg-2">Rounded to 0.1 degree, about 11 km, in every screen, export and API answer.</p>
+          <p className="mt-4 text-[14px] text-fg-2">Rounded to 0.1 degree (roughly 10 km) in every screen, export and API answer.</p>
+          <Synthetic className="mt-3 block" />
         </Card>
         <Card>
           <p className="flex items-center gap-2 text-[17px] font-semibold"><ScrollText size={18} aria-hidden className="text-fg-3" />Looking is recorded too</p>

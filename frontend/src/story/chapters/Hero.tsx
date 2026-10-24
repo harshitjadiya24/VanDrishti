@@ -62,7 +62,7 @@ export function Hero({ onSeeHow }: { onSeeHow?: () => void }) {
           className={clsx("pointer-events-none absolute top-0 left-0 border-[2.5px] border-heat-5 transition-opacity duration-[var(--duration-slow)]",
             captured ? "opacity-100" : "opacity-0")}
           style={{ boxShadow: "0 0 18px -2px rgb(255 201 74 / 0.55)" }}>
-          <span className="data absolute -top-[19px] -left-[2.5px] bg-heat-5 px-1.5 py-px text-[11px] font-semibold text-[#160a02]">animal 0.94</span>
+          <span className="data absolute -top-[19px] -left-[2.5px] bg-heat-5 px-1.5 py-px text-[11px] font-semibold text-[#160a02]">animal 0.96</span>
         </div>
       )}
 

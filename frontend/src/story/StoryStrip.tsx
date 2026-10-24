@@ -33,7 +33,7 @@ export function StoryStrip() {
         chapter ? "translate-y-0" : "translate-y-full")}>
       <Moon size={12} aria-hidden />
       <span className="max-sm:hidden">CAM S-07</span>
-      <span className="max-sm:hidden">24.10.2026 22:41:07 IST</span>
+      <span className="max-sm:hidden">22:41:07 IST · synthetic scene</span>
       <span className="min-w-0 truncate text-[#edeef0]" aria-live="polite">
         {chapter && (chapter.stage ? `stage ${chapter.stage} · ${chapter.name}` : chapter.name)}
       </span>

@@ -17,6 +17,9 @@ export const ROUTING = [
 ] as const;
 export const NEEDS_A_PERSON = 117;
 
+/** Section 6 on the sample: risk rules have no ground truth; this is what they raised. */
+export const RISK_SAMPLE = { medium: 17, high: 0 } as const;
+
 export const MEASURED = [
   {
     what: "Detector (MegaDetector V6) at threshold 0.2",

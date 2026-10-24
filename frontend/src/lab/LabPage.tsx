@@ -37,7 +37,7 @@ const FACTORS = [
   { name: "SpeciesNet score", value: "0.71", note: "leopard, next: tiger 0.18" },
   { name: "On this reserve's species list", value: "× 1.00", note: "leopard is listed" },
   { name: "Active at 22:41 (night)", value: "× 1.00", note: "nocturnal" },
-  { name: "Clear detection (0.94)", value: "× 1.00", note: "box well inside the frame" },
+  { name: "Clear detection (0.96)", value: "× 1.00", note: "box well inside the frame" },
 ];
 
 function useTheme(): ["dark" | "light", (t: "dark" | "light") => void] {
@@ -156,9 +156,9 @@ function ReviewDesk({ theme, setTheme }: { theme: "dark" | "light"; setTheme: (t
           <figure className="overflow-hidden rounded-[var(--radius-card)] border border-edge bg-black">
             <svg viewBox={`0 0 ${FRAME.w} ${FRAME.h}`} className="block w-full" role="img" aria-label="Synthetic infrared frame with the detector's box around a striped body">
               <IRScene id="stage" />
-              <DetectorBox label="animal 0.94" />
+              <DetectorBox label="animal 0.96" />
             </svg>
-            <TrapStrip camera="CAM S-07" time={`24.10.2026 ${STRIP[active].t}:07 IST`} extra="MDv6-c 0.94 · SpeciesNet 4.0.3a · synthetic" />
+            <TrapStrip camera="CAM S-07" time={`24.10.2026 ${STRIP[active].t}:07 IST`} extra="MDv6-c 0.96 · SpeciesNet 4.0.3a · synthetic" />
           </figure>
 
           <section aria-labelledby="verdict" className="flex flex-col gap-4">

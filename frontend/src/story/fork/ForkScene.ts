@@ -87,6 +87,7 @@ export class ForkScene {
   private disposables: { dispose: () => void }[] = [];
   onPassed?: (count: number) => void;
   private passedCount = 0;
+  private timers: number[] = [];
 
   constructor(canvas: HTMLCanvasElement, specs: LaneSpec[]) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "low-power" });
@@ -221,7 +222,14 @@ export class ForkScene {
   /** The visitor pressed Review: lift the boom, let queued frames through, close it again. */
   review(): void {
     this.boomTarget = 1.35;
-    window.setTimeout(() => { this.boomTarget = 0; }, 2600);
+    this.timers.push(window.setTimeout(() => { this.boomTarget = 0; }, 2600));
+  }
+
+  /** Reduced motion: the boom stands up as a still state, then closes; nothing moves between. */
+  reviewStill(): void {
+    const set = (a: number) => { this.boomAngle = this.boomTarget = a; this.boom.rotation.z = a; this.render(); };
+    set(1.35);
+    this.timers.push(window.setTimeout(() => set(0), 2600));
   }
 
   start(): void {
@@ -315,6 +323,7 @@ export class ForkScene {
   }
 
   dispose(): void {
+    this.timers.forEach((t) => window.clearTimeout(t));
     this.stop();
     for (const lane of this.lanes) lane.mesh.dispose();
     for (const d of this.disposables) d.dispose();

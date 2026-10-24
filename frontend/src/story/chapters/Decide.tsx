@@ -28,8 +28,8 @@ export function DecideChapter() {
     let live = true;
     void (async () => {
       const genesis = "0".repeat(64);
-      const a = await sha256(`${genesis}|routed: uncertain 0.55`);
-      const b = await sha256(`${a}|alert raised: none`);
+      const a = await sha256(`${genesis}|Routed: uncertain (0.55)`);
+      const b = await sha256(`${a}|Queued for a person`);
       if (live) setChain([{ action: "Routed: uncertain (0.55)", hash: a, prev: genesis }, { action: "Queued for a person", hash: b, prev: a }]);
     })();
     return () => { live = false; };
@@ -74,7 +74,7 @@ export function DecideChapter() {
 
   return (
     <Chapter id="stage-4" stage="4" strip="people decide" sectionRef={root} title="People decide"
-      lede="The model was not sure about this frame, so it waits for a person. Decide it yourself. Every decision is added to a record that cannot be rewritten, and even an undo is a new entry.">
+      lede="The model was not sure about this frame, so it waits for a person. Decide it yourself. Every decision is added to a record that refuses edits, and even an undo is a new entry.">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
         <Card tone={verdict ? "plain" : "hot"} className="transition-[border-color,box-shadow] duration-[var(--duration-slow)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,10 +108,11 @@ export function DecideChapter() {
         </Card>
 
         <div>
-          <h3 className="text-[17px] font-semibold">The audit trail</h3>
+          <div className="flex items-baseline justify-between gap-3"><h3 className="text-[17px] font-semibold">The audit trail</h3><Synthetic /></div>
           <p className="mt-1 max-w-[52ch] text-[14px] text-fg-2">
             Each entry stores the fingerprint (SHA-256) of the one before it, so changing any old entry breaks every link
-            after it. These fingerprints are computed in your browser right now.
+            after it. Each fingerprint is the SHA-256 of the previous one, a bar, and the entry's text, computed in
+            your browser right now.
           </p>
           <ol className="relative mt-6 grid gap-3 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-edge-strong" aria-live="polite">
             {chain.map((l, i) => {

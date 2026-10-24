@@ -1,7 +1,7 @@
 import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MEASURED, NEEDS_A_PERSON, ROUTING, SAMPLE } from "./results";
+import { MEASURED, NEEDS_A_PERSON, RISK_SAMPLE, ROUTING, SAMPLE } from "./results";
 import StoryPage from "./StoryPage";
 import EVALUATION from "../../../docs/EVALUATION.md?raw";
 
@@ -25,6 +25,7 @@ describe("story numbers", () => {
       "123 of 125", "| **0.974** |", "0.15–0.16 s per image"];
     for (const e of evidence) expect(EVALUATION).toContain(e);
     expect(MEASURED.map((m) => m.value).join(" ")).toMatch(/0\.94.*0\.91/);
+    expect(EVALUATION).toContain(`${RISK_SAMPLE.medium} MEDIUM, ${RISK_SAMPLE.high} HIGH`);
   });
 });
 
@@ -49,7 +50,7 @@ describe("story page", () => {
   it("shows the finished example frame under reduced motion, with no layer left hidden", () => {
     render(<StoryPage />);
     const frame = screen.getByRole("figure", { name: "The example frame and what each stage added" });
-    for (const label of ["animal 0.94", "usable · night IR"]) {
+    for (const label of ["animal 0.96", "usable · night IR"]) {
       expect(within(frame).getByText(label).closest("g")).toHaveClass("opacity-100");
     }
   });

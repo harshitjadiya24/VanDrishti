@@ -9,8 +9,8 @@ import { Chapter } from "../ui";
 type Icon = ComponentType<{ size?: number; "aria-hidden"?: boolean; className?: string }>;
 
 const NOTICES: { tone: "danger" | "plain"; icon: Icon; title: string; body: string; meta: string }[] = [
-  { tone: "danger", icon: Bell, title: "HIGH poaching risk at camera S‑07", body: "3 reasons · sent to the rangers' webhook, signed", meta: "alert · 23:10 IST" },
-  { tone: "plain", icon: FileSpreadsheet, title: "Weekly report", body: "PDF and Excel · species, cameras, tigers, events, with every caveat", meta: "report · weekly" },
+  { tone: "danger", icon: Bell, title: "HIGH poaching risk at camera S‑07", body: "3 reasons · sent to the rangers' webhook, signed", meta: "alert · synthetic example" },
+  { tone: "plain", icon: FileSpreadsheet, title: "Weekly report", body: "PDF and Excel · species, cameras, tigers, events, with their caveats", meta: "report · weekly" },
   { tone: "plain", icon: Package, title: "camtrap-dp.zip", body: "The TDWG standard package for GBIF · people never exported", meta: "export · camtrap dp 1.0.2" },
   { tone: "plain", icon: Code2, title: "GET /v1/observations", body: "Read-only API for forest-department systems · one key per reserve", meta: "api · v1" },
 ];

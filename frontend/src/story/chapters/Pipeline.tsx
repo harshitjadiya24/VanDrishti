@@ -19,9 +19,9 @@ const STEPS = [
   { title: "Which species?", recipe: "SpeciesNet v4.0.3a · country list: India",
     body: "SpeciesNet names the animal in the box, with its next four guesses. Only species recorded in the country are allowed." },
   { title: "A second opinion", recipe: "OpenCLIP ViT-B/16 · informational only",
-    body: "OpenCLIP compares the crop with words such as “a tiger”. It is shown, never trusted alone: on our sample its disagreements caught no errors." },
+    body: "OpenCLIP compares the crop with words such as “a tiger”. It is shown, never trusted alone: on our sample (where SpeciesNet made no errors to catch) its disagreements predicted none." },
   { title: "Outline the animal", recipe: "SAM 2.1 tiny · on CPU",
-    body: "SAM 2 traces the body, for a cleaner crop and later for comparing stripes." },
+    body: "SAM 2 traces the body exactly, for a cleaner crop than the detector's box." },
   { title: "One confidence, with reasons", recipe: "decision engine v1",
     body: "The species score is weighed by named factors: is the species on this reserve's list, is it active at this hour, how clear is the box." },
   { title: "Why this decision?", recipe: "explanation stored with the frame",
@@ -40,7 +40,7 @@ const TOP5 = [
 const SHORT = [
   "Fingerprinted and locked",
   "Usable · night infrared",
-  "Animal found · 0.94",
+  "Animal found · 0.96",
   "Species: tiger 0.97 (top of five)",
   "Second opinion 0.88 (shown, not used)",
   "Outline traced",
@@ -52,7 +52,7 @@ const FACTORS = [
   { name: "SpeciesNet score", value: "0.97" },
   { name: "On this reserve's species list", value: "× 1.00" },
   { name: "Active at 22:41 (night)", value: "× 1.00" },
-  { name: "Clear detection (0.94)", value: "× 1.00" },
+  { name: "Clear detection (0.96)", value: "× 1.00" },
 ];
 
 export function PipelineChapter() {
@@ -114,7 +114,7 @@ function StageFrame({ step }: { step: number }) {
             strokeDashoffset={shown(2) ? 0 : 1} className="transition-[stroke-dashoffset] duration-[900ms] ease-[var(--ease-out)]" />
           <g className={clsx("transition-opacity duration-500", shown(2) ? "opacity-100" : "opacity-0")}>
             <rect x={BOX.x - 1.25} y={BOX.y - 16} width={86} height={16} fill="var(--color-heat-5)" />
-            <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={11} fontWeight={600} fill="#160a02" fontFamily="Martian Mono Variable, monospace" textLength={76} lengthAdjust="spacingAndGlyphs">animal 0.94</text>
+            <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={11} fontWeight={600} fill="#160a02" fontFamily="Martian Mono Variable, monospace" textLength={76} lengthAdjust="spacingAndGlyphs">animal 0.96</text>
           </g>
           <g className={clsx("transition-opacity duration-500", shown(1) ? "opacity-100" : "opacity-0")}>
             <rect x={296} y={8} width={116} height={17} rx={2} fill="rgb(0 0 0 / 0.75)" />

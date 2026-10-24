@@ -4,6 +4,7 @@
 import clsx from "clsx";
 import { useRef, useState } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "../scroll";
+import { RISK_SAMPLE } from "../results";
 import { Chapter, Synthetic } from "../ui";
 
 const REASONS = [
@@ -56,6 +57,10 @@ export function RiskChapter() {
               ))}
             </div>
             <Synthetic className="mt-5 block" />
+            <p className="mt-2 text-[12.5px] text-fg-3">
+              These rules have no ground truth yet, so there is no accuracy number. On the sample data they raised
+              {RISK_SAMPLE.medium} MEDIUM events and {RISK_SAMPLE.high === 0 ? "no" : RISK_SAMPLE.high} HIGH.
+            </p>
           </div>
         </div>
       </div>

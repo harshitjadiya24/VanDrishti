@@ -27,6 +27,10 @@ export function ForkSection() {
   const [mode, setMode] = useState<"3d" | "static">(() => (hasWebGL() ? "3d" : "static"));
   const [passed, setPassed] = useState(0);
   const [lifted, setLifted] = useState(false);
+  const [stillMode] = useState(prefersReducedMotion);
+  const still = useRef(stillMode);
+  const liftTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(liftTimer.current), []);
 
   useEffect(() => {
     const box = wrap.current;
@@ -96,9 +100,12 @@ export function ForkSection() {
   }, [mode]);
 
   const review = () => {
-    scene.current?.review();
+    const fork = scene.current;
+    if (!fork) return; // no WebGL scene: there is no boom to lift
+    if (still.current) fork.reviewStill(); else fork.review();
     setLifted(true);
-    window.setTimeout(() => setLifted(false), 2600);
+    window.clearTimeout(liftTimer.current);
+    liftTimer.current = window.setTimeout(() => setLifted(false), 2600);
   };
 
   // The R key works while this section is on screen and focus is not in a text field.
@@ -120,7 +127,7 @@ export function ForkSection() {
         {mode === "static" && <StaticFork />}
         <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-3 md:inset-x-5 md:bottom-5">
           <Button tone="decide" size="lg" onClick={review} disabled={mode !== "3d" || lifted}>
-            {lifted ? "Boom up: frames passing" : <>Review: lift the boom <Kbd className="border-black/25 bg-black/10 text-[#160a02]">R</Kbd></>}
+            {lifted ? (stillMode ? "Boom up" : "Boom up: frames passing") : <>Review: lift the boom <Kbd className="border-black/25 bg-black/10 text-[#160a02]">R</Kbd></>}
           </Button>
           {passed > 0 && (
             <span role="status" className="data rounded-[6px] bg-black/70 px-2.5 py-1.5 text-[11px] text-ir uppercase">
@@ -143,9 +150,10 @@ export function ForkSection() {
         ))}
       </ul>
       <p className="mt-4 max-w-[80ch] text-[14px] text-fg-3">
-        Counts measured on {SAMPLE.frames} test frames: {NEEDS_A_PERSON} of {SAMPLE.frames} needed a person. The sample
-        was drawn to include vehicles and empty frames, so these shares are not a reserve's real stream. The moving frames
-        above are an illustration in those proportions.
+        Counts measured on {SAMPLE.frames} test frames: {NEEDS_A_PERSON} of {SAMPLE.frames} needed a person. The frames are
+        {SAMPLE.source.replace(/^252 /, "")}, and SpeciesNet was very likely trained on these datasets, so the confident
+        share is optimistic. These shares are not a reserve's real stream; the moving frames above are an illustration in
+        those proportions.
       </p>
     </Chapter>
   );

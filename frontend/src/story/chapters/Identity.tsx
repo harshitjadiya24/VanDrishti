@@ -1,6 +1,9 @@
 // Stage 4.2: stripes are compared; a person names the tiger.
 
+import { MEASURED } from "../results";
 import { Card, Chapter, StripeFrame, Synthetic } from "../ui";
+
+const REID = MEASURED.find((m) => m.what.startsWith("Tiger re-identification"));
 
 export function IdentityChapter() {
   return (
@@ -13,14 +16,14 @@ export function IdentityChapter() {
           <p className="data mt-3 text-[10.5px] text-fg-3 uppercase">cam n-02 · 23:58 IST · MegaDescriptor-T</p>
         </Card>
         <Card tone="hot">
-          <p className="text-[13px] font-medium text-fg-2">Named tiger T-07 · similarity <span className="data text-heat-5">0.93</span></p>
+          <div className="flex items-center justify-between gap-2"><p className="text-[13px] font-medium text-fg-2">Named tiger T-07 · similarity <span className="data text-heat-5">0.93</span></p><Synthetic /></div>
           <div className="mt-3 overflow-hidden rounded-[10px] border border-edge"><StripeFrame seed={23} label="T-07's stripe pattern, very similar" tilt={-3} /></div>
           <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-heat-4/60 px-2.5 py-1 text-[12.5px] font-medium">
             <span aria-hidden className="size-1.5 rounded-full bg-heat-4 shadow-[0_0_6px_var(--color-heat-4)]" />Possible match: a person checks
           </p>
         </Card>
         <Card>
-          <p className="text-[13px] font-medium text-fg-2">Named tiger T-12 · similarity <span className="data">0.41</span></p>
+          <div className="flex items-center justify-between gap-2"><p className="text-[13px] font-medium text-fg-2">Named tiger T-12 · similarity <span className="data">0.41</span></p><Synthetic /></div>
           <div className="mt-3 overflow-hidden rounded-[10px] border border-edge"><StripeFrame seed={58} label="T-12's stripe pattern, different" /></div>
           <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-edge px-2.5 py-1 text-[12.5px] font-medium text-fg-2">
             <span aria-hidden className="size-1.5 rounded-full bg-mark" />Unlike this sighting
@@ -28,8 +31,8 @@ export function IdentityChapter() {
         </Card>
       </div>
       <p className="mt-5 max-w-[80ch] text-[14px] text-fg-3">
-        Synthetic patterns. Measured: top-1 0.974 on ATRW with near-duplicate frames excluded, which is optimistic (zoo
-        footage of Amur tigers the model was most likely trained on). Not yet tested on Indian reserves.
+        Synthetic patterns. Measured: {REID?.value} on ATRW, which is optimistic ({REID?.caveat}). This is not a
+        cross-scene test, and nothing has been tested on Indian reserves yet.
       </p>
     </Chapter>
   );

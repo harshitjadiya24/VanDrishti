@@ -84,7 +84,7 @@ export function DetectorBox({ label, colour = "var(--color-heat-5)" }: { label?:
 }
 
 /** A complete frame: IR layer, marks and its data strip. */
-export function IRFrame({ id, label = "animal 0.94", strip, className, children }:
+export function IRFrame({ id, label = "animal 0.96", strip, className, children }:
   { id: string; label?: string; strip?: ReactNode; className?: string; children?: ReactNode }) {
   return (
     <figure className={className}>
