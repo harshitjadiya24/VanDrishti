@@ -37,8 +37,8 @@ export function NightFrame({ id, subjectClassName = "", children }: { id: string
     <>
       <defs>
         <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#3a413c" />
-          <stop offset="1" stopColor="#2a2f2b" />
+          <stop offset="0" stopColor="#2a3050" />
+          <stop offset="1" stopColor="#1c2033" />
         </linearGradient>
         <linearGradient id={`${id}-flank`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#d08a24" />
@@ -49,8 +49,8 @@ export function NightFrame({ id, subjectClassName = "", children }: { id: string
       </defs>
       <rect width={FRAME.w} height={FRAME.h} fill={`url(#${id}-sky)`} />
       {/* Far grass, then the ground the body stands on. */}
-      <g>{blades(7, 46, 146, 30, "#4b544e")}</g>
-      <path d="M0 146 C 120 140, 300 150, 420 143 L420 190 L0 190 Z" fill="#202421" />
+      <g>{blades(7, 46, 146, 30, "#3d4466")}</g>
+      <path d="M0 146 C 120 140, 300 150, 420 143 L420 190 L0 190 Z" fill="#151a2c" />
       <g clipPath={`url(#${id}-body)`} className={subjectClassName}>
         <rect {...BODY} fill={`url(#${id}-flank)`} />
         <g transform={`translate(${BODY.x - 8} ${BODY.y - 6}) scale(0.52 0.44)`}>
@@ -58,7 +58,7 @@ export function NightFrame({ id, subjectClassName = "", children }: { id: string
         </g>
       </g>
       {/* Near grass crosses the body's lower edge, as it would in a real frame. */}
-      <g>{blades(19, 34, 158, 26, "#151815")}</g>
+      <g>{blades(19, 34, 158, 26, "#0f1322")}</g>
       {children}
     </>
   );
@@ -69,8 +69,8 @@ export function BoxLabel({ text, className = "" }: { text: string; className?: s
   const w = 7 * text.length + 12;
   return (
     <g className={className}>
-      <rect x={BOX.x - 1.5} y={BOX.y - 17} width={w} height={17} rx={2} fill="#f2c230" />
-      <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={12} fontWeight={600} fill="#15170f" fontFamily="Mukta, sans-serif">{text}</text>
+      <rect x={BOX.x - 1.5} y={BOX.y - 17} width={w} height={17} rx={2} fill="#ffb45e" />
+      <text x={BOX.x + 5} y={BOX.y - 4.5} fontSize={12} fontWeight={600} fill="#121629" fontFamily="Mukta, sans-serif">{text}</text>
     </g>
   );
 }

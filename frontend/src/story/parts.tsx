@@ -11,7 +11,7 @@ export function Rivets({ className = "bg-on-board/70" }: { className?: string })
   );
 }
 
-/** A painted green board with its white keyline: the story's section container. */
+/** A painted indigo board with its white keyline: the story's section container. */
 export function Board({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`relative rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] md:p-4 ${className}`}>
@@ -24,13 +24,13 @@ export function Board({ children, className = "" }: { children: ReactNode; class
 /** A white enamel plate: content a person reads closely (frames, verdicts, records). */
 export function Plate({ children, className = "", tone = "enamel" }: { children: ReactNode; className?: string; tone?: "enamel" | "check" | "alarm" }) {
   const tones = {
-    enamel: "bg-on-board text-[#142019]",
+    enamel: "bg-on-board text-[#121629]",
     check: "bg-check text-on-check",
-    alarm: "bg-[#c8372d] text-white",
+    alarm: "bg-[#cc3640] text-white",
   } as const;
   return (
     <div className={`relative rounded-[12px] px-5 py-4 shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)] ${tones[tone]} ${className}`}>
-      <Rivets className={tone === "enamel" ? "bg-[#9aa79c]" : "bg-black/25"} />
+      <Rivets className={tone === "enamel" ? "bg-[#9aa0bb]" : "bg-black/25"} />
       {children}
     </div>
   );

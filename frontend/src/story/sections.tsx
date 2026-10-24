@@ -96,10 +96,10 @@ export function DecideSection() {
         <Plate className="relative">
           <div className="flex items-center justify-between gap-2">
             <span className="rounded bg-check px-2 py-0.5 text-[13px] font-semibold text-on-check">Needs a person</span>
-            <Synthetic className="!text-[#4e5f53]" />
+            <Synthetic className="!text-[#585e78]" />
           </div>
-          <p className="mt-2 text-[22px] leading-tight font-semibold">Animal, not identified <span className="tabular text-[#4e5f53]">0.55</span></p>
-          <p className="mt-1 text-[14px] text-[#3f4f44]">Below 0.6: the species model's best guess is too weak to trust.</p>
+          <p className="mt-2 text-[22px] leading-tight font-semibold">Animal, not identified <span className="tabular text-[#585e78]">0.55</span></p>
+          <p className="mt-1 text-[14px] text-[#3a3f57]">Below 0.6: the species model's best guess is too weak to trust.</p>
           <div className="relative mt-3">
             <StripeFrame seed={41} label="Synthetic frame waiting for review" tilt={-12} />
             {verdict && (
@@ -117,7 +117,7 @@ export function DecideSection() {
               </button>
             ))}
             <button type="button" disabled={!verdict} onClick={undo}
-              className="rounded-[8px] px-3 py-1.5 text-[15px] text-[#3f4f44] underline disabled:opacity-30">
+              className="rounded-[8px] px-3 py-1.5 text-[15px] text-[#3a3f57] underline disabled:opacity-30">
               Undo <kbd className="ml-1">U</kbd>
             </button>
           </div>
@@ -179,21 +179,21 @@ export function PrivacySection() {
         <div className="mt-8 grid gap-6 md:grid-cols-3">
           <Plate>
             <p className="text-[18px] font-semibold">Whole bodies are blurred</p>
-            <div className="mt-3 overflow-hidden rounded-[6px] bg-[#59625c]">
+            <div className="mt-3 overflow-hidden rounded-[6px] bg-[#4d5370]">
               <svg viewBox="0 0 300 150" className="block w-full" role="img" aria-label="A person-shaped region, blurred">
                 <defs><filter id="privacy-blur"><feGaussianBlur stdDeviation="9" /></filter></defs>
-                <rect width="300" height="150" fill="#59625c" />
+                <rect width="300" height="150" fill="#4d5370" />
                 {/* Always blurred: privacy never waits for an animation. */}
                 <g filter="url(#privacy-blur)">
-                  <rect x="120" y="22" width="56" height="118" rx="26" fill="#2f3431" />
-                  <circle cx="148" cy="22" r="17" fill="#2f3431" />
-                  <rect x="90" y="96" width="110" height="10" fill="#c9cfc8" />
+                  <rect x="120" y="22" width="56" height="118" rx="26" fill="#1c2033" />
+                  <circle cx="148" cy="22" r="17" fill="#1c2033" />
+                  <rect x="90" y="96" width="110" height="10" fill="#cfd3e2" />
                 </g>
-                <rect data-person-box x="104" y="6" width="90" height="140" fill="none" stroke="#c8372d" strokeWidth="3" strokeDasharray="500" />
-                <text x="108" y="144" fill="#f5f6f1" fontSize="11" fontFamily="Mukta, sans-serif">person 0.93 · blurred</text>
+                <rect data-person-box x="104" y="6" width="90" height="140" fill="none" stroke="#cc3640" strokeWidth="3" strokeDasharray="500" />
+                <text x="108" y="144" fill="#f6f3ee" fontSize="11" fontFamily="Mukta, sans-serif">person 0.93 · blurred</text>
               </svg>
             </div>
-            <p className="mt-3 text-[14px] text-[#3f4f44]">
+            <p className="mt-3 text-[14px] text-[#3a3f57]">
               People are blurred from head to toe in every copy anyone sees. No face is ever detected or recognised,
               and originals are never served.
             </p>
@@ -201,14 +201,14 @@ export function PrivacySection() {
           <Plate>
             <p className="text-[18px] font-semibold">Tiger locations stay vague</p>
             <dl data-coords className="mt-4 grid gap-3 text-[15px]">
-              <div><dt className="text-[13px] text-[#4e5f53]">An admin sees</dt><dd className="tabular text-[20px] font-semibold">22.34567, 80.61234</dd></div>
-              <div><dt className="text-[13px] text-[#4e5f53]">Everyone else sees</dt><dd className="text-[20px] font-semibold">{digits("22.34567")}, {digits("80.61234")}</dd></div>
+              <div><dt className="text-[13px] text-[#585e78]">An admin sees</dt><dd className="tabular text-[20px] font-semibold">22.34567, 80.61234</dd></div>
+              <div><dt className="text-[13px] text-[#585e78]">Everyone else sees</dt><dd className="text-[20px] font-semibold">{digits("22.34567")}, {digits("80.61234")}</dd></div>
             </dl>
-            <p className="mt-3 text-[14px] text-[#3f4f44]">Rounded to 0.1 degree, about 11 km, in every screen, export and API answer.</p>
+            <p className="mt-3 text-[14px] text-[#3a3f57]">Rounded to 0.1 degree, about 11 km, in every screen, export and API answer.</p>
           </Plate>
           <Plate>
             <p className="text-[18px] font-semibold">Looking is recorded too</p>
-            <p className="mt-3 text-[15px] text-[#3f4f44]">
+            <p className="mt-3 text-[15px] text-[#3a3f57]">
               Only reviewers and rangers may open a frame with people in it, and every such view is written to the
               audit trail with their name. Each person sees only their own reserves.
             </p>
@@ -285,18 +285,18 @@ export function IdentitySection() {
       </p>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         <Plate>
-          <p className="text-[13px] font-semibold text-[#4e5f53]">New sighting</p>
+          <p className="text-[13px] font-semibold text-[#585e78]">New sighting</p>
           <div className="mt-2"><StripeFrame seed={23} label="New sighting's stripe pattern" tilt={2} /></div>
         </Plate>
         <Plate>
-          <p className="text-[13px] font-semibold text-[#4e5f53]">Named tiger T-07 · similarity <span className="tabular">0.93</span></p>
+          <p className="text-[13px] font-semibold text-[#585e78]">Named tiger T-07 · similarity <span className="tabular">0.93</span></p>
           <div className="mt-2"><StripeFrame seed={23} label="T-07's stripe pattern, very similar" tilt={-3} /></div>
           <p className="mt-2 rounded bg-check px-2 py-1 text-[14px] font-semibold text-on-check">Possible match: a person checks</p>
         </Plate>
         <Plate>
-          <p className="text-[13px] font-semibold text-[#4e5f53]">Named tiger T-12 · similarity <span className="tabular">0.41</span></p>
+          <p className="text-[13px] font-semibold text-[#585e78]">Named tiger T-12 · similarity <span className="tabular">0.41</span></p>
           <div className="mt-2"><StripeFrame seed={58} label="T-12's stripe pattern, different" /></div>
-          <p className="mt-2 rounded bg-[#e3e7df] px-2 py-1 text-[14px] font-semibold">Unlike this sighting</p>
+          <p className="mt-2 rounded bg-[#e4e1ea] px-2 py-1 text-[14px] font-semibold">Unlike this sighting</p>
         </Plate>
       </div>
       <p className="mt-4 text-[14px] text-on-board-dim">
@@ -333,7 +333,7 @@ export function OutcomesSection() {
       <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {NOTICES.map((n) => (
           <div key={n.title} data-notice className="relative pt-3">
-            <span aria-hidden className="absolute top-0 left-1/2 z-10 size-3 -translate-x-1/2 rounded-full bg-[#15170f] ring-2 ring-on-board/60" />
+            <span aria-hidden className="absolute top-0 left-1/2 z-10 size-3 -translate-x-1/2 rounded-full bg-[#121629] ring-2 ring-on-board/60" />
             <Plate tone={n.tone} className="h-full">
               <p className="text-[18px] leading-tight font-semibold">{n.title}</p>
               <p className="mt-2 text-[14px]">{n.body}</p>
@@ -416,7 +416,7 @@ export function EngineeringSection() {
 export function CloseSection() {
   return (
     <section aria-labelledby="close-title" className="px-4 pt-10 pb-24 text-center md:px-10">
-      <p id="close-title" className="board-title text-[clamp(2.6rem,7vw,5rem)] uppercase">AI proposes. People decide.</p>
+      <p id="close-title" className="board-title text-[clamp(2.6rem,7vw,5rem)] uppercase">AI proposes. <span className="text-check">People decide.</span></p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <a href="/app" className="rounded-[10px] bg-on-board px-5 py-2.5 text-[17px] font-semibold text-board shadow-[0_10px_20px_-10px_rgb(0_0_0/0.55)] hover:bg-white">Sign in to the console</a>
         <a href="#hero-title" className="rounded-[10px] border-2 border-on-board/70 px-5 py-2.5 text-[17px] font-semibold hover:bg-on-board/10">Back to the top</a>

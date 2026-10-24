@@ -1,5 +1,5 @@
-// Daylight / night patrol. "system" follows the operating system; a choice is remembered in
-// this browser only (per-viewer convenience, safe to lose).
+// Night (default: long night-IR review at a desk), Flash (daylight, for rangers outdoors), or
+// System. The choice is remembered in this browser only (a per-viewer convenience, safe to lose).
 export type ThemeChoice = "system" | "light" | "dark";
 
 const KEY = "vd.theme";
@@ -7,19 +7,16 @@ const KEY = "vd.theme";
 export function readTheme(): ThemeChoice {
   try {
     const v = localStorage.getItem(KEY);
-    return v === "light" || v === "dark" ? v : "system";
+    return v === "light" || v === "system" ? v : "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 }
 
 export function applyTheme(choice: ThemeChoice): void {
-  const root = document.documentElement;
-  if (choice === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", choice);
+  document.documentElement.setAttribute("data-theme", choice);
   try {
-    if (choice === "system") localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, choice);
+    localStorage.setItem(KEY, choice);
   } catch {
     /* storage unavailable: the choice lasts this visit */
   }

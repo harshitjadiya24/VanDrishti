@@ -1,0 +1,152 @@
+/* VanDrishti design tokens: camera-trap night photography and the thermal scale.
+   - Night (default): IR black and silver; the flash is the only white.
+   - Flash (light): the same frame lit by daylight, for rangers outdoors.
+   - Attention is heat: the ironbow ramp runs from cold (settled) to white-hot (a person is
+     needed). Crimson is only for people, vehicles and danger. Every state also carries a word.
+   Contrast (WCAG, checked by script): every text role ≥ 4.5:1 on every surface in both themes;
+   focus and data marks ≥ 3:1. */
+
+@import "@fontsource-variable/archivo/standard.css";
+@import "@fontsource-variable/geist/index.css";
+@import "@fontsource-variable/martian-mono/standard.css";
+@import "@fontsource-variable/noto-sans-devanagari/index.css";
+
+@theme {
+  --font-ui: "Geist Variable", "Noto Sans Devanagari Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-wide: "Archivo Variable", "Geist Variable", ui-sans-serif, sans-serif;
+  --font-data: "Martian Mono Variable", ui-monospace, "SF Mono", monospace;
+  --font-hindi: "Noto Sans Devanagari Variable", "Geist Variable", sans-serif;
+
+  /* Theme-driven roles. */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-edge: var(--edge);
+  --color-edge-strong: var(--edge-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-decide: var(--decide);
+  --color-on-decide: var(--on-decide);
+  --color-decide-fg: var(--decide-fg);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-settled: var(--settled);
+  --color-on-settled: var(--on-settled);
+  --color-mark: var(--mark);
+
+  /* The ironbow thermal ramp, fixed in both themes: cold → white-hot. */
+  --color-heat-0: #24104a;
+  --color-heat-1: #5b1a7a;
+  --color-heat-2: #a52a72;
+  --color-heat-3: #e2513b;
+  --color-heat-4: #f7931e;
+  --color-heat-5: #ffc94a;
+  --color-heat-6: #fff3cf;
+  /* Night is fixed for the story (it always happens at night). */
+  --color-night: #0a0b0d;
+  --color-night-2: #121418;
+  --color-flash: #f4f6f8;
+  --color-ir: #c9ced6;
+
+  --radius-ctl: 8px;
+  --radius-card: 14px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-flash: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
+}
+
+/* Night: IR black and silver. */
+:root {
+  color-scheme: dark;
+  --canvas: #0a0b0d;
+  --surface: #121418;
+  --surface-2: #1a1d22;
+  --surface-3: #23272e;
+  --edge: #2c3038;
+  --edge-strong: #3d424c;
+  --fg: #edeef0;
+  --fg-2: #a9aeb8;
+  --fg-3: #8f95a1;
+  --decide: #ff8a3d;
+  --on-decide: #160a02;
+  --decide-fg: #ffa45f;
+  --danger: #ff5a68;
+  --on-danger: #160406;
+  --settled: #7cc7e8;
+  --on-settled: #04141b;
+  --mark: #9aa3b5;
+  --focus: #ffb23d;
+  --lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px -12px rgb(0 0 0 / 0.7);
+}
+
+/* Flash: the frame lit by daylight. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --canvas: #f3f3f1;
+  --surface: #ffffff;
+  --surface-2: #ecece9;
+  --surface-3: #e2e2df;
+  --edge: #d6d7d3;
+  --edge-strong: #b9bbb6;
+  --fg: #0e1013;
+  --fg-2: #474d58;
+  --fg-3: #5c626d;
+  --decide: #f07a2a;
+  --on-decide: #160a02;
+  --decide-fg: #a3410a;
+  --danger: #c21e33;
+  --on-danger: #ffffff;
+  --settled: #0c647f;
+  --on-settled: #ffffff;
+  --mark: #5d6680;
+  --focus: #0e1013;
+  --lift: 0 1px 2px rgb(14 16 19 / 0.08), 0 10px 28px -12px rgb(14 16 19 / 0.22);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --canvas: #f3f3f1;
+    --surface: #ffffff;
+    --surface-2: #ecece9;
+    --surface-3: #e2e2df;
+    --edge: #d6d7d3;
+    --edge-strong: #b9bbb6;
+    --fg: #0e1013;
+    --fg-2: #474d58;
+    --fg-3: #5c626d;
+    --decide: #f07a2a;
+    --on-decide: #160a02;
+    --decide-fg: #a3410a;
+    --danger: #c21e33;
+    --on-danger: #ffffff;
+    --settled: #0c647f;
+    --on-settled: #ffffff;
+    --mark: #5d6680;
+    --focus: #0e1013;
+    --lift: 0 1px 2px rgb(14 16 19 / 0.08), 0 10px 28px -12px rgb(14 16 19 / 0.22);
+  }
+}
+
+/* Expanded display lettering: the wordmark, screen titles, big counts. */
+.wide {
+  font-family: var(--font-wide);
+  font-stretch: 118%;
+  font-weight: 760;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+.wide-max { font-stretch: 125%; }
+/* The camera's own data: strips, times, hashes, recipes, confidences. */
+.data {
+  font-family: var(--font-data);
+  font-stretch: 88%;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.hindi { font-family: var(--font-hindi); }

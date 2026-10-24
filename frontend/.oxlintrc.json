@@ -1,4 +1,5 @@
 {
   "plugins": ["react", "typescript", "oxc"],
+  "ignorePatterns": ["src/vendor/**"],
   "rules": { "react/rules-of-hooks": "error", "react/exhaustive-deps": "warn" }
 }

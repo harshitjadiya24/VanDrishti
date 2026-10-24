@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@import "../design/tokens.css";
+
+/* Bridge (R1 → R3): the console's existing screens still use the Forest Board's class names
+   (text-dim, bg-raised, border-line, bg-board, bg-check …). They are mapped onto the new
+   roles here, so every screen already wears the new system; R3 rebuilds the screens and this
+   block is deleted. The story keeps its own colours (story/legacy.css) until R2. */
+@theme {
+  --color-base: var(--canvas);
+  --color-panel: var(--surface);
+  --color-raised: var(--surface-2);
+  --color-ink: var(--fg);
+  --color-dim: var(--fg-2);
+  --color-line: var(--edge);
+  --color-amber: var(--decide-fg);
+  --color-alarm: var(--danger);
+  --color-ok: var(--settled);
+  --color-on-alarm: var(--on-danger);
+  --color-on-ok: var(--on-settled);
+  --color-sky: var(--mark);
+  /* Fixed story colours, overridden for the console below. */
+  --color-board: #0e1428;
+  --color-board-deep: #080c1a;
+  --color-board-line: #2a3566;
+  --color-on-board: #f6f3ee;
+  --color-on-board-dim: #aab0cc;
+  --color-check: #f28c28;
+  --color-on-check: #121629;
+
+  --ease-board: var(--ease-out);
+  --ease-boom: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-stamp: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --duration-quick: var(--duration-fast);
+  --duration-board: var(--duration-slow);
+}
+:root {
+  --line: var(--edge);
+  --ink: var(--fg);
+  --dim: var(--fg-2);
+  --alarm: var(--danger);
+  --ok: var(--settled);
+  --shadow-plate: var(--lift);
+}
+/* Inside the console, "board" means the solid primary surface and "check" means decide. */
+.console {
+  --color-board: var(--fg);
+  --color-board-deep: var(--fg-2);
+  --color-board-line: var(--edge);
+  --color-on-board: var(--canvas);
+  --color-on-board-dim: var(--surface-3);
+  --color-check: var(--decide);
+  --color-on-check: var(--on-decide);
+}
+
+html, body { background: var(--canvas); color: var(--fg); }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Browser surfaces carry the design too. */
+::selection { background: var(--decide); color: var(--on-decide); }
+:root { caret-color: var(--decide); accent-color: var(--decide); }
+* { scrollbar-color: var(--edge-strong) transparent; scrollbar-width: thin; }
+/* Focus rings: amber on Night (≥ 3:1 on every surface), ink on Flash. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+a { text-underline-offset: 0.2em; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Loading sheen: slow, low contrast, off under reduced motion. */
+.skeleton { background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface-3) 80%, transparent) 50%, transparent 70%); background-size: 220% 100%; animation: sheen 1.6s var(--ease-out) infinite; }
+@keyframes sheen { from { background-position: 120% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; background-image: none; } }
+
+/* A camera with an open high-risk event pulses on the map; the ring is gone under reduced
+   motion (the camera's colour and the table still say it). */
+.pulse-ring { transform-box: fill-box; transform-origin: center; animation: pulse-ring 2.4s var(--ease-out) infinite; }
+@keyframes pulse-ring { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pulse-ring { display: none; } }
+
+/* Overlay entrances (Radix data-state). */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes palette-in { from { opacity: 0; transform: translate(-50%, -6px) scale(0.985); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes sheet-in { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

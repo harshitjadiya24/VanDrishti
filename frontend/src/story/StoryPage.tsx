@@ -1,3 +1,4 @@
+import "./legacy.css";
 import { useRef } from "react";
 import { ForkSection } from "./fork/ForkSection";
 import { Rivets } from "./parts";
@@ -26,7 +27,7 @@ const MILESTONES = [
 export default function StoryPage() {
   useSmoothScroll();
   return (
-    <div className="min-h-dvh bg-board-deep text-on-board">
+    <div className="story-ground min-h-dvh text-on-board">
       <Hero />
       <main>
         <PipelineSection />
@@ -73,7 +74,7 @@ function Hero() {
             <h1 id="hero-title" className="board-title text-[clamp(3.6rem,11vw,6rem)] uppercase">VanDrishti</h1>
             <div className="mt-1 flex flex-wrap items-baseline gap-x-6 gap-y-1">
               <p lang="hi" className="deva text-[clamp(1.5rem,3.4vw,2.2rem)] text-on-board-dim">वनदृष्टि</p>
-              <p className="text-[clamp(1.35rem,2.6vw,2rem)] font-semibold leading-tight">AI proposes. People decide.</p>
+              <p className="text-[clamp(1.35rem,2.6vw,2rem)] font-semibold leading-tight">AI proposes. <span className="text-check">People decide.</span></p>
             </div>
             <div className="mt-6 grid gap-5 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-8">
               <FramePlate />
@@ -90,7 +91,7 @@ function Hero() {
         {/* The posts the board stands on, painted in bands like a forest road sign. */}
         <div aria-hidden className="flex min-h-8 flex-1 justify-between px-[12%]">
           {[0, 1].map((i) => (
-            <span key={i} className="w-4 bg-[linear-gradient(#f5f6f1_0_50%,#15170f_50%_100%)] [background-size:100%_16px]" />
+            <span key={i} className="w-4 bg-[linear-gradient(#f6f3ee_0_50%,#121629_50%_100%)] [background-size:100%_16px]" />
           ))}
         </div>
       </div>
@@ -116,16 +117,16 @@ function Hero() {
 function FramePlate() {
   return (
     <figure className="relative self-start rounded-[12px] bg-on-board p-3 shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
-      <Rivets className="bg-[#9aa79c]" />
-      <div className="relative overflow-hidden rounded-[6px] bg-[#2f3431]">
+      <Rivets className="bg-[#9aa0bb]" />
+      <div className="relative overflow-hidden rounded-[6px] bg-[#1c2033]">
         <svg viewBox="0 0 420 190" className="block w-full" role="img"
           aria-label="Synthetic night frame: the detector's box around a striped body in the grass">
           <NightFrame id="hero">
-            <rect data-hero-box {...BOX} fill="none" stroke="#f2c230" strokeWidth="3" pathLength={1} strokeDasharray="1" />
+            <rect data-hero-box {...BOX} fill="none" className="box-glow" stroke="#ffb45e" strokeWidth="3" pathLength={1} strokeDasharray="1" />
             <BoxLabel text="animal 0.94" />
           </NightFrame>
         </svg>
-        <figcaption className="flex justify-between bg-black/80 px-3 py-1 font-[ui-monospace,monospace] text-[11px] tracking-wide text-[#d7ddd8]">
+        <figcaption className="flex justify-between bg-black/80 px-3 py-1 font-[ui-monospace,monospace] text-[11px] tracking-wide text-[#dfe2ee]">
           <span>CAM S-07</span><span>22:41 IST</span><span>SYNTHETIC FRAME</span>
         </figcaption>
       </div>
@@ -136,11 +137,11 @@ function FramePlate() {
 /** The model's proposal for that frame, in three fixed tiers: verdict, label, reason. */
 function VerdictPlate() {
   return (
-    <div data-hero-verdict className="relative rounded-[12px] bg-on-board px-5 pt-4 pb-5 text-[#142019] shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
-      <Rivets className="bg-[#9aa79c]" />
+    <div data-hero-verdict className="relative rounded-[12px] bg-on-board px-5 pt-4 pb-5 text-[#121629] shadow-[0_14px_30px_-14px_rgb(0_0_0/0.6)]">
+      <Rivets className="bg-[#9aa0bb]" />
       <span className="inline-block rounded bg-board px-2 py-0.5 text-[13px] font-semibold text-on-board">Auto-accepted</span>
-      <p className="mt-2 text-[22px] leading-tight font-semibold">Tiger <span className="tabular text-[#4e5f53]">0.97</span></p>
-      <p className="mt-1 text-[15px] leading-snug text-[#3f4f44]">
+      <p className="mt-2 text-[22px] leading-tight font-semibold">Tiger <span className="tabular text-[#585e78]">0.97</span></p>
+      <p className="mt-1 text-[15px] leading-snug text-[#3a3f57]">
         The species model agrees with the detector, and tigers are on this reserve's list. Spot-checked at random.
       </p>
     </div>

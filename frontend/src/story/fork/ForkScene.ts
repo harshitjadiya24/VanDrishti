@@ -16,8 +16,8 @@ interface Frame {
   passed: boolean; // a person let it through
 }
 
-const FOG = "#0b2716";
-const ROAD = "#2a2f2c";
+const FOG = "#080c1a";
+const ROAD = "#1d2340";
 const MAX_PER_LANE = 36;
 const BOOM_T = 0.74; // where on a lane the check-post stands
 const GAP = 0.034; // spacing between queued frames, in lane fraction
@@ -52,7 +52,7 @@ function boomTexture(): THREE.CanvasTexture {
   const ctx = c.getContext("2d");
   if (ctx) {
     for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = i % 2 ? "#f5f6f1" : "#c8372d";
+      ctx.fillStyle = i % 2 ? "#f6f3ee" : "#cc3640";
       ctx.fillRect(i * 32, 0, 32, 16);
     }
   }
@@ -95,13 +95,13 @@ export class ForkScene {
     this.scene.background = new THREE.Color(FOG);
     this.scene.fog = new THREE.Fog(FOG, 40, 140);
 
-    this.scene.add(new THREE.HemisphereLight("#d6ead9", "#0b2716", 1.1));
-    const sun = new THREE.DirectionalLight("#fff1d6", 0.9);
+    this.scene.add(new THREE.HemisphereLight("#c9d3ff", "#080c1a", 1.1));
+    const sun = new THREE.DirectionalLight("#ffd9b0", 0.9);
     sun.position.set(-12, 20, 10);
     this.scene.add(sun);
 
     const groundGeo = new THREE.PlaneGeometry(220, 220);
-    const groundMat = new THREE.MeshLambertMaterial({ color: "#123a22" });
+    const groundMat = new THREE.MeshLambertMaterial({ color: "#0d1430" });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     this.scene.add(ground);
@@ -133,7 +133,7 @@ export class ForkScene {
       this.disposables.push(laneGeo, edgeGeo, edgeMat);
 
       const cardGeo = new THREE.BoxGeometry(2.0, 0.12, 1.35);
-      const cardMat = new THREE.MeshLambertMaterial({ color: "#f5f6f1" });
+      const cardMat = new THREE.MeshLambertMaterial({ color: "#f6f3ee" });
       const mesh = new THREE.InstancedMesh(cardGeo, cardMat, MAX_PER_LANE);
       mesh.count = 0;
       mesh.frustumCulled = false; // instances move along the whole lane; the bounds would go stale
@@ -150,7 +150,7 @@ export class ForkScene {
     const right = Math.max(...xs) + 2;
     const z = personLanes[0]?.curve.getPointAt(BOOM_T).z ?? 0;
     const postGeo = new THREE.BoxGeometry(0.35, 2.2, 0.35);
-    const postMat = new THREE.MeshLambertMaterial({ color: "#15170f" });
+    const postMat = new THREE.MeshLambertMaterial({ color: "#121629" });
     [left, right].forEach((x) => {
       const post = new THREE.Mesh(postGeo, postMat);
       post.position.set(x, 1.1, z);
@@ -170,7 +170,7 @@ export class ForkScene {
 
     // Forest on both sides of the trunk road.
     const treeGeo = new THREE.ConeGeometry(1.1, 4.2, 7);
-    const treeMat = new THREE.MeshLambertMaterial({ color: "#2b7044" });
+    const treeMat = new THREE.MeshLambertMaterial({ color: "#12302e" });
     const trees = new THREE.InstancedMesh(treeGeo, treeMat, 260);
     let placed = 0;
     while (placed < 260) {
@@ -301,7 +301,7 @@ export class ForkScene {
         // Before the fork every frame is unsorted enamel; after it, it takes its lane's colour.
         // A frame a person let through turns white again: decided.
         const sorted = f.t > 0.3;
-        color.set(f.passed ? "#ffffff" : sorted ? lane.spec.color : "#e9ece4");
+        color.set(f.passed ? "#ffffff" : sorted ? lane.spec.color : "#ebe6de");
         lane.mesh.setColorAt(i, color);
       });
       lane.mesh.count = lane.frames.length;

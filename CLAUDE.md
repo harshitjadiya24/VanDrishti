@@ -123,11 +123,13 @@ history, old Docker volumes). Do not look for it; build from the image.
 - Docker Hub pulls can fail here with "short read"/stall: retry, keep base images few, and pin
   tags (python 3.11.15-slim-bookworm, node 24.12.0-alpine, caddy 2.11.4-alpine, uv 0.12.23).
 - Local dev admin credentials live in `data/local/admin_credentials.txt` (git-ignored).
-- Frontend design (F0+): world "The Forest Board" (PRODUCT.md, .impeccable/surfaces/). Story at
+- Frontend design: redesign "Cinematic night-vision" in progress (R0–R4, 2026-10-24; replaces The
+  Forest Board). Direction contracts in `.impeccable/surfaces/` (story + console). Story at
   `/` (public, no API calls, lazy), console at `/app/*`. Every story number lives in
   `src/story/results.ts` and a test checks it against docs/EVALUATION.md (`?raw` import; Vite
   `server.fs.allow` includes `../docs`). Illustrative frames are stripe geometry, labelled synthetic.
-- three.js: one scene (`story/fork`), its own chunk, imported only when the section nears view.
+- three.js: scenes are their own lazy chunks (`story/fork`, and the R3F hero `story/scene/NightForest`),
+  imported only when needed, with a static fallback when WebGL is missing.
   Each mount creates its own canvas (React StrictMode mounts twice; two renderers on one canvas
   showed stale frames). `frustumCulled = false` on moving InstancedMeshes. THREE.Clock is
   deprecated: time with performance.now().
@@ -136,7 +138,12 @@ history, old Docker volumes). Do not look for it; build from the image.
   animation (blur is always on). jsdom lacks matchMedia: `src/test/setup.ts` provides one.
 - Playwright screenshots are written asynchronously: wait ~2 s before reading the file, or
   you review the previous capture.
-- Console kit (`frontend/src/components/kit.tsx`): Plate, StatTile/CountNumber, CountBadge,
+- Frontend layout: `app/` (main, router, global.css), `lib/` (api, session, time: localTime/stripTime,
+  keys: isTypingTarget/useHotkeys), `design/` (tokens.css, primitives, kit, IRFrame, TrapStrip),
+  `console/` (Shell, CommandPalette, nav), `features/<domain>/` (screens + tests), `story/`, `vendor/`.
+  Night is the default theme (`data-theme` dark|light|system). Until R3, `app/global.css` bridges
+  the old class names (text-dim, bg-raised, bg-board, bg-check …) onto the new tokens.
+- Console kit (`frontend/src/design/kit.tsx`, primitives in `design/primitives.tsx`): Plate, StatTile/CountNumber, CountBadge,
   StageBadge (always a word), ConfidenceDial, Skeleton, EmptyState, ToastProvider/useToast. Undo
   toasts never time out (WCAG timing); undo is a new audited action, never an erase.
   Screens start with `PageHeader`; filters use `Segmented`; buttons/fields use `BUTTON`/`FIELD`.
@@ -146,15 +153,17 @@ history, old Docker volumes). Do not look for it; build from the image.
   Motion exits). Reviewers with several reserves must pass `reserve=` to list endpoints.
 - Browser checks against dev data: undo any action you take (reopen alerts, undo reviews).
 - Accessibility floor (F5): text on `bg-alarm`/`bg-ok` uses `text-on-alarm`/`text-on-ok` (white by day,
-  dark ink at night; white failed 4.5:1 on the night fills). Focus rings use `--focus-ring` (green by
-  day, yellow at night and on `.bg-board`); check yellow alone is 1.6:1 on daylight. Phone targets are
+  dark ink at night; white failed 4.5:1 on the night fills). Focus rings use `--focus` (amber on Night, ink
+  on Flash). Decide-orange as text uses `decide-fg`; heat colours always come with a word. Phone targets are
   44 px (`h-11 md:h-9` in `BUTTON`/`FIELD`); never fade text with opacity below AA.
-- The console is its own chunk (`src/console.ts`, route `lazy` in router.tsx): the story page must not
-  import from `Shell` or `screens/`. Shared code they both need lives outside both (e.g. `story/stripes`).
-- Design system: `DESIGN.md` + `.impeccable/design.json` (The Forest Board). Floor rules from the finish
+- The console is its own chunk (`src/console/index.ts`, route `lazy` in `app/router.tsx`): the story page
+  must not import from `console/` or `features/`; `design/` and `lib/` are shared. `/lab` is dev-only. Shared code they both need lives outside both (e.g. `story/stripes`).
+- Design system: `DESIGN.md` + `.impeccable/design.json` still describe The Forest Board until R4's
+  documenter rewrites them. Floor rules from the finish
   review: no side stripes on cards, no eyebrow labels above headings, no zero-blur offset shadows, no
   blue outside the palette, milestone stones carry number + stage word ("4·1" hectometre stones between
-  stages, never invented distances). The synthetic frame is `story/frame.tsx` (NightFrame, BODY, BOX):
+  stages, never invented distances). Synthetic frames: `design/IRFrame.tsx` (new, IR greyscale) and the
+  old `story/frame.tsx` (NightFrame, BODY, BOX) until R2:
   SVG rects need `width`/`height` keys (spreading `w`/`h` renders nothing).
 - `docs/screenshots/` holds only photo-free captures (WebP) with `PROVENANCE.md`; anything showing
   camera-trap frames stays in the git-ignored `.impeccable/review/`.
@@ -162,3 +171,6 @@ history, old Docker volumes). Do not look for it; build from the image.
   metrics-guard, impeccable-finish-reviewer, impeccable-documenter); the impeccable ones load
   `~/.claude/skills/impeccable/agents/*.toml` as their spec.
 
+- Vendored UI code lives in `frontend/src/vendor/<source>/` with a README (source, licence, date,
+  what was excluded and why); changes are marked "VanDrishti:"; oxlint ignores `src/vendor/**` but
+  `tsc` still checks it. motion-primitives (MIT) is there: console only, never the story page.

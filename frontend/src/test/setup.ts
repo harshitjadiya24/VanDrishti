@@ -23,3 +23,9 @@ if (!window.matchMedia) {
 
 // jsdom does not run animation frames reliably: Motion finishes every animation at once in tests.
 MotionGlobalConfig.skipAnimations = true;
+
+// cmdk scrolls the selected item into view and Radix measures with ResizeObserver; jsdom has neither.
+if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = () => {};
+if (!("ResizeObserver" in window)) {
+  (window as unknown as { ResizeObserver: unknown }).ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+}

@@ -6,11 +6,11 @@ import type { ForkScene, LaneSpec } from "./ForkScene";
 import { hasWebGL } from "./webgl";
 
 const COLOR: Record<string, string> = {
-  auto: "#3f9d64",
-  blank: "#7d8b82",
-  review: "#f2c230",
-  uncertain: "#e8a317",
-  people: "#d9473b",
+  auto: "#4cc38a",
+  blank: "#8b90a8",
+  review: "#f28c28",
+  uncertain: "#ffb45e",
+  people: "#ff6b6e",
 };
 // Left-to-right lane order in the scene: free-flowing lanes first, then the check-post lanes.
 const ORDER = ["auto", "blank", "review", "uncertain", "people"] as const;
@@ -122,11 +122,11 @@ export function ForkSection() {
       </p>
 
       <div className="mt-10 overflow-hidden rounded-[14px] bg-board p-3 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)]">
-        <div ref={wrap} className="relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#0b2716] md:aspect-auto md:h-[min(68vh,620px)] md:min-h-[340px]">
+        <div ref={wrap} className="relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[#080c1a] md:aspect-auto md:h-[min(68vh,620px)] md:min-h-[340px]">
           {mode === "static" && <StaticFork />}
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-3">
             <button type="button" onClick={review} disabled={mode !== "3d" || lifted}
-              className="rounded-[10px] bg-check px-4 py-2 text-[16px] font-semibold text-on-check shadow-[0_10px_20px_-10px_rgb(0_0_0/0.55)] transition-transform duration-[var(--duration-quick)] active:translate-y-0.5 disabled:opacity-60">
+              className="rounded-[10px] glow-check bg-check px-4 py-2 text-[16px] font-semibold text-on-check transition-transform duration-[var(--duration-quick)] active:translate-y-0.5 disabled:opacity-60">
               {lifted ? "Boom up: frames passing" : "Review (R): lift the boom"}
             </button>
             {passed > 0 && (
@@ -144,7 +144,7 @@ export function ForkSection() {
             <span aria-hidden className="mb-2 block h-1.5 w-10 rounded-full" style={{ background: COLOR[l.id] }} />
             <p className="text-[15px] font-semibold leading-tight">{l.label}</p>
             <p className="tabular mt-1 text-[26px] leading-none font-semibold">{l.frames}</p>
-            <p className="mt-1 text-[13px] text-[#4e5f53]">{l.note}</p>
+            <p className="mt-1 text-[13px] text-[#585e78]">{l.note}</p>
           </Plate>
         ))}
       </div>
@@ -161,19 +161,19 @@ export function ForkSection() {
 function StaticFork() {
   return (
     <svg viewBox="0 0 600 340" className="h-full w-full" role="img" aria-label="One road splits into five lanes; three stop at a check-post">
-      <rect width="600" height="340" fill="#0b2716" />
-      <path d="M300 20 L300 120" stroke="#2a2f2c" strokeWidth="26" />
+      <rect width="600" height="340" fill="#080c1a" />
+      <path d="M300 20 L300 120" stroke="#1d2340" strokeWidth="26" />
       {ORDER.map((id, i) => {
         const x = 70 + i * 115;
         return (
           <g key={id}>
-            <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke="#2a2f2c" strokeWidth="22" fill="none" />
+            <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke="#1d2340" strokeWidth="22" fill="none" />
             <path d={`M300 120 C300 170 ${x} 170 ${x} 230 L${x} 330`} stroke={COLOR[id]} strokeWidth="2" fill="none" />
           </g>
         );
       })}
-      <line x1="275" y1="251" x2="595" y2="251" stroke="#c8372d" strokeWidth="10" />
-      <line x1="275" y1="251" x2="595" y2="251" stroke="#f5f6f1" strokeWidth="10" strokeDasharray="20 20" />
+      <line x1="275" y1="251" x2="595" y2="251" stroke="#cc3640" strokeWidth="10" />
+      <line x1="275" y1="251" x2="595" y2="251" stroke="#f6f3ee" strokeWidth="10" strokeDasharray="20 20" />
     </svg>
   );
 }
