@@ -86,8 +86,10 @@ export function DecideChapter() {
           </p>
           <p className="mt-1 text-[14px] text-fg-2">Below 0.6: the species model's best guess is too weak to trust.</p>
           <div className="relative mt-4 overflow-hidden rounded-[10px] border border-edge">
-            <StripeFrame seed={41} label="Synthetic frame waiting for review" tilt={-12}
-              className={clsx("transition-[filter] duration-[var(--duration-slow)]", verdict ? "" : "sepia-[0.35] saturate-150")} />
+            <StripeFrame seed={41} label="Synthetic frame waiting for review" tilt={-12} />
+            <p className="data absolute inset-x-0 bottom-0 flex justify-between bg-black/85 px-3 py-1.5 text-[10px] tracking-[0.05em] text-ir uppercase">
+              <span>cam n-02 · 23:58 ist · ir</span><span>{verdict ? "decided" : "waiting"}</span>
+            </p>
             {verdict && (
               <div ref={stamp} className="absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-[10px] border border-settled/70 bg-black/80 px-5 py-3 text-center backdrop-blur-sm">
                 <span className="data block text-[10px] tracking-[0.08em] text-settled uppercase">decided by a person</span>

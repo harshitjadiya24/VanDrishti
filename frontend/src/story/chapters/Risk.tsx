@@ -28,7 +28,7 @@ export function RiskChapter() {
   const heat = HEAT[level];
 
   return (
-    <Chapter id="stage-5" stage="5" strip="poaching risk" sectionRef={root} title="Poaching risk, with reasons"
+    <Chapter id="stage-5" variant="split" stage="5" strip="poaching risk" sectionRef={root} title="Poaching risk, with reasons"
       lede="When people or vehicles appear, each reason adds points. The level is a triage order for rangers, not a prediction, and a person's “false alarm” dismisses it.">
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
         <ol className="grid content-start gap-3">
@@ -56,9 +56,12 @@ export function RiskChapter() {
                 </span>
               ))}
             </div>
-            <Synthetic className="mt-5 block" />
+            <p className="data mt-5 inline-flex items-center gap-2 rounded-[6px] bg-black px-2.5 py-1 text-[10.5px] tracking-[0.05em] text-ir uppercase">
+              cam s-07 · 23:10 ist · {total} points
+            </p>
+            <Synthetic className="mt-3 block" />
             <p className="mt-2 text-[12.5px] text-fg-3">
-              These rules have no ground truth yet, so there is no accuracy number. On the sample data they raised
+              These rules have no ground truth yet, so there is no accuracy number. On the sample data they raised{" "}
               {RISK_SAMPLE.medium} MEDIUM events and {RISK_SAMPLE.high === 0 ? "no" : RISK_SAMPLE.high} HIGH.
             </p>
           </div>

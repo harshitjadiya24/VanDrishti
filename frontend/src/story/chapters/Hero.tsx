@@ -70,6 +70,10 @@ export function Hero({ onSeeHow }: { onSeeHow?: () => void }) {
       <div aria-hidden className={clsx("pointer-events-none absolute inset-0 bg-flash transition-opacity",
         flashing ? "opacity-70 duration-75" : "opacity-0 duration-500 ease-[var(--ease-flash)]")} />
 
+      {/* A scrim under the copy: the lit IR ground must never weaken the text's contrast. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/90 via-black/60 to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent" />
+
       <header className="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-5 md:px-10 md:pt-7">
         <p className="flex items-baseline gap-3">
           <span className="wide wide-max text-[22px] tracking-[-0.01em]">VanDrishti</span>

@@ -30,13 +30,12 @@ export function FrameView({ item, showMask }: { item: QueueItem; showMask: boole
           />
         )}
         <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
-          {/* Each box draws itself on, the detector's mark being made; reduced motion shows it whole. */}
+          {/* Each box arrives solid (a dash draw-on breaks under non-scaling strokes); reduced motion shows it at once. */}
           {item.boxes.map((b, i) => (
             <motion.rect key={`${item.image_id}-${i}`} x={b.box[0]} y={b.box[1]} width={b.box[2]} height={b.box[3]} fill="none"
               stroke={BOX_COLOUR[b.category] ?? "#fff"} strokeWidth={2} vectorEffect="non-scaling-stroke"
-              pathLength={1} strokeDasharray="1"
-              initial={reduce ? false : { strokeDashoffset: 1 }} animate={{ strokeDashoffset: 0 }}
-              transition={{ duration: DURATION.slow * 1.6, ease: EASE_OUT, delay: 0.08 * i }} />
+              initial={reduce ? false : { opacity: 0.001 }} animate={{ opacity: 1 }}
+              transition={{ duration: DURATION.base, ease: EASE_OUT, delay: 0.06 * i }} />
           ))}
         </svg>
         {item.boxes.map((b, i) => (

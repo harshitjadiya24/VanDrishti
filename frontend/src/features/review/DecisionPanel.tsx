@@ -21,17 +21,20 @@ export function DecisionPanel({ item }: { item: QueueItem }) {
   return (
     <section aria-label="Model decision" className="grid gap-5">
       <div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* The answer is the model's proposal; a spot check means a person checks an auto-accepted one. */}
-          <span className="data rounded-full border border-edge px-2 py-0.5 text-[10px] tracking-[0.06em] text-fg-3 uppercase">model's proposal</span>
+        <h2 className="wide text-[clamp(1.7rem,2.4vw,2.2rem)]">{item.label ?? routeTitle(item.route)}</h2>
+        {/* The answer is the model's proposal; a spot check means a person checks an auto-accepted one. */}
+        <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[12.5px] text-fg-3">
+          The model's proposal
           {item.spot_check && <span className="rounded-full bg-decide px-2 py-0.5 text-[11.5px] font-semibold text-on-decide">Spot check</span>}
-        </div>
-        <h2 className="wide mt-3 text-[clamp(1.7rem,2.4vw,2.2rem)]">{item.label ?? routeTitle(item.route)}</h2>
+        </p>
         {item.confidence !== null && (
           <div className="mt-3 flex items-end gap-4">
             <ConfidenceDial key={item.image_id} value={item.confidence} size={96} />
             <div className="pb-0.5">
-              <span className="wide block text-[30px]" style={{ color: heatFor(item.confidence) }}>{item.confidence.toFixed(2)}</span>
+              <span className="flex items-center gap-2">
+                <span aria-hidden className="size-2.5 rounded-full" style={{ background: heatFor(item.confidence), boxShadow: `0 0 10px ${heatFor(item.confidence)}` }} />
+                <span className="wide text-[30px]">{item.confidence.toFixed(2)}</span>
+              </span>
               <span className="text-[12.5px] text-fg-2">Confidence: <span className={b.tone}>{b.word}</span></span>
             </div>
           </div>

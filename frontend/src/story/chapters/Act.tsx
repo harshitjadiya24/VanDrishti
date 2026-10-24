@@ -19,27 +19,34 @@ export function ActChapter() {
   const root = useRef<HTMLElement>(null);
   useGSAP(() => {
     if (prefersReducedMotion()) return;
-    gsap.fromTo("[data-notice]", { y: 18, clipPath: "inset(0 0 100% 0)" }, {
-      y: 0, clipPath: "inset(0 0 0% 0)", stagger: 0.1, duration: 0.8, ease: "expo.out",
+    gsap.fromTo("[data-notice]", { y: 14, clipPath: "inset(0 0 100% 0)" }, {
+      y: 0, clipPath: "inset(0 0 0% 0)", stagger: 0.1, duration: 0.7, ease: "expo.out",
       scrollTrigger: { trigger: root.current, start: "top 65%" },
     });
   }, { scope: root });
   return (
-    <Chapter id="act" stage="5.1" strip="on the notice board" sectionRef={root} title="On the notice board"
+    <Chapter id="act" variant="split" stage="5.1" strip="on the notice board" sectionRef={root} title="On the notice board"
       lede="Decisions become alerts for rangers, reports for officials, and data other systems can use.">
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* A notice feed: each entry is posted with its own strip, the hottest first. */}
+      <ol className="overflow-hidden rounded-[var(--radius-card)] border border-edge bg-surface">
         {NOTICES.map((n) => (
-          <li key={n.title} data-notice
-            className={n.tone === "danger"
-              ? "rounded-[var(--radius-card)] border border-danger/60 bg-surface p-5 shadow-[0_18px_40px_-22px_rgb(255_90_104/0.5)]"
-              : "rounded-[var(--radius-card)] border border-edge bg-surface p-5"}>
-            <n.icon size={20} aria-hidden className={n.tone === "danger" ? "text-danger" : "text-fg-3"} />
-            <p className="mt-4 text-[17px] leading-snug font-semibold">{n.title}</p>
-            <p className="mt-2 text-[13.5px] text-fg-2">{n.body}</p>
-            <p className="data mt-4 text-[10.5px] text-fg-3 uppercase">{n.meta}</p>
+          <li key={n.title} data-notice className="grid border-t border-edge first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+            <div className="flex items-start gap-3 px-5 py-5">
+              <n.icon size={20} aria-hidden className={n.tone === "danger" ? "mt-0.5 shrink-0 text-danger" : "mt-0.5 shrink-0 text-fg-3"} />
+              <p className="text-[17px] leading-snug font-semibold">{n.title}</p>
+            </div>
+            <div className="px-5 pb-5 md:py-5">
+              <p className="text-[14px] text-fg-2">{n.body}</p>
+              <p className={n.tone === "danger"
+                ? "data mt-3 inline-flex items-center gap-2 rounded-[6px] bg-black px-2.5 py-1 text-[10.5px] tracking-[0.05em] text-danger uppercase"
+                : "data mt-3 inline-flex items-center gap-2 rounded-[6px] bg-black px-2.5 py-1 text-[10.5px] tracking-[0.05em] text-ir uppercase"}>
+                <span aria-hidden className={n.tone === "danger" ? "size-1.5 rounded-full bg-danger shadow-[0_0_8px_var(--danger)]" : "size-1.5 rounded-full bg-fg-3"} />
+                {n.meta}
+              </p>
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
     </Chapter>
   );
 }

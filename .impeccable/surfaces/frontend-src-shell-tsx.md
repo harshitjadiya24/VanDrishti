@@ -1,8 +1,8 @@
 ---
 version: 1
 slug: "frontend-src-shell-tsx"
-primary_target: "frontend/src/Shell.tsx"
-related_targets: ["frontend/src/screens/ReviewScreen.tsx"]
+primary_target: "frontend/src/console/Shell.tsx"
+related_targets: ["frontend/src/features/review/ReviewScreen.tsx"]
 ---
 
 ## Scope and mode

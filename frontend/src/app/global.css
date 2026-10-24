@@ -18,6 +18,9 @@ body {
 * { scrollbar-color: var(--edge-strong) transparent; scrollbar-width: thin; }
 /* Focus rings: amber on Night (≥ 3:1 on every surface), ink on Flash. */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+/* The ⌘K search shows focus by its whole row (CommandPalette); a ring on the bare input would clip
+   against the dialog edge. Unlayered, so it beats the global ring above. */
+[cmdk-input]:focus-visible { outline: none; }
 a { text-underline-offset: 0.2em; }
 .tabular { font-variant-numeric: tabular-nums; }
 

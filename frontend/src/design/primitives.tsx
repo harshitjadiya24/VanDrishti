@@ -77,11 +77,15 @@ export function StageBadge({ stage, children, className }: { stage: Stage; child
   );
 }
 
-/** Confidence read on the thermal scale: below 0.6 hot, 0.6–0.9 warm, 0.9 and above cold. */
+/** Confidence on the ironbow scale, for marks (dots, bars, chips on black), never for text:
+ * 0.9 and above is settled (cold); below that, the less sure the model, the hotter. */
 export function heatFor(confidence: number): string {
+  // The ramp skips its red step: red-orange would read as crimson danger.
   if (confidence >= 0.9) return "var(--settled)";
-  if (confidence >= 0.6) return "var(--color-heat-4)";
-  return "var(--color-heat-5)";
+  if (confidence >= 0.8) return "var(--color-heat-2)";
+  if (confidence >= 0.7) return "var(--color-heat-4)";
+  if (confidence >= 0.6) return "var(--color-heat-5)";
+  return "var(--color-heat-6)";
 }
 
 /** A short hint on hover or focus. */

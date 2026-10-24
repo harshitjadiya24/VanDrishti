@@ -116,12 +116,6 @@ export function ReviewScreen() {
         <h1 className="wide text-[clamp(1.6rem,2.6vw,2.1rem)]">{title}</h1>
         <StageBadge stage={QUEUE_STAGE[kind]} />
         {items.length > 0 && <span className="data pb-1 text-[12px] text-fg-2">{position} of {items.length} waiting</span>}
-        <span className="ml-auto hidden flex-wrap gap-x-4 gap-y-1 pb-1 text-[12px] text-fg-3 lg:flex pointer-coarse:hidden">
-          <span><Kbd>J</Kbd> <Kbd>K</Kbd> move</span>
-          <span><Kbd>M</Kbd> outline</span>
-          <span><Kbd>P</Kbd> poaching</span>
-          <span><Kbd>1</Kbd>–<Kbd>3</Kbd> severity</span>
-        </span>
       </header>
 
       {items.length > 1 && <Filmstrip items={items} current={current} onPick={setIndex} showImages={kind !== "people_vehicles"} />}
@@ -165,10 +159,21 @@ export function ReviewScreen() {
                 <FrameView item={item} showMask={showMask} />
               </motion.div>
             </AnimatePresence>
+            {/* The key bar: every decision is one key away, typed nowhere else. */}
+            <ul aria-label="Keyboard" className="mt-3 hidden flex-wrap gap-x-5 gap-y-2 rounded-[12px] border border-edge bg-surface px-4 py-3 text-[12.5px] text-fg-2 lg:flex pointer-coarse:hidden">
+              {ACTIONS.filter((a) => item.allowed_actions.includes(a.action)).map((a) => (
+                <li key={a.action} className="flex items-center gap-1.5"><Kbd>{a.key.toUpperCase()}</Kbd>{a.label.replace("…", "")}</li>
+              ))}
+              <li className="flex items-center gap-1.5"><Kbd>U</Kbd>Undo</li>
+              <li className="flex items-center gap-1.5"><Kbd>J</Kbd><Kbd>K</Kbd>Move</li>
+              <li className="flex items-center gap-1.5"><Kbd>M</Kbd>Outline</li>
+              <li className="flex items-center gap-1.5"><Kbd>P</Kbd>Poaching</li>
+              <li className="flex items-center gap-1.5"><Kbd>1</Kbd>–<Kbd>3</Kbd>Severity</li>
+            </ul>
           </div>
 
           {/* Wide screens: the panel stays in view and scrolls inside; the actions dock at its foot. */}
-          <aside className="grid content-start gap-5 rounded-[var(--radius-card)] border border-edge bg-surface p-5 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-6rem)] xl:overflow-y-auto">
+          <aside className="grid content-start gap-5 rounded-[var(--radius-card)] border border-edge bg-surface p-5 xl:sticky xl:top-20 xl:max-h-[calc(100dvh-18rem)] xl:overflow-y-auto">
             <DecisionPanel item={item} />
 
             <div className="grid gap-3 border-t border-edge pt-4">
@@ -241,9 +246,11 @@ function Filmstrip({ items, current, onPick, showImages }: { items: QueueItem[];
                 {showImages
                   ? <img src={api.displayUrl(f.image_id)} alt="" loading="lazy" className={clsx("block aspect-[4/3] w-full object-cover", !active && "brightness-75")} />
                   : <span aria-hidden className="grid aspect-[4/3] w-full place-items-center bg-surface-2 text-danger"><ShieldAlert size={22} /></span>}
+                {/* Heat is a mark (the bar); the number stays ink so it is always legible. */}
+                <span aria-hidden className="block h-[3px]" style={{ background: f.confidence !== null ? heatFor(f.confidence) : "var(--edge)" }} />
                 <span className="data flex justify-between bg-black px-1.5 py-1 text-[9.5px] text-ir">
                   <span className="truncate">{f.camera}</span>
-                  {f.confidence !== null && <span style={{ color: heatFor(f.confidence) }}>{f.confidence.toFixed(2)}</span>}
+                  {f.confidence !== null && <span className="text-[#edeef0]">{f.confidence.toFixed(2)}</span>}
                 </span>
               </button>
             </li>

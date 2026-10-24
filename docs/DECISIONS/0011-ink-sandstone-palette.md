@@ -1,6 +1,6 @@
 # 0011 — Recolour the Forest Board: Ink & Sandstone
 
-- **Status:** accepted
+- **Status:** superseded by 0012 (the Cinematic night-vision redesign)
 - **Date:** 2026-10-24
 - **Amends:** 0010 (decision 2, colours only)
 

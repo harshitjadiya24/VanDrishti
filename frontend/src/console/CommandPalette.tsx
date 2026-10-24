@@ -6,7 +6,6 @@ import { Command } from "cmdk";
 import { LogOut, MapPinned, Moon, Search, Sun, SunMoon } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router";
-import { CountBadge } from "../design/kit";
 import { Kbd } from "../design/primitives";
 import { isTypingTarget } from "../lib/keys";
 import type { Reserve } from "../lib/api";
@@ -35,6 +34,8 @@ function Item({ value, onSelect, icon, children, hint }: { value: string; onSele
     </Command.Item>
   );
 }
+
+const PALETTE_HEAT = { alarm: "var(--danger)", check: "var(--color-heat-4)", neutral: "var(--mark)" } as const;
 
 const GROUP = "px-1 pt-2 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-3";
 
@@ -65,7 +66,13 @@ export function CommandPalette({ open, onOpenChange, groups, reserves, reserve, 
                   {g.items.map((it) => (
                     <Item key={it.to} value={`${it.label} ${it.keywords ?? ""}`} icon={<it.icon size={16} />}
                       onSelect={() => run(() => navigate(it.to))}
-                      hint={it.count ? <CountBadge n={it.count} tone={it.tone} /> : undefined}>
+                      hint={it.count ? (
+                        // The same per-queue heat as the rail: one queue never reads at two heats.
+                        <span className="data flex items-center gap-1.5 text-[11px] text-fg">
+                          <span aria-hidden className="size-1.5 rounded-full" style={{ background: it.heat ?? PALETTE_HEAT[it.tone ?? "neutral"] }} />
+                          {it.count}
+                        </span>
+                      ) : undefined}>
                       {it.label}
                     </Item>
                   ))}

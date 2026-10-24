@@ -18,13 +18,16 @@ export const QUEUES: { kind: QueueKind; label: string; icon: LucideIcon; tone: H
   { kind: "quality", label: "Quality", icon: Sparkles, tone: "neutral", perm: "review_species" },
 ];
 
-export interface NavItem { to: string; label: string; icon: LucideIcon; perm: string; count?: number; tone?: Heat; keywords?: string }
+export interface NavItem { to: string; label: string; icon: LucideIcon; perm: string; count?: number; tone?: Heat; heat?: string; keywords?: string }
 export interface NavGroup { title: string; items: NavItem[] }
 
 export function buildNav(counts: Partial<Record<QueueKind, number>> | undefined, urgentAlerts: number, can: (p: string) => boolean): NavGroup[] {
   const groups: NavGroup[] = [
     { title: "Needs a person", items: [
-      ...QUEUES.map((q) => ({ to: `/app/review/${q.kind}`, label: q.label, icon: q.icon, perm: q.perm, count: counts?.[q.kind], tone: q.tone, keywords: "queue review frames" })),
+      ...QUEUES.map((q) => ({ to: `/app/review/${q.kind}`, label: q.label, icon: q.icon, perm: q.perm, count: counts?.[q.kind], tone: q.tone,
+        // Uncertain frames run hotter than the review band: the less sure the model, the hotter.
+        heat: q.kind === "uncertain" ? "var(--color-heat-6)" : q.kind === "review" ? "var(--color-heat-4)" : undefined,
+        keywords: "queue review frames" })),
       { to: "/app/identity", label: "Tiger identities", icon: Fingerprint, perm: "view", keywords: "re-id stripes match" },
       { to: "/app/alerts", label: "Alerts", icon: Bell, perm: "view", count: urgentAlerts, tone: "alarm", keywords: "warnings rangers" },
     ] },

@@ -85,8 +85,10 @@ export function PipelineChapter() {
                 i === step ? "translate-x-0" : "md:translate-x-2")}>
               <h3 className={clsx("wide text-[clamp(1.5rem,2.4vw,2rem)] transition-colors duration-[var(--duration-slow)]", i === step ? "text-fg" : "text-fg-2")}>{s.title}</h3>
               <p className={clsx("mt-3 text-[16px] leading-relaxed transition-colors duration-[var(--duration-slow)]", i === step ? "text-fg-2" : "text-fg-3")}>{s.body}</p>
-              <p className={clsx("data mt-4 inline-block border-l-2 py-0.5 pl-3 text-[11px] tracking-[0.04em] uppercase transition-colors duration-[var(--duration-slow)]",
-                i === step ? "border-heat-5 text-heat-5" : "border-edge-strong text-fg-3")}>{s.recipe}</p>
+              <p className={clsx("data mt-4 inline-flex items-center gap-2 rounded-[6px] bg-black/60 px-2.5 py-1 text-[10.5px] tracking-[0.05em] uppercase transition-colors duration-[var(--duration-slow)]",
+                i === step ? "text-heat-5" : "text-fg-3")}>
+                <span aria-hidden className={clsx("size-1.5 rounded-full", i === step ? "bg-heat-5" : "bg-fg-3")} />{s.recipe}
+              </p>
             </li>
           ))}
         </ol>

@@ -191,9 +191,9 @@ function Rail({ groups, narrow, layoutKey }: { groups: NavGroup[]; narrow: boole
                       {!narrow && <span className="relative flex-1 truncate">{it.label}</span>}
                       {it.count ? (
                         narrow
-                          ? <span aria-hidden className="absolute top-1.5 right-2 size-1.5 rounded-full" style={{ background: HEAT[it.tone ?? "neutral"] }} />
+                          ? <span aria-hidden className="absolute top-1.5 right-2 size-1.5 rounded-full" style={{ background: it.heat ?? HEAT[it.tone ?? "neutral"] }} />
                           : <span className="data relative flex items-center gap-1.5 text-[11px] text-fg">
-                              <span aria-hidden className="size-1.5 rounded-full" style={{ background: HEAT[it.tone ?? "neutral"], boxShadow: it.tone !== "neutral" ? `0 0 7px ${HEAT[it.tone ?? "neutral"]}` : undefined }} />
+                              <span aria-hidden className="size-1.5 rounded-full" style={{ background: it.heat ?? HEAT[it.tone ?? "neutral"], boxShadow: it.tone !== "neutral" ? `0 0 7px ${it.heat ?? HEAT[it.tone ?? "neutral"]}` : undefined }} />
                               {it.count}
                             </span>
                       ) : null}

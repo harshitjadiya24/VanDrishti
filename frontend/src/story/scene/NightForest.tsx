@@ -70,7 +70,7 @@ function Trunks() {
       frustumCulled={false}
     >
       <cylinderGeometry args={[0.09, 0.2, 13, 7]} />
-      <meshStandardMaterial color="#2a2e33" roughness={1} />
+      <meshStandardMaterial color="#5d636b" roughness={1} />
     </instancedMesh>
   );
 }
@@ -167,6 +167,7 @@ function Scene({ shotAt, boxRef, still }: NightForestProps) {
   const stripes = useStripeTexture();
   const flash = useRef<THREE.PointLight>(null);
   const moon = useRef<THREE.HemisphereLight>(null);
+  const fill = useRef<THREE.AmbientLight>(null);
   const eyes = useRef<THREE.Group>(null);
   const hue = useRef<HueSaturationEffect>(null);
   const tigerMat = useRef<THREE.MeshStandardMaterial>(null);
@@ -198,13 +199,15 @@ function Scene({ shotAt, boxRef, still }: NightForestProps) {
     const t = shotAt === null ? -1 : still ? 10 : (performance.now() - shotAt) / 1000;
     const { light, ir } = flashCurve(t);
     // A light at the camera that falls off with distance: near trunks go silver, the far forest stays dark.
-    if (flash.current) flash.current.intensity = light * 90 + ir * 22;
+    // IR exposure: near trunks and ground go silver and fall off into black; the subject reads bright.
+    if (flash.current) flash.current.intensity = light * 160 + ir * 70;
+    if (fill.current) fill.current.intensity = ir * 0.32;
     if (moon.current) moon.current.intensity = 0.32 - ir * 0.18;
     if (hue.current) hue.current.saturation = -ir * 0.97;
     if (tigerMat.current) {
       // Unlit, the body is only a darker shape behind its eyes; the flash shows it.
       tigerMat.current.color.setScalar(0.12 + ir * 0.88);
-      tigerMat.current.emissiveIntensity = 0.01 + ir * 0.06;
+      tigerMat.current.emissiveIntensity = 0.01 + ir * 0.32;
     }
     // Eyeshine blinks now and then while the night runs; it stays lit in the frozen frame.
     if (eyes.current) {
@@ -233,10 +236,11 @@ function Scene({ shotAt, boxRef, still }: NightForestProps) {
       <color attach="background" args={["#05070a"]} />
       <fogExp2 attach="fog" args={["#080b10", 0.085]} />
       <hemisphereLight ref={moon} args={["#7f95c4", "#05070a", 0.32]} />
+      <ambientLight ref={fill} intensity={0} color="#ffffff" />
       <pointLight ref={flash} position={[CAMERA[0], CAMERA[1] + 0.3, CAMERA[2] - 0.5]} intensity={0} decay={1} distance={0} color="#ffffff" />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -15]}>
         <planeGeometry args={[80, 60]} />
-        <meshStandardMaterial color="#14171b" roughness={1} />
+        <meshStandardMaterial color="#3a3f46" roughness={1} />
       </mesh>
       <Trunks />
       <mesh position={[TIGER.x, TIGER.y, TIGER.z]}>

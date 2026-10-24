@@ -16,16 +16,22 @@ export interface ChapterProps {
   children: ReactNode;
   className?: string;
   sectionRef?: React.Ref<HTMLElement>;
+  /** "split" sets the title and its paragraph side by side on wide screens, to vary the rhythm. */
+  variant?: "stacked" | "split";
 }
 
 /** One chapter: a title in expanded lettering, one paragraph, then the demonstration. */
-export function Chapter({ id, stage, strip, title, lede, children, className, sectionRef }: ChapterProps) {
+export function Chapter({ id, stage, strip, title, lede, children, className, sectionRef, variant = "stacked" }: ChapterProps) {
   return (
     <section id={id} ref={sectionRef} data-chapter={stage ?? ""} data-chapter-name={strip} aria-labelledby={`${id}-title`}
       className={clsx("scroll-mt-6 px-5 py-24 md:px-10 md:py-32", className)}>
       <div className="mx-auto max-w-[1280px]">
-        <h2 id={`${id}-title`} className="wide max-w-[18ch] text-[clamp(2.4rem,5.6vw,4.6rem)]">{title}</h2>
-        {lede && <p className="mt-5 max-w-[60ch] text-[clamp(1.02rem,1.4vw,1.2rem)] leading-relaxed text-fg-2">{lede}</p>}
+        <div className={clsx(variant === "split" && "lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-end lg:gap-16")}>
+          <h2 id={`${id}-title`} className="wide max-w-[18ch] text-[clamp(2.4rem,5.6vw,4.6rem)]">{title}</h2>
+          {lede && (
+            <p className={clsx("mt-5 max-w-[60ch] text-[clamp(1.02rem,1.4vw,1.2rem)] leading-relaxed text-fg-2", variant === "split" && "lg:mt-0 lg:pb-2")}>{lede}</p>
+          )}
+        </div>
         <div className="mt-12 md:mt-16">{children}</div>
       </div>
     </section>
